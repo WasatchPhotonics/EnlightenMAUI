@@ -2,18 +2,22 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <IsFirstTimeProjectOpen>False</IsFirstTimeProjectOpen>
-    <ActiveDebugFramework>net8.0-android</ActiveDebugFramework>
+    <ActiveDebugFramework>net8.0-android34.0</ActiveDebugFramework>
     <ActiveDebugProfile>HMD Global Nokia 7.1 (Android 10.0 - API 29)</ActiveDebugProfile>
     <SelectedPlatformGroup>PhysicalDevice</SelectedPlatformGroup>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)'=='iOS'">
+    <RuntimeIdentifier>ios-arm64</RuntimeIdentifier>
+    <PlatformTarget>arm64</PlatformTarget>
+  </PropertyGroup>
   <ItemGroup>
-    <MauiXaml Update="UI\DataPage.xaml">
+    <MauiXaml Update="Views\DataPage.xaml">
       <SubType>Designer</SubType>
     </MauiXaml>
-    <MauiXaml Update="UI\InfoPage.xaml">
+    <MauiXaml Update="Views\InfoPage.xaml">
       <SubType>Designer</SubType>
     </MauiXaml>
-    <MauiXaml Update="UI\DevicePage.xaml">
+    <MauiXaml Update="Views\DevicePage.xaml">
       <SubType>Designer</SubType>
     </MauiXaml>
   </ItemGroup>

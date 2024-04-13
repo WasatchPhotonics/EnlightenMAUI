@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
+             x:Class="EnlightenMAUI.ScopePage"
+             x:DataType="local:ViewModels.ScopeViewModel">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,0"
+            Spacing="25">
+            <Label
+                Text="Scope"
+                Style="{StaticResource Headline}"
+                SemanticProperties.HeadingLevel="Level1" />
+
+            <!-- ======================================================= -->
+            <!-- The all-important spectral chart                        -->
+            <!-- ======================================================= -->
+
+            <telerik:RadCartesianChart x:Name="chart"
+                                       HorizontalOptions="FillAndExpand"
+                                       VerticalOptions="FillAndExpand"
+                                       MinimumHeightRequest="100"
+                                       HeightRequest="400"
+                                       BackgroundColor="#000">
+
+                <!-- axes -->
+                <telerik:RadCartesianChart.HorizontalAxis>
+                    <telerik:NumericalAxis ShowLabels="True"
+                                           LabelFitMode="MultiLine"
+                                           LabelTextColor="#999"
+                                           LabelFormat="{Binding xAxisLabelFormat}"
+                                           Minimum="{Binding xAxisMinimum}"
+                                           Maximum="{Binding xAxisMaximum}" />
+                </telerik:RadCartesianChart.HorizontalAxis>
+                <telerik:RadCartesianChart.VerticalAxis>
+                    <telerik:NumericalAxis ShowLabels="True"
+                                           LabelFitMode="MultiLine"
+                                           LabelTextColor="#999"/>
+                </telerik:RadCartesianChart.VerticalAxis>
+
+                <!-- series data -->
+                <telerik:RadCartesianChart.Series>
+                    <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
+                    <telerik:ScatterLineSeries XValueBinding="xValue"
+                                               YValueBinding="intensity"
+                                               Stroke="#27c0a1"
+                                               DisplayName="Live"
+                                               ItemsSource="{Binding chartData}" />
+
+                    <!-- I couldn't find a way to add these programmatically at runtime (and appear on the graph) -->
+                    <!-- 
+                    <telerik:ScatterLineSeries DisplayName="Trace #0" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #1" Stroke="#6758c5" ItemsSource="{Binding trace1}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #2" Stroke="#f7e842" ItemsSource="{Binding trace2}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #3" Stroke="#4a5da9" ItemsSource="{Binding trace3}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #4" Stroke="#f79a1c" ItemsSource="{Binding trace4}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #5" Stroke="#60b34e" ItemsSource="{Binding trace5}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #6" Stroke="#cd242b" ItemsSource="{Binding trace6}" XValueBinding="xValue" YValueBinding="intensity" />
+                    <telerik:ScatterLineSeries DisplayName="Trace #7" Stroke="#2994d3" ItemsSource="{Binding trace7}" XValueBinding="xValue" YValueBinding="intensity" />
+                    -->
+                </telerik:RadCartesianChart.Series>
+
+                <!-- pan and zoom -->
+                <telerik:RadCartesianChart.ChartBehaviors>
+                    <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
+                                                     PanMode="Both" 
+                                                     HandleDoubleTap="True"/>
+                    <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                </telerik:RadCartesianChart.ChartBehaviors>
+            </telerik:RadCartesianChart>
+            
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
