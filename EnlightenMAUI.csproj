@@ -60,6 +60,34 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+		<PackageReference Include="Telerik.UI.for.Maui.Trial" Version="6.8.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="UI\DataPage.xaml.cs">
+	    <DependentUpon>DataPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="UI\InfoPage.xaml.cs">
+	    <DependentUpon>InfoPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="UI\DevicePage.xaml.cs">
+	    <DependentUpon>DevicePage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="UI\ScopePage.xaml.cs">
+	    <DependentUpon>ScopePage.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="UI\DataPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="UI\InfoPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="UI\DevicePage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 
 </Project>

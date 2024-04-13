@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace EnlightenMAUI
+namespace EnlightenMAUI.UI
 {
     public static class MauiProgram
     {
@@ -16,7 +16,7 @@ namespace EnlightenMAUI
                 });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();
