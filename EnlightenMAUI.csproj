@@ -23,7 +23,7 @@
 		<ApplicationTitle>EnlightenMAUI</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.enlightenmaui</ApplicationId>
+		<ApplicationId>com.wasatchphotonics.enlightenmaui</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>

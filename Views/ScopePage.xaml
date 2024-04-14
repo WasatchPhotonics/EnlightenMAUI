@@ -71,8 +71,10 @@
                     <telerik:ChartTooltipBehavior TriggerMode="Tap" />
                 </telerik:RadCartesianChart.ChartBehaviors>
             </telerik:RadCartesianChart>
-            
+
+
         </VerticalStackLayout>
     </ScrollView>
 
 </ContentPage>
+
