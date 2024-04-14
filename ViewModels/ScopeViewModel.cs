@@ -37,7 +37,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.updateChart: done");
     }
 
-
     private void refreshChartData()
     {
         // use last Measurement from the Spectrometer
@@ -91,7 +90,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             return;
         }
-
     }
 
     public ObservableCollection<ChartDataPoint> chartData { get; set; } = new ObservableCollection<ChartDataPoint>();

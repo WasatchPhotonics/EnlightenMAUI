@@ -81,24 +81,25 @@ public class Util
     // a lightweight wrapper so other classes don't need to do this
     ////////////////////////////////////////////////////////////////////////
 
-    /*
     public static bool bluetoothEnabled()
     {
-        var platformUtil = DependencyService.Get<IPlatformUtil>();
-        return platformUtil.bluetoothEnabled();
+        // var platformUtil = DependencyService.Get<IPlatformUtil>();
+        // return platformUtil.bluetoothEnabled();
+        return false;
     }
 
     public static bool enableBluetooth(bool flag)
     {
-        var platformUtil = DependencyService.Get<IPlatformUtil>();
-        return platformUtil.enableBluetooth(flag);
+        // var platformUtil = DependencyService.Get<IPlatformUtil>();
+        // return platformUtil.enableBluetooth(flag);
+        return false;
     }
 
     // View is there for iOS (Android doesn't need it)
     public static void toast(string msg, View view = null)
     {
-        var platformUtil = DependencyService.Get<IPlatformUtil>();
-        platformUtil.toast(msg, view);
+        // var platformUtil = DependencyService.Get<IPlatformUtil>();
+        // platformUtil.toast(msg, view);
+        Logger.getInstance().error($"TOAST: {msg}");
     }
-    */
 }
