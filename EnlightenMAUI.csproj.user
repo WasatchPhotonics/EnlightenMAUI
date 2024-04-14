@@ -10,17 +10,7 @@
     <RuntimeIdentifier>ios-arm64</RuntimeIdentifier>
     <PlatformTarget>arm64</PlatformTarget>
   </PropertyGroup>
-  <ItemGroup>
-    <MauiXaml Update="Views\DataPage.xaml">
-      <SubType>Designer</SubType>
-    </MauiXaml>
-    <MauiXaml Update="Views\InfoPage.xaml">
-      <SubType>Designer</SubType>
-    </MauiXaml>
-    <MauiXaml Update="Views\DevicePage.xaml">
-      <SubType>Designer</SubType>
-    </MauiXaml>
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Update="App.xaml">
       <SubType>Designer</SubType>
