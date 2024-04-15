@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
+             x:Class="EnlightenMAUI.LogPage"
+             x:DataType="local:ViewModels.LogViewModel">
+             <!-- Title="📋" -->
+
+    <ContentPage.Content>
+        <StackLayout Orientation="Vertical" BackgroundColor="#333">
+
+            <!-- Page header -->
+            <StackLayout Orientation="Horizontal">
+                <Button Command="{Binding saveCmd}" Text="Save" Margin="30, 10, 30, 10"/>
+                <StackLayout Orientation="Horizontal">
+                    <Label Text="Verbose"/>
+                    <Switch IsToggled="{Binding verbose}" />
+
+                    <Label Text="BLE"/>
+                    <Switch IsToggled="{Binding debugBLE}" />
+                </StackLayout>
+            </StackLayout>
+
+            <!-- Log lines -->
+            <Editor Text="{Binding logText}" 
+                    TextColor="#ccc"
+                    BackgroundColor="#666"
+                    Margin="10,0,10,0"
+                    IsSpellCheckEnabled="False"
+                    HorizontalOptions="FillAndExpand"
+                    VerticalOptions="FillAndExpand" />
+
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

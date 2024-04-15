@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
+             x:Class="EnlightenMAUI.SettingsPage"
+             x:DataType="local:ViewModels.SettingsViewModel">
+             <!-- Title="💾" -->
+             
+    <StackLayout Orientation="Vertical" BackgroundColor="#333">
+
+        <!-- Page header -->
+        <Image Source="enlightenLOGO" WidthRequest="300"/>
+
+        <ScrollView Margin="10, 0, 50, 0">
+            <StackLayout HorizontalOptions="FillAndExpand">
+
+                <!-- Category header -->
+                <Label Text="Save Options" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Save Pixel" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding savePixel}" HorizontalOptions="EndAndExpand" />
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Save Wavelength" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding saveWavelength}" HorizontalOptions="EndAndExpand" />
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Save Wavenumber" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding saveWavenumber}" HorizontalOptions="EndAndExpand" />
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Save Raw" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding saveRaw}" HorizontalOptions="EndAndExpand" />
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Save Dark" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding saveDark}" HorizontalOptions="EndAndExpand" />
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Save Reference" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
+                </StackLayout>
+
+                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
+                    <Label Text="Laser Watchdog Timeout (sec)" />
+                    <Entry Text="{Binding laserWatchdogTimeoutSec}" 
+                           Placeholder="10"
+                           HorizontalTextAlignment="Center"
+                           WidthRequest="100"
+                           Keyboard="Numeric" />
+                </FlexLayout>
+
+                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
+                    <Label Text="Laser Warm-up Delay (ms)" />
+                    <Entry Text="{Binding laserDelayMS}" 
+                           Placeholder="500"
+                           HorizontalTextAlignment="Center"
+                           WidthRequest="100"
+                           Keyboard="Numeric" />
+                </FlexLayout>
+
+                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
+                    <Label Text="Vertical ROI Start Line" />
+                    <Entry x:Name="entryVerticalROIStartLine"
+                           Text="{Binding verticalROIStartLine}" 
+                           Placeholder="200"
+                           HorizontalTextAlignment="Center"
+                           WidthRequest="100"
+                           Focused="entry_Focused"
+                           Completed="entryVerticalROIStartLine_Completed"
+                           Keyboard="Numeric" />
+                </FlexLayout>
+                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
+                    <Label Text="Vertical ROI Stop Line" />
+                    <Entry x:Name="entryVerticalROIStopLine"
+                           Text="{Binding verticalROIStopLine}" 
+                           Placeholder="800"
+                           HorizontalTextAlignment="Center"
+                           WidthRequest="100"
+                           Focused="entry_Focused"
+                           Completed="entryVerticalROIStopLine_Completed"
+                           Keyboard="Numeric" />
+                </FlexLayout>
+            </StackLayout>
+        </ScrollView>
+    </StackLayout>
+</ContentPage>

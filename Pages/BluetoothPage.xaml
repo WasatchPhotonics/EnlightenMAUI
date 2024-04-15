@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
+             x:Class="EnlightenMAUI.BluetoothPage"
+             x:DataType="local:ViewModels.BluetoothViewModel">
+             <!-- Title="{Binding title}" -->
+
+    <ContentPage.Content>
+        <StackLayout Orientation="Vertical" BackgroundColor="#333">
+
+            <!-- Page header -->
+            <Image Source="enlightenLOGO" WidthRequest="300"/>
+
+            <!-- Button Bar -->
+            <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
+                <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
+                    <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand">
+                        <Button Text="Scan" Command="{Binding scanCmd}" IsEnabled="{Binding bluetoothEnabled}"
+                                TextColor="{Binding scanButtonTextColor}" 
+                                BackgroundColor="{Binding scanButtonBackgroundColor}" />
+                        <Button Text="{Binding buttonConnectText}" Command="{Binding connectCmd}" IsEnabled="{Binding buttonConnectEnabled}" /> 
+                    </StackLayout>
+                </Frame>
+            </Frame>
+
+            <!-- Connection ProgressBar -->
+            <ProgressBar Progress="{Binding connectionProgress}"
+                         ProgressColor="#2994d3" />
+
+            <!-- List of discovered BLE devices -->
+            <ListView x:Name="listView" 
+                      ItemSelected="listView_ItemSelected" 
+                      SeparatorColor="#555" 
+                      BackgroundColor="#333" 
+                      Margin="20, 0, 20, 0" 
+                      HasUnevenRows="True"> 
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            <StackLayout Orientation="Vertical"
+                                         MinimumHeightRequest="100">
+                                         <!-- BackgroundColor="{Binding backgroundColor}" -->
+                                <StackLayout Orientation="Horizontal">
+                                    <Label TextColor="#27c0a1" Text="unk rssi" FontSize="Large"/>
+                                    <!-- Binding rssi, StringFormat='RSSI: {0}' -->
+                                    <Label TextColor="#2994d3" Text="Binding name" FontSize="Large"/>
+                                </StackLayout>
+                                <Label TextColor="#cccccc" Text="Binding id"/>
+                            </StackLayout>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>
