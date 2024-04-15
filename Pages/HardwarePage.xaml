@@ -1,29 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 
 <!--
-The DevicePage provides information on the connected Device (i.e. 
-Bluetooth spectrometer). It basically corresponds to ENLIGHTEN's 
-Hardware View. 
+The HardwarePage corresponds to ENLIGHTEN's Hardware View. 
 
 @todo:
     - add logo
     - fix name/value bindings
-    - connect button
+    - move button to BluetoothPage
 -->
 
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.DevicePage"
-             x:DataType="local:ViewModels.DeviceViewModel">
+             x:Class="EnlightenMAUI.HardwarePage"
+             x:DataType="local:ViewModels.HardwareViewModel">
 
     <ScrollView>
 
         <VerticalStackLayout Padding="10,0,10,0" Spacing="25" BackgroundColor="#333">
-            <Label Text="Device" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
-            <!-- Page header Image Source="enlightenLOGO" WidthRequest="300" -->
+            <!-- Page header -->
+            <Image Source="enlighten_logo.png" WidthRequest="300"/>
+
+            <Label Text="Hardware" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
             <!-- BLE Device Info -->
             <Label FontSize="Large" Text="BLE Device Info"/>

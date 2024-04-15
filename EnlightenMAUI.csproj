@@ -76,6 +76,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Pages\ClipboardPage.xaml.cs">
+	    <DependentUpon>ClipboardPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Pages\AboutPage.xaml.cs">
+	    <DependentUpon>AboutPage.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Views\DataPage.xaml.cs">
 	    <DependentUpon>DataPage.xaml</DependentUpon>
 	  </Compile>

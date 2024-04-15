@@ -11,6 +11,9 @@
         <StackLayout Orientation="Vertical" BackgroundColor="#333">
 
             <!-- Page header -->
+            <Image Source="enlighten_logo.png" WidthRequest="300"/>
+
+            <!-- Page header -->
             <StackLayout Orientation="Horizontal">
                 <Button Command="{Binding saveCmd}" Text="Save" Margin="30, 10, 30, 10"/>
                 <StackLayout Orientation="Horizontal">

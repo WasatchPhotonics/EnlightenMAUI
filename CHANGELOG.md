@@ -2,8 +2,11 @@
 
 - 2024-04-15 0.0.4
     - added enlighten_logo
-    - About -> Info
-    - InfoViewModel -> code-behind
+    - AboutViewModel -> code-behind
+    - Data -> Clipboard
+    - Device -> {Bluetooth, Hardware}
+    - added Clipboard
+    - all tabs viewable except Bluetooth
 - 2024-04-14 0.0.3
     - Telerik chart loading
     - imported from EnlightenMobile

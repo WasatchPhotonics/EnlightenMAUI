@@ -5,13 +5,12 @@
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:Class="EnlightenMAUI.BluetoothPage"
              x:DataType="local:ViewModels.BluetoothViewModel">
-             <!-- Title="{Binding title}" -->
 
     <ContentPage.Content>
         <StackLayout Orientation="Vertical" BackgroundColor="#333">
 
             <!-- Page header -->
-            <Image Source="enlightenLOGO" WidthRequest="300"/>
+            <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
             <!-- Button Bar -->
             <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">

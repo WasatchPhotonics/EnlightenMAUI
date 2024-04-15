@@ -11,8 +11,8 @@
         <VerticalStackLayout Padding="30,0" Spacing="25">
             <Label Text="Scope" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
-            <!-- Page header (when in portrait mode) -->
-            <Image x:Name="logoVertical" Source="enlightenLOGO" WidthRequest="200" BackgroundColor="#333" Margin="5, 5, 5, 5" />
+            <!-- Page header -->
+            <Image Source="enlighten_logo.png" WidthRequest="200" BackgroundColor="#333" Margin="5, 5, 5, 5" />
 
             <!-- ======================================================= -->
             <!-- The all-important spectral chart                        -->

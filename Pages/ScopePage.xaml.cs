@@ -5,7 +5,6 @@ using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI;
 
-// MZ: why is this here?
 [XamlCompilation(XamlCompilationOptions.Compile)]
 public partial class ScopePage : ContentPage
 {
