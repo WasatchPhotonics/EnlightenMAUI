@@ -7,13 +7,8 @@
              x:DataType="local:ViewModels.ScopeViewModel">
 
     <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Label
-                Text="Scope"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+        <VerticalStackLayout Padding="30,0" Spacing="25">
+            <Label Text="Scope" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
             <!-- ======================================================= -->
             <!-- The all-important spectral chart                        -->
@@ -72,9 +67,6 @@
                 </telerik:RadCartesianChart.ChartBehaviors>
             </telerik:RadCartesianChart>
 
-
         </VerticalStackLayout>
     </ScrollView>
-
 </ContentPage>
-

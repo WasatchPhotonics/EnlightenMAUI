@@ -1,17 +1,73 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<!--
+The DevicePage provides information on the connected Device (i.e. 
+Bluetooth spectrometer). It basically corresponds to ENLIGHTEN's 
+Hardware View. 
+
+@todo:
+    - add logo
+    - fix name/value bindings
+    - connect button
+-->
+
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="EnlightenMAUI.DevicePage">
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
+             x:Class="EnlightenMAUI.DevicePage"
+             x:DataType="local:ViewModels.DeviceViewModel">
 
     <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Label
-                Text="Device"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+
+        <VerticalStackLayout Padding="10,0,10,0" Spacing="25" BackgroundColor="#333">
+            <Label Text="Device" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
+
+            <!-- Page header Image Source="enlightenLOGO" WidthRequest="300" -->
+
+            <!-- BLE Device Info -->
+            <Label FontSize="Large" Text="BLE Device Info"/>
+            <Button Text="{Binding bleBtnTxt}" Margin="5"/> <!-- Clicked="connectPage" -->
+            <StackLayout Margin="10, 0, 10, 0">
+                <FlexLayout JustifyContent="SpaceBetween">
+                    <Label Text="Device Name"/>
+                    <Label Text="{Binding deviceName}"/>
+                </FlexLayout>
+                <FlexLayout JustifyContent="SpaceBetween">
+                    <Label Text="Manufacturer Name"/>
+                    <Label Text="{Binding manufacturerName}"/>
+                </FlexLayout>
+                <FlexLayout JustifyContent="SpaceBetween">
+                    <Label Text="BLE FW Revision"/>
+                    <Label Text="{Binding softwareRevision}"/>
+                </FlexLayout>
+                <FlexLayout JustifyContent="SpaceBetween">
+                    <Label Text="FPGA FW Revision"/>
+                    <Label Text="{Binding firmwareRevision}"/>
+                </FlexLayout>
+                <FlexLayout JustifyContent="SpaceBetween">
+                    <Label Text="Hardware Revision"/>
+                    <Label Text="{Binding hardwareRevision}"/>
+                </FlexLayout>
+            </StackLayout>
+
+            <!-- Scrolling ListView of EEPROM (name, value) tuples -->
+            <Label Text="EEPROM" FontSize="Large" Margin="0, 10, 0, 0"/>
+            <ListView x:Name="listViewEEPROM" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            <StackLayout Orientation="Horizontal">
+                                <Label TextColor="#999" Text="Binding name"/>
+                                <Label TextColor="#eee" Text="Binding value" HorizontalTextAlignment="End" HorizontalOptions="EndAndExpand"/>
+                            </StackLayout>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
         </VerticalStackLayout>
+
     </ScrollView>
 
 </ContentPage>
