@@ -3,16 +3,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="EnlightenMAUI.InfoPage">
 
-    <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Label
-                Text="Info"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+    <FlexLayout BackgroundColor="#333" 
+                Direction="Column"
+                AlignItems="Center"
+                JustifyContent="SpaceEvenly">
 
-            </VerticalStackLayout>
-    </ScrollView>
+        <Image Source="enlighten_logo.png" HeightRequest="100" />
 
+        <Label FontSize="22" TextColor="#eee" Text="{Binding version}" />
+
+        <!-- seems more reasonable to use code-behind? -->
+        <Button Padding="40,10,40,10" 
+                Text="Learn more" 
+                BackgroundColor="#27c0a1"
+                TextColor="White" />
+        <!-- Command="{Binding OpenWebCommand}" -->
+
+    </FlexLayout>
 </ContentPage>

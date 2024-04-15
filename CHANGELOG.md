@@ -1,5 +1,8 @@
 # Changelog
 
+- 2024-04-15 0.0.4
+    - added enlighten_logo
+    - About -> Info
 - 2024-04-14 0.0.3
     - Telerik chart loading
     - imported from EnlightenMobile
