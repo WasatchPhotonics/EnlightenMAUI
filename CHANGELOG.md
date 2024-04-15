@@ -6,11 +6,7 @@
         - Common/*
         - Models/*
         - ViewModels/*
-        - Pages
-            - DevicePage
-            - ScopePage
-            - BluetoothPage
-            - LogPage
+        - Pages/*
 - 2024-04-13 0.0.2
     - 4-tab shell working
 - 2024-04-12 0.0.1
