@@ -13,7 +13,7 @@ namespace EnlightenMAUI.ViewModels;
 // 
 // This is the kind of verbose-yet-useless class that makes people hate MVVM.  
 // IF there's a way to obviate it, let me know.
-public class DeviceViewModel : INotifyPropertyChanged
+public class HardwareViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -31,7 +31,7 @@ public class DeviceViewModel : INotifyPropertyChanged
     }
     string _bleBtnTxt = "Connect";
 
-    public DeviceViewModel()
+    public HardwareViewModel()
     {
         // as Bluetooth device meta-characteristics are parsed during connection,
         // catch updates so this view is pre-populated 
@@ -87,11 +87,11 @@ public class DeviceViewModel : INotifyPropertyChanged
     // Util
     ////////////////////////////////////////////////////////////////////////
 
-    // so we can update these from the DeviceView code-behind
+    // so we can update these from the HardwarePage code-behind
     // on display, after changing spectrometers.
     public void refresh(string name = null)
     {
-        logger.debug($"refreshing DeviceViewModel ({name})");
+        logger.debug($"refreshing HardwareViewModel ({name})");
 
         if (name != null)
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -104,7 +104,6 @@ public class DeviceViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(manufacturerName)));
         }
     }
-
     protected void OnPropertyChanged([CallerMemberName] string caller = "")
     {
         logger.debug("SSVM: OnPropertyChanged");

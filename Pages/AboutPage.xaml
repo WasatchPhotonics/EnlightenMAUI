@@ -1,31 +1,24 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.AboutPage"
-             x:DataType="local:ViewModels.AboutViewModel">
+             x:Class="EnlightenMAUI.AboutPage">
 
-    <!-- These become globally accessible colors through StaticResource? -->
-    <ContentPage.Resources>
-        <ResourceDictionary>
-            <Color x:Key="DarkGray">#333</Color>
-            <Color x:Key="Teal">#27c0a1</Color>
-        </ResourceDictionary>
-    </ContentPage.Resources>
-
-    <FlexLayout BackgroundColor="{StaticResource DarkGray}" 
+    <FlexLayout BackgroundColor="#333" 
                 Direction="Column"
                 AlignItems="Center"
                 JustifyContent="SpaceEvenly">
-        <Image Source="enlightenLOGO.png" HeightRequest="100" />
 
-        <!-- seems more reasonable to use code-behind? -->
-        <Label FontSize="22" TextColor="#eee" Text="{Binding version}" />
+        <Image Source="enlighten_logo.png" HeightRequest="100" />
+
+        <Label FontSize="22" TextColor="#eee" Text="EnlightenMAUI 0.0.4" />
+
         <Button Padding="40,10,40,10" 
                 Text="Learn more" 
-                BackgroundColor="{StaticResource Teal}" 
-                TextColor="White" />
-                <!-- Command="{Binding OpenWebCommand}" -->
+                BackgroundColor="#27c0a1"
+                TextColor="White" 
+                Clicked="Button_Clicked" />
+
     </FlexLayout>
 </ContentPage>

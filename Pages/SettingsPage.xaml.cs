@@ -6,10 +6,10 @@ using EnlightenMAUI.Models;
 
 namespace EnlightenMAUI;
 
-[XamlCompilation(XamlCompilationOptions.Compile)] // MZ: needed?
+[XamlCompilation(XamlCompilationOptions.Compile)] 
 public partial class SettingsPage : ContentPage
 {
-    SettingsViewModel asvm; // ApplicationSettings vs Scope...?
+    SettingsViewModel svm; 
 
     Logger logger = Logger.getInstance();
 
@@ -17,8 +17,8 @@ public partial class SettingsPage : ContentPage
     {
         InitializeComponent();
 
-        // asvm = (SettingsViewModel)BindingContext; // MZ: fix
-        asvm?.loadSettings();
+        svm = (SettingsViewModel)BindingContext; 
+        svm?.loadSettings();
     }
 
     // the user clicked "return" or "done" when entering the password, so
@@ -37,12 +37,12 @@ public partial class SettingsPage : ContentPage
     void entryVerticalROIStartLine_Completed(Object sender, EventArgs e)
     {
         var entry = sender as Entry;
-        asvm?.setVerticalROIStartLine(entry.Text);
+        svm?.setVerticalROIStartLine(entry.Text);
     }
 
     void entryVerticalROIStopLine_Completed(Object sender, EventArgs e)
     {
         var entry = sender as Entry;
-        asvm?.setVerticalROIStopLine(entry.Text);
+        svm?.setVerticalROIStopLine(entry.Text);
     }
 }

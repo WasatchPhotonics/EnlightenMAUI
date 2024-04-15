@@ -10,7 +10,7 @@
     <StackLayout Orientation="Vertical" BackgroundColor="#333">
 
         <!-- Page header -->
-        <Image Source="enlightenLOGO" WidthRequest="300"/>
+        <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
         <ScrollView Margin="10, 0, 50, 0">
             <StackLayout HorizontalOptions="FillAndExpand">

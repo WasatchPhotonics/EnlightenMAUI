@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using EnlightenMAUI.ViewModels;
 using EnlightenMAUI.Models;
 
 namespace EnlightenMAUI;
 
 /// <summary>
-/// Code-behind for DeviceView.xaml.
+/// Code-behind for HardwarePage.xaml.
 /// </summary>
 /// <remarks>
-/// This is the View for Device, which currently means the EEPROM.  
-/// (FPGA Compilation Options, firmware revisions etc can be added later.)
+/// This is the View for Hardware, which currently means firmware settings, BLE 
+/// device descriptors, the EEPROM etc.  
 ///
 /// Note this class owns and instantiates the actual ObservableCollection of 
 /// ViewableSettings, injecting the (empty) collection into the EEPROM object
@@ -23,28 +21,31 @@ namespace EnlightenMAUI;
 /// viewableSettings collection.
 ///
 /// However, the display of any one particular ViewableSetting is mediated
-/// through the DeviceViewModel, which allows for any transforms
+/// through the HardwareViewModel, which allows for any transforms
 /// between the raw Model data (ViewableSetting) and the display version shown
 /// on the View.  In this case, we're not applying any transforms or display
 /// logic (ViewableSetting is internally stored as a string tuple, with no
 /// transformations required), but this is the MVVM architecture.  
 ///
-/// Note that the XAML directs the binding context to the DeviceViewModel,
+/// Note that the XAML directs the binding context to the HardwareViewModel,
 /// but the XAML ListSettings can reference attributes directly within the ViewModel's
 /// public ViewableSetting object.
 /// </remarks>
+///
 /// <todo>
-/// Make a new DeviceModel class, which "has" an EEPROM, but 
+/// Make a new HardwareModel class, which "has" an EEPROM, but 
 /// also FPGACompilationOptions, FirmwareRevisions (µC/FPGA ver), BatteryStatus
 /// etc objects, and which populates the ObservableCollection from all of them.
 /// </todo>
-public partial class DevicePage : ContentPage
+
+[XamlCompilation(XamlCompilationOptions.Compile)]
+public partial class HardwarePage : ContentPage
 {
     ObservableCollection<ViewableSetting> viewableSettingsEEPROM;
-    DeviceViewModel ssvm;
+    HardwareViewModel hvm;
     Logger logger = Logger.getInstance();
 
-    public DevicePage()
+    public HardwarePage()
     {
         InitializeComponent();
 
@@ -56,7 +57,7 @@ public partial class DevicePage : ContentPage
 
         listViewEEPROM.ItemsSource = viewableSettingsEEPROM;
 
-        ssvm = (DeviceViewModel)BindingContext;
+        hvm = (HardwareViewModel)BindingContext;
     }
 
     /*
@@ -72,12 +73,12 @@ public partial class DevicePage : ContentPage
     //       visit this page?
     protected override void OnAppearing()
     {
-        logger.debug("displaying DeviceView");
+        logger.debug("displaying HardwarePage");
         base.OnAppearing();
-        if (ssvm != null)
+        if (hvm != null)
         {
-            ssvm.updateBLEBtn();
-            ssvm.refresh();
+            hvm.updateBLEBtn();
+            hvm.refresh();
         }
     }
 }

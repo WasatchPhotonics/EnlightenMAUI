@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Telerik.Maui.Controls.Compatibility;
 
-// TODO: move out of UI?
-
-namespace EnlightenMAUI.UI;
+namespace EnlightenMAUI;
 
 public static class MauiProgram
 {

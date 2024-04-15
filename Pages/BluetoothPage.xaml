@@ -5,13 +5,12 @@
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:Class="EnlightenMAUI.BluetoothPage"
              x:DataType="local:ViewModels.BluetoothViewModel">
-             <!-- Title="{Binding title}" -->
 
     <ContentPage.Content>
         <StackLayout Orientation="Vertical" BackgroundColor="#333">
 
             <!-- Page header -->
-            <Image Source="enlightenLOGO" WidthRequest="300"/>
+            <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
             <!-- Button Bar -->
             <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
@@ -26,8 +25,7 @@
             </Frame>
 
             <!-- Connection ProgressBar -->
-            <ProgressBar Progress="{Binding connectionProgress}"
-                         ProgressColor="#2994d3" />
+            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#2994d3" />
 
             <!-- List of discovered BLE devices -->
             <ListView x:Name="listView" 
@@ -39,8 +37,7 @@
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <ViewCell>
-                            <StackLayout Orientation="Vertical"
-                                         MinimumHeightRequest="100">
+                            <StackLayout Orientation="Vertical" MinimumHeightRequest="100">
                                          <!-- BackgroundColor="{Binding backgroundColor}" -->
                                 <StackLayout Orientation="Horizontal">
                                     <Label TextColor="#27c0a1" Text="unk rssi" FontSize="Large"/>

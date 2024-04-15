@@ -1,32 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
     
-<!--
-The AppShell defines the outermost layer of app navigation.
-Each ShellContent defines the clickable tabs at the bottom of the app.
-Upon click, the user is routed to a specific page, with the tabbar always visible.
-
-The following minimal ShellContent entry has explanations for each attribute.
-
-    <ShellContent
-		x:Name="ScopeTab" 
-		Title="Scope"
-		Icon="Images/ico_spectra.png"
-		ContentTemplate="{DataTemplate local:DevicePage}"
-		Route="DevicePage"/>
-
-	x:Name - Makes it possible to reference this element in code, for example to set the starting tab.
-	Title - This is the text displayed in the tab.
-	Icon - This is the image displayed in the tab. Notice the path is relative to the Resources folder and that the image is monochrome with variable transparency (alpha)
-	ContentTemplate - Needed or app will crash with: "No Content found for ShellContent"
-	Route - This is the page associated with the tab. Note you don't need to prefix with UI/ or UI. because the xmlns:local (namespace) of Shell is EnlightenMobile, which 
-			matches the namespace of DevicePage.
-
-The name used within ContentTemplate should always match with the Route.
-
-	ContentTemplate="{DataTemplate local:AnyOtherPage}"
-	Route="AnyOtherPage"
--->
-    
 <Shell
     x:Class="EnlightenMAUI.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -35,63 +8,32 @@ The name used within ContentTemplate should always match with the Route.
     Shell.FlyoutBehavior="Disabled"
     Title="EnlightenMAUI">
 
-
     <TabBar>
         <!-- 
-        The use of x:Names makes symbols directly accessible in .xaml.cs
-    
         This example from StackOverflow shows shelltab_0 could be referenced directly:
             https://stackoverflow.com/questions/75551165/switch-app-shell-tab-programmatically-to-current-page-on-tab-not-with-gotoasync
         -->
 
-        <!--
-        This is the page that displays spectra and has laser, integration time controls.
-    
-        This is the default tab when there is an existing device connection.
-            See AppShell.xaml.cs for conditional logic
-        -->
-        <ShellContent
-            x:Name="ScopeTab" 
-            Title="Scope"
-            Icon="Images/ico_spectra.png"
-            ContentTemplate="{DataTemplate local:ScopePage}"
-            Route="ScopePage"/>
+        <!-- About -->
+        <ShellContent x:Name="AboutTab" Title="About" Icon="Images/ico_info.png" ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
 
-        <!-- 
-        This is the page that allows connection to an XS device.
-    
-        This is the default tab when there is not an existing device connection.
-            See AppShell.xaml.cs for conditional logic
-        -->
-        <ShellContent
-            x:Name="DeviceTab" 
-            Title="Device"
-            Icon="Images/ico_xs.png" 
-            ContentTemplate="{DataTemplate local:DevicePage}"
-            Route="DevicePage"/>
+        <!-- Bluetooth -->
+        <ShellContent x:Name="BluetoothTab" Title="BLE" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
 
-        <!-- 
-        This is the page that keeps saved spectra as well as any post-processing offerings we may include.
-    
-        Renaming "Saves" from the 2023-05-16 design to "Data"
-        in anticipation of future features
-        -->
-        <ShellContent
-            x:Name="DataTab" 
-            Title="Data"
-            Icon="Images/ico_page.png"
-			ContentTemplate="{DataTemplate local:DataPage}"
-            Route="DataPage"/>
+        <!-- Scope -->
+        <ShellContent x:Name="ScopeTab" Title="Scope" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
 
-        <!--
-        This is the page where we link to our organization and provide access to logs, additional resources.
-        -->
-        <ShellContent
-            x:Name="InfoTab" 
-            Title="Info"
-            Icon="Images/ico_info.png" 
-			ContentTemplate="{DataTemplate local:InfoPage}"
-            Route="InfoPage"/>
+        <!-- Clipboard -->
+        <ShellContent x:Name="ClipboardTab" Title="Clipboard" ContentTemplate="{DataTemplate local:ClipboardPage}" Route="ClipboardPage"/>
+
+        <!-- Hardware -->
+        <ShellContent x:Name="HardwareTab" Title="Hardware" Icon="Images/ico_xs.png" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
+
+        <!-- Application Settings -->
+        <ShellContent x:Name="SettingsTab" Title="Settings" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
+
+        <!-- Log -->
+        <ShellContent x:Name="LogTab" Title="Log" Icon="Images/ico_log.png" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
     </TabBar>
 
 </Shell>
