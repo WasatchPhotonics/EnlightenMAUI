@@ -121,7 +121,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectionProgress)));
         }
     }
-    double _connectionProgress;
+    double _connectionProgress = 0;
 
     ////////////////////////////////////////////////////////////////////////
     // paired
@@ -136,18 +136,19 @@ public class BluetoothViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
         }
     }
-    bool _paired;
+    bool _paired = false;
 
     public bool bluetoothEnabled 
     { 
         get => _bluetoothEnabled;
         private set 
         {
+            logger.info($"BVM.bluetoothEnabled: setting {value}");
             _bluetoothEnabled = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(bluetoothEnabled)));
         }
     }
-    bool _bluetoothEnabled = Util.bluetoothEnabled();
+    bool _bluetoothEnabled = Util.bluetoothEnabled(); // initialize from phone state at launch
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -159,35 +160,35 @@ public class BluetoothViewModel : INotifyPropertyChanged
     // float that update back here somehow, but...this will work for now
     public async Task<bool> doResetAsync()
     {
-        logger.debug("attempting to disable Bluetooth");
+        logger.debug("BVM.doResetAsync: attempting to disable Bluetooth");
 
         bleDeviceList.Clear();
         paired = false;
         buttonConnectEnabled = false;
         
         if (!Util.enableBluetooth(false))
-            logger.error("Unable to disable Bluetooth");
+            logger.error("BVM.doResetAsync: Unable to disable Bluetooth");
 
         bluetoothEnabled = false;
 
-        logger.debug("sleeping during Bluetooth restart");
+        logger.debug("BVM.doResetAsync: sleeping during Bluetooth restart");
         await Task.Delay(1000);
 
-        logger.debug("attempting to re-enable Bluetooth");
+        logger.debug("BVM.doResetAsync: attempting to re-enable Bluetooth");
         var ok = Util.enableBluetooth(true);
-
-        logger.debug("sleeping AFTER Bluetooth restart");
-        await Task.Delay(2000);
-
-        bluetoothEnabled = true;
-
         if (!ok)
         {
-            logger.error("Unable to re-enable Bluetooth");
+            logger.error("BVM.doResetAsync: Unable to re-enable Bluetooth");
             return false;
         }
 
-        logger.info("Bluetooth reset");
+        logger.debug("BVM.doResetAsync: inferring successful Bluetooth enable...sleeping");
+        await Task.Delay(2000);
+
+        logger.debug("BVM.doResetAsync: storing new Bluetooth enable status");
+        bluetoothEnabled = true;
+
+        logger.info("BVM.doResetAsync: Bluetooth successfully reset");
         return true;
     }
 
@@ -204,12 +205,23 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     public string scanButtonBackgroundColor
     {
-        get => ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
+        get
+        { 
+            string color = "#ff0000";
+            // color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
+            return color;
+        }
     }
 
     public string scanButtonTextColor
     {
-        get => ble.Adapter.IsScanning ? "#fff" : "#333";
+        get
+        {
+            string color = "#ffcc00";
+            // color = ble.Adapter.IsScanning ? "#fff" : "#333";
+            return color;
+        }
+
     }
 
     /// <summary>

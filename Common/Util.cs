@@ -9,6 +9,8 @@ namespace EnlightenMAUI.Common;
 /// </summary>
 public class Util
 {
+    private static Logger logger = Logger.getInstance();
+
     public static void swap(ref ushort a, ref ushort b)
     {
         var tmp = a;
@@ -83,6 +85,7 @@ public class Util
 
     public static bool bluetoothEnabled()
     {
+        logger.error($"Util.bluetoothEnabled: NotImplemented");
         // var platformUtil = DependencyService.Get<IPlatformUtil>();
         // return platformUtil.bluetoothEnabled();
         return false;
@@ -90,6 +93,7 @@ public class Util
 
     public static bool enableBluetooth(bool flag)
     {
+        logger.error($"Util.enableBluetooth({flag}): NotImplemented");
         // var platformUtil = DependencyService.Get<IPlatformUtil>();
         // return platformUtil.enableBluetooth(flag);
         return false;
@@ -98,8 +102,8 @@ public class Util
     // View is there for iOS (Android doesn't need it)
     public static void toast(string msg, View view = null)
     {
+        logger.error($"Util.toast({msg}): NotImplemented");
         // var platformUtil = DependencyService.Get<IPlatformUtil>();
         // platformUtil.toast(msg, view);
-        Logger.getInstance().error($"TOAST: {msg}");
     }
 }

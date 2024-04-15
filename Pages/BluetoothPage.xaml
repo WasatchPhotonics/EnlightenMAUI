@@ -25,8 +25,7 @@
             </Frame>
 
             <!-- Connection ProgressBar -->
-            <ProgressBar Progress="{Binding connectionProgress}"
-                         ProgressColor="#2994d3" />
+            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#2994d3" />
 
             <!-- List of discovered BLE devices -->
             <ListView x:Name="listView" 
@@ -38,8 +37,7 @@
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <ViewCell>
-                            <StackLayout Orientation="Vertical"
-                                         MinimumHeightRequest="100">
+                            <StackLayout Orientation="Vertical" MinimumHeightRequest="100">
                                          <!-- BackgroundColor="{Binding backgroundColor}" -->
                                 <StackLayout Orientation="Horizontal">
                                     <Label TextColor="#27c0a1" Text="unk rssi" FontSize="Large"/>

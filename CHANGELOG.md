@@ -6,7 +6,7 @@
     - Data -> Clipboard
     - Device -> {Bluetooth, Hardware}
     - added Clipboard
-    - all tabs viewable except Bluetooth
+    - all tabs viewable
 - 2024-04-14 0.0.3
     - Telerik chart loading
     - imported from EnlightenMobile
