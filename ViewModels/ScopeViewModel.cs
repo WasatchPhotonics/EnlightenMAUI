@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Telerik.Maui.Controls.Compatibility.Chart;
+
 using EnlightenMAUI.Models;
 
 namespace EnlightenMAUI.ViewModels;
@@ -14,11 +16,20 @@ public class ScopeViewModel : INotifyPropertyChanged
 {
     Logger logger = Logger.getInstance();
 
+    // scope bindings
     public string xAxisLabelFormat { get; set; } = "F2";
     public double xAxisMinimum { get; set; } = 400;
     public double xAxisMaximum { get; set; } = 2400;
     public double spectrumMax { get; set; } = 0;
 
+    // parameter bindings
+    public bool paired { get; set; } = false;
+    public int acquisitionProgress { get; set; } = 50;
+    public string label_integration { get; set; } = "400ms";
+    public string label_gain { get; set; } = "8dB";
+    public string label_averaging { get; set; } = "5avg";
+    public string acquireButtonTextColor { get; set; } = "#ffcc00";
+    public string acquireButtonBackgroundColor { get; set; } = "#dddddd";
     public ScopeViewModel()
     {
         logger.debug("SVM.ctor: start");
@@ -27,6 +38,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler PropertyChanged;
+
+    public RadCartesianChart theChart;
 
     void updateChart()
     {
