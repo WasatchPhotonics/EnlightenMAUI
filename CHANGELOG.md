@@ -1,5 +1,8 @@
 # Changelog
 
+- 2024-04-16 0.0.5
+    - all tabs have icons
+    - working on BLE...BVM not instantiating?
 - 2024-04-15 0.0.4
     - added enlighten_logo
     - AboutViewModel -> code-behind
