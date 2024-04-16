@@ -16,7 +16,7 @@
             <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
                 <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
                     <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand">
-                        <Button Text="Scan" Command="{Binding scanCmd}" IsEnabled="{Binding bluetoothEnabled}"
+                        <Button Text="{Binding scanButtonText}" Command="{Binding scanCmd}" IsEnabled="{Binding bluetoothEnabled}"
                                 TextColor="{Binding scanButtonTextColor}" 
                                 BackgroundColor="{Binding scanButtonBackgroundColor}" />
                         <Button Text="{Binding buttonConnectText}" Command="{Binding connectCmd}" IsEnabled="{Binding buttonConnectEnabled}" /> 
@@ -29,19 +29,17 @@
 
             <!-- List of discovered BLE devices -->
             <ListView x:Name="listView" 
-                      ItemSelected="listView_ItemSelected" 
+                      ItemsSource="{Binding bleDeviceList}"
                       SeparatorColor="#555" 
                       BackgroundColor="#333" 
                       Margin="20, 0, 20, 0" 
-                      HasUnevenRows="True"> 
+                      HasUnevenRows="True">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <ViewCell>
-                            <StackLayout Orientation="Vertical" MinimumHeightRequest="100">
-                                         <!-- BackgroundColor="{Binding backgroundColor}" -->
+                        <ViewCell x:DataType="local:Models.BLEDevice">
+                            <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
                                 <StackLayout Orientation="Horizontal">
-                                    <Label TextColor="#27c0a1" Text="unk rssi" FontSize="Large"/>
-                                    <!-- Binding rssi, StringFormat='RSSI: {0}' -->
+                                    <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large"/>
                                     <Label TextColor="#2994d3" Text="Binding name" FontSize="Large"/>
                                 </StackLayout>
                                 <Label TextColor="#cccccc" Text="Binding id"/>

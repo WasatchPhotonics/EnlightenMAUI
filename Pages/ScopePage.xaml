@@ -12,7 +12,7 @@
             <Label Text="Scope" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
             <!-- Page header -->
-            <Image Source="enlighten_logo.png" WidthRequest="200" BackgroundColor="#333" Margin="5, 5, 5, 5" />
+            <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
             <!-- ======================================================= -->
             <!-- The all-important spectral chart                        -->

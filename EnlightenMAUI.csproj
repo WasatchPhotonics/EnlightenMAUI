@@ -47,7 +47,6 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -65,6 +64,14 @@
 
 	<ItemGroup>
 	  <None Remove="Resources\Images\enlighten_logo.png" />
+	  <None Remove="Resources\Images\ico_bluetooth.png" />
+	  <None Remove="Resources\Images\ico_clipboard.png" />
+	  <None Remove="Resources\Images\ico_gear.png" />
+	  <None Remove="Resources\Images\ico_info.png" />
+	  <None Remove="Resources\Images\ico_page.png" />
+	  <None Remove="Resources\Images\ico_spectra.png" />
+	  <None Remove="Resources\Images\ico_xs.png" />
+	  <None Remove="Resources\Images\ui_slider_knob.png" />
 	</ItemGroup>
 
 	<ItemGroup>
