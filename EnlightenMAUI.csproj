@@ -63,6 +63,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\AppIcon\appicon.svg" />
+	  <None Remove="Resources\AppIcon\appiconfg.svg" />
 	  <None Remove="Resources\Images\enlighten_logo.png" />
 	  <None Remove="Resources\Images\ico_bluetooth.png" />
 	  <None Remove="Resources\Images\ico_clipboard.png" />
@@ -72,6 +74,11 @@
 	  <None Remove="Resources\Images\ico_spectra.png" />
 	  <None Remove="Resources\Images\ico_xs.png" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiIcon Include="Resources\AppIcon\appicon.svg" />
+	  <MauiIcon Include="Resources\AppIcon\appiconfg.svg" />
 	</ItemGroup>
 
 	<ItemGroup>
