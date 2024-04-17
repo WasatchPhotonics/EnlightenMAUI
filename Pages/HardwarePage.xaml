@@ -1,20 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 
-<!--
-The HardwarePage corresponds to ENLIGHTEN's Hardware View. 
-
-@todo:
-    - add logo
-    - fix name/value bindings
-    - move button to BluetoothPage
--->
-
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.HardwarePage"
-             x:DataType="local:ViewModels.HardwareViewModel">
+             x:DataType="local:ViewModels.HardwareViewModel"
+             x:Class="EnlightenMAUI.HardwarePage">
+
+    <ContentPage.BindingContext>
+        <local:ViewModels.HardwareViewModel/>
+    </ContentPage.BindingContext>
 
     <ScrollView>
 

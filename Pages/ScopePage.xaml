@@ -7,6 +7,10 @@
              x:DataType="local:ViewModels.ScopeViewModel"
              BackgroundColor="#333">
 
+    <ContentPage.BindingContext>
+        <local:ViewModels.ScopeViewModel/>
+    </ContentPage.BindingContext>
+
     <ScrollView>
         <VerticalStackLayout Padding="30,0" Spacing="25">
             <Label Text="Scope" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />

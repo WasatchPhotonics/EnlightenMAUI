@@ -3,8 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.BluetoothPage"
-             x:DataType="local:ViewModels.BluetoothViewModel">
+             x:DataType="local:ViewModels.BluetoothViewModel"
+             x:Class="EnlightenMAUI.BluetoothPage">
+
+    <ContentPage.BindingContext>
+        <local:ViewModels.BluetoothViewModel/>
+    </ContentPage.BindingContext>
 
     <ContentPage.Content>
         <StackLayout Orientation="Vertical" BackgroundColor="#333">
