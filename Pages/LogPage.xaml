@@ -3,9 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.LogPage"
-             x:DataType="local:ViewModels.LogViewModel">
-             <!-- Title="📋" -->
+             x:DataType="local:ViewModels.LogViewModel"
+             x:Class="EnlightenMAUI.LogPage">
+
+    <ContentPage.BindingContext>
+        <local:ViewModels.LogViewModel/>
+    </ContentPage.BindingContext>
 
     <ContentPage.Content>
         <StackLayout Orientation="Vertical" BackgroundColor="#333">

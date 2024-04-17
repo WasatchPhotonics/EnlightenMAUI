@@ -3,10 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.SettingsPage"
-             x:DataType="local:ViewModels.SettingsViewModel">
-             <!-- Title="💾" -->
-             
+             x:DataType="local:ViewModels.SettingsViewModel"
+             x:Class="EnlightenMAUI.SettingsPage">
+
+    <ContentPage.BindingContext>
+        <local:ViewModels.SettingsViewModel/>
+    </ContentPage.BindingContext>
+
     <StackLayout Orientation="Vertical" BackgroundColor="#333">
 
         <!-- Page header -->

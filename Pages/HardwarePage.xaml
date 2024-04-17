@@ -1,20 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 
-<!--
-The HardwarePage corresponds to ENLIGHTEN's Hardware View. 
-
-@todo:
-    - add logo
-    - fix name/value bindings
-    - move button to BluetoothPage
--->
-
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.HardwarePage"
-             x:DataType="local:ViewModels.HardwareViewModel">
+             x:DataType="local:ViewModels.HardwareViewModel"
+             x:Class="EnlightenMAUI.HardwarePage">
+
+    <ContentPage.BindingContext>
+        <local:ViewModels.HardwareViewModel/>
+    </ContentPage.BindingContext>
 
     <ScrollView>
 
@@ -27,7 +22,6 @@ The HardwarePage corresponds to ENLIGHTEN's Hardware View.
 
             <!-- BLE Device Info -->
             <Label FontSize="Large" Text="BLE Device Info"/>
-            <Button Text="{Binding bleBtnTxt}" Margin="5"/> <!-- Clicked="connectPage" -->
             <StackLayout Margin="10, 0, 10, 0">
                 <FlexLayout JustifyContent="SpaceBetween">
                     <Label Text="Device Name"/>
@@ -53,13 +47,13 @@ The HardwarePage corresponds to ENLIGHTEN's Hardware View.
 
             <!-- Scrolling ListView of EEPROM (name, value) tuples -->
             <Label Text="EEPROM" FontSize="Large" Margin="0, 10, 0, 0"/>
-            <ListView x:Name="listViewEEPROM" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 
+            <ListView ItemsSource="{Binding eepromFields}" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <ViewCell>
+                        <ViewCell x:DataType="local:Models.ViewableSetting">
                             <StackLayout Orientation="Horizontal">
-                                <Label TextColor="#999" Text="Binding name"/>
-                                <Label TextColor="#eee" Text="Binding value" HorizontalTextAlignment="End" HorizontalOptions="EndAndExpand"/>
+                                <Label TextColor="#999" Text="{Binding name}"/>
+                                <Label TextColor="#eee" Text="{Binding value}" HorizontalTextAlignment="End" HorizontalOptions="EndAndExpand"/>
                             </StackLayout>
                         </ViewCell>
                     </DataTemplate>

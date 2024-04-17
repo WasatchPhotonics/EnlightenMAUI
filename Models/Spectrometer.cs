@@ -153,6 +153,7 @@ public class Spectrometer : INotifyPropertyChanged
             return false;
         }
 
+        logger.debug("Spectrometer.initAsync: parsing EEPROM");
         if (!eeprom.parse(pages))
         {
             logger.error("Spectrometer.initAsync: failed to parse EEPROM");
@@ -163,10 +164,11 @@ public class Spectrometer : INotifyPropertyChanged
         // post-process EEPROM
         ////////////////////////////////////////////////////////////////////
 
+        logger.debug("Spectrometer.initAsync: post-processing EEPROM");
         pixels = eeprom.activePixelsHoriz;
         laserExcitationNM = eeprom.laserExcitationWavelengthNMFloat;
 
-        logger.debug("computing wavecal");
+        logger.debug("Spectrometer.initAsync: computing wavecal");
         wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
 
         if (laserExcitationNM > 0)
@@ -174,6 +176,7 @@ public class Spectrometer : INotifyPropertyChanged
         else
             wavenumbers = null;
 
+        logger.debug("Spectrometer.initAsync: generating pixel axis");
         generatePixelAxis();
 
         // set this early so battery and other BLE calls can progress
@@ -185,7 +188,7 @@ public class Spectrometer : INotifyPropertyChanged
 
         showConnectionProgress(1);
         
-        logger.debug("finishing spectrometer initialization");
+        logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
         await updateBatteryAsync(); 
@@ -211,12 +214,13 @@ public class Spectrometer : INotifyPropertyChanged
         //
         // whereAmI = WhereAmI.getInstance();
 
+        logger.debug("Spectrometer.initAsync: done");
         return true;
     }
 
     async Task<List<byte[]>> readEEPROMAsync()
     {
-        logger.info("Attempting to read EEPROM data.");
+        logger.info("reading EEPROM");
         Plugin.BLE.Abstractions.Contracts.ICharacteristic eepromCmd;
         Plugin.BLE.Abstractions.Contracts.ICharacteristic eepromData;
 
@@ -230,7 +234,7 @@ public class Spectrometer : INotifyPropertyChanged
             logger.error("Can't read EEPROM w/o characteristics");                
             return null;
         }
-        logger.debug("reading EEPROM");
+        logger.debug("Spectrometer.readEEPROMAsync: reading EEPROM");
         List<byte[]> pages = new List<byte[]>();
         for (int page = 0; page < EEPROM.MAX_PAGES; page++)
         {
@@ -239,20 +243,20 @@ public class Spectrometer : INotifyPropertyChanged
             for (int subpage = 0; subpage < EEPROM.SUBPAGE_COUNT; subpage++)
             {
                 byte[] request = ToBLEData.convert((byte)page, (byte)subpage);
-                logger.debug($"requestEEPROMSubpage: page {page}, subpage {subpage}");
+                logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {page}, subpage {subpage}");
                 bool ok = 0 == await eepromCmd.WriteAsync(request);
                 if (!ok)
                 {
-                    logger.error($"Failed to write eepromCmd({page}, {subpage})");
+                    logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({page}, {subpage})");
                     return null;
                 } 
 
                 try
                 {
-                    logger.debug("reading eepromData");
+                    logger.debug($"Spectrometer.readEEPROMAsync: reading eepromData");
                     var response = await eepromData.ReadAsync();
-                    logger.hexdump(response.data, "response");
-                    logger.info($"The length of buf is {buf.Length} and lenght of response is {response.data.Length}");
+                    logger.hexdump(response.data, "response: ");
+                    logger.info($"The length of buf is {buf.Length} and length of response is {response.data.Length}");
 
                     for (int i = 0; i < response.data.Length; i++)
                         buf[pos++] = response.data[i];
@@ -263,10 +267,11 @@ public class Spectrometer : INotifyPropertyChanged
                     return null;
                 }
             }
-            logger.hexdump(buf, "adding page: ");
+            logger.hexdump(buf, $"adding page {page}: ");
             pages.Add(buf);
             showConnectionProgress(.15 + .85 * page / EEPROM.MAX_PAGES);
         }
+        logger.debug($"Spectrometer.readEEPROMAsync: done");
         return pages;
     }
 

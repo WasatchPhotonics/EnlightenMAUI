@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Threading.Tasks;
-using System.Linq;
 
 using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions.EventArgs;
 using Plugin.BLE.Abstractions.Exceptions;
 using Plugin.BLE;
-
-using Microsoft.Maui.ApplicationModel; // Permissions
 
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Common;
@@ -21,15 +15,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler PropertyChanged;
 
-    public ObservableCollection<BLEDevice> bleDeviceList = new ObservableCollection<BLEDevice>();
+    List<BLEDevice> source = new List<BLEDevice>();
+    public ObservableCollection<BLEDevice> bleDeviceList { get; private set; }
+    BLEDevice bleDevice; 
 
     public Command scanCmd { get; }
     public Command connectCmd { get; }
 
     IBluetoothLE ble;
     IAdapter adapter;
-
-    BLEDevice bleDevice;
 
     IService service;
 
@@ -48,22 +42,33 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     public BluetoothViewModel()
     {
+        logger.debug("BVM.ctor: start");
+
+        logger.debug("BVM.ctor: configuring BLE logger");
         Plugin.BLE.Abstractions.Trace.TraceImplementation = logger.ble;
 
-        // this crashes on iOS if you don't follow add plist entries per
+        logger.debug("BVM.ctor: instantiating bleDeviceList");
+        bleDeviceList = new ObservableCollection<BLEDevice>(source);
+
+        // this crashed Xamarin on iOS if you don't follow add plist entries per
         // https://stackoverflow.com/a/59998233/11615696
+        logger.debug("BVM.ctor: grabbing ble handle");
         ble = CrossBluetoothLE.Current;
+        logger.debug("BVM.ctor: grabbing adapter handle");
         adapter = CrossBluetoothLE.Current.Adapter;
 
+        logger.debug("BVM.ctor: adding DeviceDiscovered handler");
         adapter.DeviceDiscovered += _bleAdapterDeviceDiscovered;
+        logger.debug("BVM.ctor: adding ScanTimeoutElapsed handler");
         adapter.ScanTimeoutElapsed += _bleAdapterStoppedScanning;
 
+        logger.debug("BVM.ctor: creating primaryServiceId");
         primaryServiceId = _makeGuid("ff00");
 
         // characteristics
         logger.debug("BluetoothView: initializing characteristic GUIDs");
 
-        // ENG-0120
+        // @see ENG-0120
         guidByName["integrationTimeMS"] = _makeGuid("ff01");
         guidByName["gainDb"]            = _makeGuid("ff02");
         guidByName["laserState"]        = _makeGuid("ff03");
@@ -80,10 +85,17 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         scanCmd = new Command(() => { _ = doScanAsync(); });
         connectCmd = new Command(() => { _ = doConnectOrDisconnectAsync(); });
+
+        logger.debug("BVM.ctor: initial disconnection");
         Task<bool> task = doDisconnectAsync();
         task.Wait();
+        logger.debug("BVM.ctor: back from initial disconnection");
 
+        // as the Spectrometer connection proceeds, allow it to flow updates
+        // through this ViewModel for visualization to the user
         spec.showConnectionProgress += showSpectrometerConnectionProgress;
+
+        logger.debug("BVM.ctor: done");
 }
 
     private void _bleAdapterStoppedScanning(object sender, EventArgs e)
@@ -207,8 +219,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         get
         { 
-            string color = "#ff0000";
-            // color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
+            // string color = "#ff0000";
+            string color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
             return color;
         }
     }
@@ -217,11 +229,10 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         get
         {
-            string color = "#ffcc00";
-            // color = ble.Adapter.IsScanning ? "#fff" : "#333";
+            // string color = "#ffcc00";
+            string color = ble.Adapter.IsScanning ? "#fff" : "#333";
             return color;
         }
-
     }
 
     /// <summary>
@@ -229,26 +240,34 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// </summary> 
     private async Task<bool> doScanAsync()
     {
-        if (paired)
-            await doDisconnectAsync();
+        logger.debug("BVM.doScanAsync[Step 1]: start");
 
+        if (paired)
+        {
+            logger.debug("BVM.doScanAsync: paired so disconnecting");
+            await doDisconnectAsync();
+            logger.debug("BVM.doScanAsync: done disconnecting"); 
+        }
+
+        logger.debug("BVM.doScanAsync: clearing list"); 
         bleDeviceList.Clear();
         buttonConnectEnabled = false;
         
         try
         {
-            // resolve Location permission
+            logger.debug("BVM.doScanAsync: requesting permissions");
             var success = await _requestPermissionsAsync();
             if (!success)
             {
-                logger.error("can't obtain Location permission");
+                logger.error("BVM.doScanAsync: can't obtain Location permission");
                 notifyUser("Permissions", "Can't obtain Location permission", "Ok");
                 return false;
             }
+            logger.debug("BVM.doScanAsync: all permissions granted");
 
             if (!ble.Adapter.IsScanning)
             {
-                logger.debug("starting scan");
+                logger.debug("BVM.doScanAsync[Step 2]: starting scan");
                 _ = adapter.StartScanningForDevicesAsync();
 
                 // Step 2: As each device is added to the list, the 
@@ -259,84 +278,43 @@ public class BluetoothViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             logger.error("caught exception during scan button event: {0}", ex.Message);
-            notifyUser("EnlightenMobile", "Caught exception during BLE scan: " + ex.Message, "Ok");
+            notifyUser("EnlightenMAUI", "Caught exception during BLE scan: " + ex.Message, "Ok");
         }
 
         updateScanButtonProperties();
 
-        logger.debug("scan change complete");
+        logger.debug("BVM.doScanAsync: scan change complete");
         return true;
     }
 
     async Task<bool> _requestPermissionsAsync()
     {
-        // Recent versions of Android require either coarse- or fine-grained 
-        // Location access in order to perform a BLE scan.
+        ////////////////////////////////////////////////////////////////////////
+        // Mandatory Permissions
+        ////////////////////////////////////////////////////////////////////////
 
-        /*
-        if (!await _requestPermissionAsync<LocationPermission>(Permission.Location, "Location",
-            "Bluetooth requires access to the 'Location' service in order to function."))
+        // Historically, Location permission is required to use BLE.
+        PermissionStatus status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+        if (status != PermissionStatus.Granted)
+        {
+            logger.error("ENLIGHTEN requires LocationWhenInUse permission to use Bluetooth.");
             return false;
+        }
 
-        if (!await _requestPermissionAsync<StoragePermission>(Permission.Storage, "Storage",
-            "App needs to be able to save spectra to local filesystem."))
-            return false;
-        */
-        return false;
+        ////////////////////////////////////////////////////////////////////////
+        // Optional Permissions
+        ////////////////////////////////////////////////////////////////////////
+
+        status = await Permissions.RequestAsync<Permissions.StorageWrite>();
+        if (status != PermissionStatus.Granted)
+            logger.error("ENLIGHTEN requires StorageWrite permission to save spectra.");
+
+        status = await Permissions.RequestAsync<Permissions.StorageRead>();
+        if (status != PermissionStatus.Granted)
+            logger.error("ENLIGHTEN requires StorageWrite permission to load spectra.");
 
         return true;
     }
-
-    /*
-     
-    // @todo figure out why generic CheckPermissionStatusAsync doesn't compile
-    async Task<bool> _requestPermissionAsync<T>(Permission perm, string name, string reason)
-        where T : BasePermission
-    {
-        try
-        {
-            // do we already have permission?
-
-            // WHY DOESN'T THIS WORK?!?
-            //
-            // I almost feel like I'm working from a cached version of the 
-            // Plugin.Permissions package...like if I fully flushed and 
-            // reinstalled that package, this would be okay.
-            //
-            // var status = await CrossPermissions.Current.CheckPermissionStatusAsync<T>(); 
-            var status = await CrossPermissions.Current.CheckPermissionStatusAsync(perm);
-
-            // if not, prompt the user to authorize it
-            if (status != PermissionStatus.Granted)
-            {
-                if (await CrossPermissions.Current.ShouldShowRequestPermissionRationaleAsync(perm))
-                    notifyUser("Permissions", 
-                               "ENLIGHTEN Mobile requires Location permission to use Bluetooth: " + reason,
-                               "Ok");
-
-                var result = await CrossPermissions.Current.RequestPermissionsAsync(perm);
-                status = result[perm];
-            }
-
-            // do we have it now?
-            if (status == PermissionStatus.Granted)
-            {
-                logger.debug($"{name} permission granted");
-                return true;
-            }
-            else if (status != PermissionStatus.Unknown)
-            {
-                return logger.error($"{name} permission denied");
-            }
-        }
-        catch (Exception ex)
-        {
-            return logger.error($"Exception obtaining {name} permission: {ex}");
-        }
-        return false;
-    }
-
-    */
 
     ////////////////////////////////////////////////////////////////////////
     // Connect Button
@@ -349,6 +327,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         get => _buttonConnectEnabled;
         private set
         {
+            logger.debug($"BVM: buttonConnectEnabled -> {value}");
             _buttonConnectEnabled = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectEnabled)));
         }
@@ -364,127 +343,142 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// </summary>
     private async Task<bool> doConnectOrDisconnectAsync()
     {
+        logger.debug("BVM.doConnectOrDisconnect[Step 4]: start");
         if (paired)
         {
+            logger.debug("BVM.doConnectOrDisconnect: disconnecting");
             await doDisconnectAsync();
         }
         else
         {
+            logger.debug("BVM.doConnectOrDisconnect: connecting");
             paired = await doConnectAsync();
             if (paired)
             {
-                await Shell.Current.GoToAsync("..");
+                logger.debug("BVM.doConnectOrDisconnect: switching to ScopePage");
+                await Shell.Current.GoToAsync("ScopePage");
             }
         }
+        logger.debug("BVM.doConnectOrDisconnect: done");
         connectionProgress = 0;
         return true;
     }
 
     async Task<bool> doDisconnectAsync()
     {
-        logger.debug("attempting to disconnect");
+        logger.debug("BVM.doDisconnectAsync: attempting to disconnect");
         spec.disconnect();
 
         if (bleDevice is null && spec.bleDevice is null)
         {
-            logger.error("attempt to disconnect without bleDevice");
+            logger.error("BVM.doDisconnectAsync: attempt to disconnect without bleDevice");
             paired = false;
             return false;
         }
 
-        try { 
-            if(!(spec.bleDevice is null)) {
+        try 
+        { 
+            if(!(spec.bleDevice is null)) 
+            {
                 // See https://github.com/xabre/xamarin-bluetooth-le/issues/311
                 // I'm getting an exception but looking at the rpi it works
                 // Using await hangs infinitely here though
+                logger.debug("BVM.doDisconnectAsync: attempting to disconnect spec.bleDevice.device");
                 var device = spec.bleDevice.device;
                 spec.bleDevice = null;
                 adapter.DisconnectDeviceAsync(device).Start();
             }
-            else {
-                Console.WriteLine("Not disconnect through spec");
+            else 
+            {
+                logger.debug("BVM.doDisconnectAsync: attempting to disconnect bleDevice.device");
                 await adapter.DisconnectDeviceAsync(bleDevice.device);
             } 
         }
-        catch {
-            Console.WriteLine("Issue with disconnect call");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"BVM.doDisconnectAsync: caught exception while disconnecting: {ex.Message}");
         }
-       
+
+        logger.debug("BVM.doDisconnectAsync: done");
         paired = false;
         return true;
     }
 
     async Task<bool> doConnectAsync()
     {
-        logger.debug("attempting to connect");
+        logger.debug("BVM.doConnectAsync: start");
         buttonConnectEnabled = false;
 
         connectionProgress = 0;
         if (bleDevice is null)
         {
-            logger.error("must select a device before connecting");
+            logger.error("BVM.doConnectAsync: must select a device before connecting");
             return false;
         }
 
         // recommended to help reduce GattCallback error 133
         if (ble.Adapter.IsScanning)
         {
-            logger.debug("stopping scan");
+            logger.debug("BVM.doConnectAsync: stopping scan");
             await adapter.StopScanningForDevicesAsync();
             updateScanButtonProperties();
+            logger.debug("BVM.doConnectAsync: done stopping scan");
         }
 
-        logger.debug($"attempting connection to {bleDevice.name}");
+        logger.debug($"BVM.doConnectAsync: attempting connection to {bleDevice.name}");
         var success = false;
         try
         {
             // Step 5: actually try to connect
+            logger.debug($"BVM.doConnectAsync[Step 5]: calling adapter.ConnectToDeviceAsync");
             await adapter.ConnectToDeviceAsync(bleDevice.device);
 
             // Step 5a: verify connection
+            logger.debug($"BVM.doConnectAsync[Step 5a]: verifying connection");
             foreach (var d in adapter.ConnectedDevices)
             {
                 if (d == bleDevice.device)
                 {
+                    logger.debug($"BVM.doConnectAsync: verified!");
                     success = true;
                     break;
                 }
             }
+            logger.debug($"BVM.doConnectAsync: never verified :-(");
         }
         catch (DeviceConnectionException ex)
         {
-            logger.error("exception connecting to device ({0})", ex.Message);
+            logger.error("BVM.doConnectAsync: exception connecting to device ({0})", ex.Message);
 
             // kick off the reset WHILE the alert message is running
+            logger.error("BVM.doConnectAsync: resetting");
             _ = doResetAsync();
 
             notifyUser("Bluetooth", 
-                       ex.Message + 
-                           "\nAutomatically resetting Bluetooth adapter. " +
-                           "Click \"Ok\" to re-scan and try again.",
+                       ex.Message + "\nAutomatically resetting Bluetooth adapter. Click \"Ok\" to re-scan and try again.",
                        "Ok");
             return false;
         }
 
         if (!success)
-            return logger.error($"failed connection to {bleDevice.name}");
+            return logger.error($"BVM.doConnectAsync: failed connection to {bleDevice.name}");
 
-        logger.info($"successfully connected to {bleDevice.name}");
+        logger.info($"BVM.doConnectAsync: successfully connected to {bleDevice.name}");
         connectionProgress = 0.05;
 
         // Step 6: connect to primary service
         await bleDevice.device.RequestMtuAsync(256);
-        logger.debug($"connecting to primary service {primaryServiceId}");
+        logger.debug($"BVM.doConnectAsync[Step 6]: connecting to primary service {primaryServiceId}");
         service = await bleDevice.device.GetServiceAsync(primaryServiceId);
         if (service is null)
         {
-            return logger.error($"did not find primary service {primaryServiceId}");
+            return logger.error($"BVM.doConnectAsync: did not find primary service {primaryServiceId}");
         }
 
-        logger.debug($"found primary service {service}");
+        logger.debug($"BVM.doConnectAsync: found primary service {service}");
 
         // Step 7: read characteristics
-        logger.debug("reading characteristics of service {0} ({1})", service.Name, service.Id);
+        logger.debug($"BVM.doConnectAsync[Step 7]: reading characteristics of service {service.Name} ({service.Id})");
         characteristicsByName = new Dictionary<string, ICharacteristic>();
         var list = await service.GetCharacteristicsAsync();
         foreach (var c in list)
@@ -502,7 +496,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
             if (name is null)
             {
-                logger.error($"ignoring unrecognized characteristic {c.Uuid}");
+                logger.error($"BVM.doConnectAsync: ignoring unrecognized characteristic {c.Uuid}");
                 continue;
             }
 
@@ -510,7 +504,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             characteristicsByName.Add(name, c);
         }
 
-        logger.debug("Registered characteristics:");
+        logger.debug("BVM.doConnectAsync: Registered characteristics:");
         foreach (var pair in characteristicsByName)
         {
             var name = pair.Key;
@@ -529,21 +523,21 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
         connectionProgress = 0.15;
 
-        logger.debug("polling device for other services");
+        logger.debug("BVM.doConnectAsync: polling device for other services");
         var allServices = await bleDevice.device.GetServicesAsync();
         foreach (var thisService in allServices)
         {
-            logger.debug($"examining service {thisService.Name} (ID {thisService.Id})");
+            logger.debug($"BVM.doConnectAsync: examining service {thisService.Name} (ID {thisService.Id})");
             if (thisService.Id == primaryServiceId)
             {
-                logger.debug("skipping primary service");
+                logger.debug("BVM.doConnectAsync: skipping primary service");
                 continue;
             }
 
             var characteristics = await thisService.GetCharacteristicsAsync();
             foreach (var c in characteristics)
             {
-                logger.debug($"reading {c.Name}");
+                logger.debug($"BVM.doConnectAsync: reading {c.Name}");
                 // This line is required because for some reason attempting to read
                 // the Service Changed service cause the program to get blocked here
                 if(c.Name != "Service Changed")
@@ -551,7 +545,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     var response = await c.ReadAsync();
                     if (response.data is null)
                     {
-                        logger.error($"can't read {c.Uuid} ({c.Name})");
+                        logger.error($"BVM.doConnectAsync: can't read {c.Uuid} ({c.Name})");
                     }
                     else
                     {
@@ -563,7 +557,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
 
         // populate Spectrometer
-        logger.debug("initializing spectrometer");
+        logger.debug("BVM.doConnectAsync: initializing spectrometer");
         await spec.initAsync(characteristicsByName);
 
         // start notifications
@@ -575,7 +569,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             // disabled until I can troubleshoot with Nic
             if (false && c.CanUpdate && (name == "batteryStatus" || name == "laserState"))
             {
-                logger.debug($"starting notification updates on {name}");
+                logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                 c.ValueUpdated -= _characteristicUpdated;
                 c.ValueUpdated += _characteristicUpdated;
 
@@ -588,7 +582,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // all done
         ////////////////////////////////////////////////////////////////////
 
-        logger.debug("btnConnect_clicked done");
+        logger.debug("BVM.doConnectAsync: done");
         spec.bleDevice = bleDevice;
 
         // allow disconnect
@@ -606,6 +600,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             object sender, 
             CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
     {
+        logger.debug($"BVM._characteristicUpdated: start");
         var c = characteristicUpdatedEventArgs.Characteristic;
 
         // faster way to do this using nameByGuid?
@@ -633,6 +628,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
             spec.processLaserStateNotificationAsync(c.Value);
         else
             logger.error($"no registered processor for {name} notifications");
+
+        logger.debug($"BVM._characteristicUpdated: done");
     }
 
     // per EE, all Wasatch Photonics SiG Characteristic UUIDs follow this 
@@ -651,6 +648,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// </summary>
     void _bleAdapterDeviceDiscovered(object sender, DeviceEventArgs e)
     {
+        // logger.debug($"BVM._bleAdapterDeviceDiscovered: start");
         var device = e.Device; // an IDevice
 
         // ignore anything without a name
@@ -660,12 +658,20 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // ignore anything that doesn't have "WP" or "SiG" in the name
         var nameLC = device.Name.ToLower();
         if (!nameLC.Contains("wp") && !nameLC.Contains("sig"))
+        {
+            if (!ignoredNames.Contains(device.Name))
+            {
+                ignoredNames.Add(device.Name);
+                logger.debug($"BVM._bleAdapterDeviceDiscovered: ignoring {device.Name}");
+            }
             return;
+        }
 
         BLEDevice bd = new BLEDevice(device);
-        logger.debug($"discovered {bd.name} (RSSI {bd.rssi} Id {device.Id})");
+        logger.debug($"BVM._bleAdapterDeviceDiscovered[Step 2a]: discovered {bd.name} (RSSI {bd.rssi} Id {device.Id})");
         bleDeviceList.Add(bd);
     }
+    private SortedSet<string> ignoredNames = new SortedSet<string>();
 
     ////////////////////////////////////////////////////////////////////////
     // View code-behind callbacks
@@ -683,6 +689,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// </remarks>
     public void selectBLEDevice(object obj)
     {
+        logger.debug($"BVM.selectBLEDevice: start");
+
         var selectedBLEDevice = obj as BLEDevice;
         if (selectedBLEDevice is null)
         {
@@ -693,7 +701,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
 
         bleDevice = selectedBLEDevice;
-        logger.debug($"selected device {bleDevice.name}");
+        logger.debug($"BVM.selectBLEDevice[Step 3b]: selected device {bleDevice.name}");
 
         // let devices know which is selected, so they can advertise an 
         // appropriate row color
@@ -701,5 +709,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             dev.selected = dev.device.Id == bleDevice.device.Id;
 
         buttonConnectEnabled = true;
+
+        logger.debug($"BVM.selectBLEDevice: done");
     }
 }
