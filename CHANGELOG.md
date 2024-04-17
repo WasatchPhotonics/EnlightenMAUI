@@ -2,8 +2,7 @@
 
 - 2024-04-17
     - connects over BLE
-    - fully reads EEPROM
-    - not display EEPROM fields in HardwarePage
+    - reads and displays EEPROM
 - 2024-04-16
     - all tabs have icons
     - working on BLE

@@ -22,8 +22,8 @@ public partial class HardwarePage : ContentPage
         logger.debug("HardwarePage.OnAppearing: start");
         if (hvm != null)
         {
-            logger.debug("HardwarePage.OnAppearing: calling HardwareViewModel.refresh");
-            hvm.refresh();
+            // logger.debug("HardwarePage.OnAppearing: calling HardwareViewModel.refresh");
+            // hvm.refresh();
         }
         logger.debug("HardwarePage.OnAppearing: done");
     }
