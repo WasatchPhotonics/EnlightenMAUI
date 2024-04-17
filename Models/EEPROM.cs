@@ -14,11 +14,9 @@ public class EEPROM
     // Singleton
     /////////////////////////////////////////////////////////////////////////
 
-    // This wouldn't normally be a Singleton; it is normally an attribute
-    // of Spectrometer.  However, since we have a DeviceViewModel
-    // that needs to inject its ObservableCollection<ViewableSettings> into
-    // the EEPROM at launch, it seems simplest for now to have EEPROM
-    // instantiated at launch, even before BLE connection has occured.
+    // This wouldn't normally be a Singleton; it should really be an
+    // attribute of Spectrometer. When we fix this, consider a cleaner way
+    // to flow EEPROM fields up into HardwareViewModel.
 
     public static EEPROM instance = null;
 
@@ -42,9 +40,16 @@ public class EEPROM
     Logger logger = Logger.getInstance();
 
     public List<byte[]> pages { get; private set; }
-    public event EventHandler EEPROMChanged; // not used
 
-    public ObservableCollection<ViewableSetting> viewableSettings = null;
+    // Host the ObservableCollection here in the Model. I initially tried to
+    // store it in the ViewModel, but ViewModels are meant to TRANSFORM data,
+    // not STORE data -- that actually is the proper purview of a Model.
+    //
+    // @todo: consider changing this to a SortedDictionary and work out how to
+    //        flatten that into the ObservableCollection in HardwareViewModel
+    public List<ViewableSetting> viewableSettings = new List<ViewableSetting>();
+
+    public event EventHandler EEPROMChanged; // not used
 
     /////////////////////////////////////////////////////////////////////////
     //
@@ -761,12 +766,24 @@ public class EEPROM
         return true;
     }
 
+    /// <summary>
+    /// Parse EEPROM fields.
+    /// </summary>
+    /// <remarks>
+    /// Why earlier EEPROM formats (<15)? Because it is possible that someone may
+    /// flash a new spectrometer using the old ModelConfigurator, an old version
+    /// of ENLIGHTEN / WPSC, old Python scripts etc.
+    /// </remarks>
+    /// <param name="pages_in"></param>
+    /// <returns>true on success</returns>
     public bool parse(List<byte[]> pages_in)
     {
+        logger.debug("EEPROM.parse: start");
         if (pages_in is null)
             return false;
 
         pages = pages_in;
+        logger.debug($"EEPROM.parse: received {pages.Count} pages");
         if (pages.Count < MAX_PAGES)
         {
             logger.error($"EEPROM.parse: didn't receive {MAX_PAGES} pages");
@@ -895,7 +912,8 @@ public class EEPROM
             else
                 avgResolution = 0.0f;
 
-            if (format >= 9)                    featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+            if (format >= 9)
+                featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
         }
         catch (Exception ex)
         {
@@ -903,10 +921,13 @@ public class EEPROM
             return false;
         }
 
+        logger.debug("EEPROM.parse: enforcing reasonable defaults");
         enforceReasonableDefaults();
 
+        logger.debug("EEPROM.parse: registering all");
         registerAll();
 
+        logger.debug("EEPROM.parse: done");
         return true;
     }
 
@@ -946,10 +967,10 @@ public class EEPROM
             minIntegrationTimeMS = 1;
         }
 
-        if (detectorGain <= 0 || detectorGain >= 256)
+        if (detectorGain < 0 || detectorGain >= 32)
         {
-            logger.error($"invalid gain found ({detectorGain}), defaulting to 24");
-            detectorGain = 24;
+            logger.error($"invalid gain found ({detectorGain}), defaulting to 8");
+            detectorGain = 8;
         }
 
         if (activePixelsHoriz <= 0)
@@ -961,7 +982,8 @@ public class EEPROM
 
     void registerAll()
     {
-        viewableSettings.Clear();
+        logger.debug("EEPROM.registerAll: start");
+
         logger.debug("EEPROM Contents:");
         register("Model", model);
         register("serialNumber", serialNumber);
@@ -1019,21 +1041,19 @@ public class EEPROM
             register($"badPixels[{i}]", badPixels[i]);
 
         register("productConfiguration", productConfiguration);
+
+        logger.debug("EEPROM.registerAll: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Added to populate ObservableCollection
+    // viewableSettings
     ////////////////////////////////////////////////////////////////////////
-
-    // These functions register each EEPROM attribute's (name, value) pair
-    // into the ObservableCollection displayed on DeviceView.
 
     void register(string name, bool   value) => register(name, value.ToString());
     void register(string name, float  value) => register(name, value.ToString());
     void register(string name, string value)
     {
-        string msg = string.Format($"{name,21} = {value}");
-        logger.debug(msg);
+        logger.debug($"EEPROM.register: {name,21} = {value}");
         viewableSettings.Add(new ViewableSetting(name, value));
     }
 }

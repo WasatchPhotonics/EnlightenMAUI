@@ -1,24 +1,28 @@
 # Changelog
 
-- 2024-04-16 0.0.5
+- 2024-04-17
+    - connects over BLE
+    - fully reads EEPROM
+    - not display EEPROM fields in HardwarePage
+- 2024-04-16
     - all tabs have icons
-    - working on BLE...BVM not instantiating?
-- 2024-04-15 0.0.4
+    - working on BLE
+- 2024-04-15
     - added enlighten_logo
     - AboutViewModel -> code-behind
     - Data -> Clipboard
     - Device -> {Bluetooth, Hardware}
     - added Clipboard
     - all tabs viewable
-- 2024-04-14 0.0.3
+- 2024-04-14 
     - Telerik chart loading
     - imported from EnlightenMobile
         - Common/*
         - Models/*
         - ViewModels/*
         - Pages/*
-- 2024-04-13 0.0.2
+- 2024-04-13
     - 4-tab shell working
-- 2024-04-12 0.0.1
+- 2024-04-12
     - started from MAUI demo
     - runs on Android

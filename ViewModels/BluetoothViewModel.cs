@@ -648,7 +648,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// </summary>
     void _bleAdapterDeviceDiscovered(object sender, DeviceEventArgs e)
     {
-        logger.debug($"BVM._bleAdapterDeviceDiscovered: start");
+        // logger.debug($"BVM._bleAdapterDeviceDiscovered: start");
         var device = e.Device; // an IDevice
 
         // ignore anything without a name
@@ -658,12 +658,20 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // ignore anything that doesn't have "WP" or "SiG" in the name
         var nameLC = device.Name.ToLower();
         if (!nameLC.Contains("wp") && !nameLC.Contains("sig"))
+        {
+            if (!ignoredNames.Contains(device.Name))
+            {
+                ignoredNames.Add(device.Name);
+                logger.debug($"BVM._bleAdapterDeviceDiscovered: ignoring {device.Name}");
+            }
             return;
+        }
 
         BLEDevice bd = new BLEDevice(device);
         logger.debug($"BVM._bleAdapterDeviceDiscovered[Step 2a]: discovered {bd.name} (RSSI {bd.rssi} Id {device.Id})");
         bleDeviceList.Add(bd);
     }
+    private SortedSet<string> ignoredNames = new SortedSet<string>();
 
     ////////////////////////////////////////////////////////////////////////
     // View code-behind callbacks

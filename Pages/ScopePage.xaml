@@ -121,7 +121,7 @@
                                VerticalOptions="CenterAndExpand" />
 
                         <!-- You must set the Maximum value before the Minimum -->
-                        <Slider x:Name="IntegrationTimeMsSlider" Maximum="5000"  Minimum="1" Value="500" ValueChanged="Callback_IntegrationTimeMS" ThumbImageSource="thumb.png"/>
+                        <Slider x:Name="IntegrationTimeMsSlider" Maximum="5000"  Minimum="1" Value="500" ValueChanged="Callback_IntegrationTimeMS" ThumbImageSource="ui_slider_knob.png"/>
                     </StackLayout>
 
                     <!-- gain -->
@@ -131,7 +131,7 @@
                                HorizontalOptions="Center"
                                VerticalOptions="CenterAndExpand" />
 
-                        <Slider x:Name="GainDBSlider"  Maximum="72" Minimum="0" Value="16" ValueChanged="Callback_GainDb" ThumbImageSource="thumb.png" />
+                        <Slider x:Name="GainDBSlider"  Maximum="72" Minimum="0" Value="16" ValueChanged="Callback_GainDb" ThumbImageSource="ui_slider_knob.png" />
                     </StackLayout>
 
                     <!-- averaging -->
@@ -141,7 +141,7 @@
                                HorizontalOptions="Center"
                                VerticalOptions="CenterAndExpand" />
 
-                        <Slider x:Name="ScanAveragingSlider" Maximum="32" Minimum="1" Value="1" ValueChanged="Callback_ScansToAverage" ThumbImageSource="thumb.png"/>
+                        <Slider x:Name="ScanAveragingSlider" Maximum="32" Minimum="1" Value="1" ValueChanged="Callback_ScansToAverage" ThumbImageSource="ui_slider_knob.png"/>
                     </StackLayout>
                 </StackLayout>
             </Grid>

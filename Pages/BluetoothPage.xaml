@@ -33,6 +33,7 @@
             <!-- List of discovered BLE devices -->
             <ListView x:Name="listView" 
                       ItemsSource="{Binding bleDeviceList}"
+                      ItemSelected="listView_ItemSelected"
                       SeparatorColor="#555" 
                       BackgroundColor="#333" 
                       Margin="20, 0, 20, 0" 
@@ -44,9 +45,9 @@
                             <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
                                 <StackLayout Orientation="Horizontal">
                                     <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large"/>
-                                    <Label TextColor="#2994d3" Text="Binding name" FontSize="Large"/>
+                                    <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
                                 </StackLayout>
-                                <Label TextColor="#cccccc" Text="Binding id"/>
+                                <Label TextColor="#cccccc" Text="{Binding id}"/>
                             </StackLayout>
                         </ViewCell>
                     </DataTemplate>

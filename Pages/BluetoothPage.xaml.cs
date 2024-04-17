@@ -15,13 +15,27 @@ public partial class BluetoothPage : ContentPage
         bvm = (BluetoothViewModel)BindingContext;
 
         Appearing += onAppearingAsync;
+        bvm.notifyUser += notifyUserAsync;
     }
+
+    // Step 3a: the user has explicitly selected a device from the listView,
+    // so notify the ViewModel
+    void listView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    {
+        logger.debug("BluetoothPage.listView_ItemSelected[Step 3a]: passing selected item to BluetoothViewModel");
+        bvm.selectBLEDevice(listView.SelectedItem);
+    }
+
+    // the BluetoothViewModel has raised a "notifyUser" event, so display it
+    async void notifyUserAsync(string title, string message, string button) =>
+        await DisplayAlert(title, message, button);
 
     // This currently comes up on the SECOND visit to the page, not the first,
     // but otherwise works. Use different Event? Add to About? Call from ctor and
     // skip the prompt?
-    async void onAppearingAsync(object sender, System.EventArgs e)
+    async void onAppearingAsync(object sender, EventArgs e)
     {
+        base.OnAppearing();
         logger.debug("BluetoothPage.onAppearingAsync: start");
         if (!bvm.bluetoothEnabled)
         {
@@ -37,7 +51,9 @@ public partial class BluetoothPage : ContentPage
                 _ = bvm.doResetAsync();
             }
             else
+            {
                 logger.debug("BluetoothPage.onAppearingAsync: not confirmed");
+            }
         }
         logger.debug("BluetoothPage.onAppearingAsync: done");
     }

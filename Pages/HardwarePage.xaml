@@ -22,7 +22,6 @@
 
             <!-- BLE Device Info -->
             <Label FontSize="Large" Text="BLE Device Info"/>
-            <Button Text="{Binding bleBtnTxt}" Margin="5"/> <!-- Clicked="connectPage" -->
             <StackLayout Margin="10, 0, 10, 0">
                 <FlexLayout JustifyContent="SpaceBetween">
                     <Label Text="Device Name"/>
@@ -48,7 +47,7 @@
 
             <!-- Scrolling ListView of EEPROM (name, value) tuples -->
             <Label Text="EEPROM" FontSize="Large" Margin="0, 10, 0, 0"/>
-            <ListView x:Name="listViewEEPROM" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 
+            <ListView x:Name="eepromFields" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <ViewCell>

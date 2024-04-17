@@ -1,66 +1,42 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
+
 using EnlightenMAUI.Models;
 
 namespace EnlightenMAUI.ViewModels;
 
-// This class provides "transformation logic" to render the Model of the
-// EEPROM's ObservableList entries.  
-//
-// Not really; the ObservableList natively uses ViewableSetting objects, and 
-// this class does nothing except provide a "straight-through" copy of each 
-// ViewableSetting as it is rendered into a Cell of the ListView.  
-// 
-// This is the kind of verbose-yet-useless class that makes people hate MVVM.  
-// IF there's a way to obviate it, let me know.
 public class HardwareViewModel : INotifyPropertyChanged
 {
-    public event PropertyChangedEventHandler PropertyChanged;
-
     Spectrometer spec = Spectrometer.getInstance();
-    Logger logger = Logger.getInstance();
-    
-    public string bleBtnTxt
-    {
-        get => _bleBtnTxt;
-        set
-        {
-            _bleBtnTxt = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(bleBtnTxt)));
-        }
-    }
-    string _bleBtnTxt = "Connect";
+    EEPROM eeprom = EEPROM.getInstance();
 
+    // HardwarePage binds to data through its ViewModel (this file).
+    // However, ViewModels don't guarantee lengthy persistence; they
+    // may roll in and out of memory. Persistent data is meant to be
+    // stored in MODELS, so here we're just providing a pass-through
+    // to the name-value field pairs actually stored in Models.EEPROM.
+    ObservableCollection<ViewableSetting> eepromFields;
+
+    Logger logger = Logger.getInstance();
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    
     public HardwareViewModel()
     {
-        // as Bluetooth device meta-characteristics are parsed during connection,
-        // catch updates so this view is pre-populated 
-        spec.bleDeviceInfo.PropertyChanged += bleDeviceUpdate;
-        updateBLEBtn();
-    }
+        logger.debug("HVM.ctor: start");
 
-    public void updateBLEBtn()
-    {
-        Console.WriteLine("Calling ble btn update");
-        if (spec.bleDevice != null)
-        {
-            bleBtnTxt = "Disconnect";
-        }
-        else
-        {
-            bleBtnTxt = "Connect";
-        }
+        logger.debug("HVM.ctor: providing pass-through to EEPROM.viewableSettings");
+        eepromFields = new ObservableCollection<ViewableSetting>(eeprom.viewableSettings);
+
+        logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
+        spec.bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
     }
 
     // the BluetoothView code-behind has registered some metadata, so update 
     // our display properties
-    void bleDeviceUpdate(object sender, PropertyChangedEventArgs e) =>
+    void _bleDeviceUpdate(object sender, PropertyChangedEventArgs e) =>
         refresh(e.PropertyName);
-
-    public string title
-    {
-        get => "Spectrometer Settings";
-    }
 
     ////////////////////////////////////////////////////////////////////////
     // BLE Device Info
@@ -73,17 +49,6 @@ public class HardwareViewModel : INotifyPropertyChanged
     public string hardwareRevision { get => spec.bleDeviceInfo.hardwareRevision; }
 
     ////////////////////////////////////////////////////////////////////////
-    // EEPROM
-    ////////////////////////////////////////////////////////////////////////
-
-    public ViewableSetting ViewableSetting
-    {
-        get { return _viewableSetting; }
-        set { _viewableSetting = value; }
-    }
-    ViewableSetting _viewableSetting;
-
-    ////////////////////////////////////////////////////////////////////////
     // Util
     ////////////////////////////////////////////////////////////////////////
 
@@ -91,22 +56,29 @@ public class HardwareViewModel : INotifyPropertyChanged
     // on display, after changing spectrometers.
     public void refresh(string name = null)
     {
-        logger.debug($"refreshing HardwareViewModel ({name})");
-
         if (name != null)
+        {
+            logger.debug($"HVM.refresh: refreshing {name}");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
         else
         {
+            logger.debug($"HVM.refresh: refreshing eepromFields");
+            // eepromFields = new ObservableCollection<ViewableSetting>(eeprom.viewableSettings);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(eepromFields)));
+
+            logger.debug($"HVM.refresh: refreshing BLE properties");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deviceName)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(softwareRevision)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(firmwareRevision)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hardwareRevision)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(manufacturerName)));
         }
+        logger.debug($"HVM.refresh: done");
     }
     protected void OnPropertyChanged([CallerMemberName] string caller = "")
     {
-        logger.debug("SSVM: OnPropertyChanged");
+        logger.debug($"HVM.OnPropertyChanged[{caller}]");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(caller));
     }
 }
