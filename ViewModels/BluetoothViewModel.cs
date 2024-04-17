@@ -44,18 +44,25 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         logger.debug("BVM.ctor: start");
 
+        logger.debug("BVM.ctor: configuring BLE logger");
         Plugin.BLE.Abstractions.Trace.TraceImplementation = logger.ble;
 
+        logger.debug("BVM.ctor: instantiating bleDeviceList");
         bleDeviceList = new ObservableCollection<BLEDevice>(source);
 
         // this crashed Xamarin on iOS if you don't follow add plist entries per
         // https://stackoverflow.com/a/59998233/11615696
+        logger.debug("BVM.ctor: grabbing ble handle");
         ble = CrossBluetoothLE.Current;
+        logger.debug("BVM.ctor: grabbing adapter handle");
         adapter = CrossBluetoothLE.Current.Adapter;
 
+        logger.debug("BVM.ctor: adding DeviceDiscovered handler");
         adapter.DeviceDiscovered += _bleAdapterDeviceDiscovered;
+        logger.debug("BVM.ctor: adding ScanTimeoutElapsed handler");
         adapter.ScanTimeoutElapsed += _bleAdapterStoppedScanning;
 
+        logger.debug("BVM.ctor: creating primaryServiceId");
         primaryServiceId = _makeGuid("ff00");
 
         // characteristics
@@ -204,27 +211,16 @@ public class BluetoothViewModel : INotifyPropertyChanged
     void updateScanButtonProperties()
     {
         logger.debug("updating scan button properties");
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scanButtonText)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scanButtonTextColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scanButtonBackgroundColor)));
-    }
-
-    public string scanButtonText
-    {
-        get
-        {
-            Random rnd = new Random();
-            int i = rnd.Next();
-            return $"Scan{i}";
-        }
     }
 
     public string scanButtonBackgroundColor
     {
         get
         { 
-            string color = "#ff0000";
-            // color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
+            // string color = "#ff0000";
+            string color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
             return color;
         }
     }
@@ -233,8 +229,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         get
         {
-            string color = "#ffcc00";
-            // color = ble.Adapter.IsScanning ? "#fff" : "#333";
+            // string color = "#ffcc00";
+            string color = ble.Adapter.IsScanning ? "#fff" : "#333";
             return color;
         }
     }
