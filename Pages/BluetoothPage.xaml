@@ -3,7 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:DataType="local:ViewModels.BluetoothViewModel"
              x:Class="EnlightenMAUI.BluetoothPage">
 
     <ContentPage.BindingContext>
@@ -19,8 +18,8 @@
             <!-- Button Bar -->
             <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
                 <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
-                    <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand">
-                        <Button Text="{Binding scanButtonText}" Command="{Binding scanCmd}" IsEnabled="{Binding bluetoothEnabled}"
+                    <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand" x:DataType="local:ViewModels.BluetoothViewModel">
+                        <Button Text="Scan" Command="{Binding scanCmd}" IsEnabled="{Binding bluetoothEnabled}"
                                 TextColor="{Binding scanButtonTextColor}" 
                                 BackgroundColor="{Binding scanButtonBackgroundColor}" />
                         <Button Text="{Binding buttonConnectText}" Command="{Binding connectCmd}" IsEnabled="{Binding buttonConnectEnabled}" /> 
@@ -29,7 +28,7 @@
             </Frame>
 
             <!-- Connection ProgressBar -->
-            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#2994d3" />
+            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#2994d3" x:DataType="local:ViewModels.BluetoothViewModel"/>
 
             <!-- List of discovered BLE devices -->
             <ListView x:Name="listView" 
@@ -37,6 +36,7 @@
                       SeparatorColor="#555" 
                       BackgroundColor="#333" 
                       Margin="20, 0, 20, 0" 
+                      x:DataType="local:ViewModels.BluetoothViewModel"
                       HasUnevenRows="True">
                 <ListView.ItemTemplate>
                     <DataTemplate>
