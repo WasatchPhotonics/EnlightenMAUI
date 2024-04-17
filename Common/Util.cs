@@ -85,18 +85,34 @@ public class Util
 
     public static bool bluetoothEnabled()
     {
-        logger.error($"Util.bluetoothEnabled: NotImplemented");
-        // var platformUtil = DependencyService.Get<IPlatformUtil>();
-        // return platformUtil.bluetoothEnabled();
-        return false;
+        logger.debug("Util.bluetoothEnabled: start");
+        bool enabled = false;
+    #if ANDROID
+        logger.debug("Util.bluetoothEnabled: getting bluetoothManager");
+        var bluetoothManager = (Android.Bluetooth.BluetoothManager)Android.App.Application.Context.GetSystemService(Android.Content.Context.BluetoothService);
+        logger.debug("Util.bluetoothEnabled: getting bluetoothAdapter");
+        var bluetoothAdapter = bluetoothManager.Adapter;
+        logger.debug("Util.bluetoothEnabled: checking enabled");
+        enabled = bluetoothAdapter.IsEnabled;
+#endif
+        logger.debug($"Util.bluetoothEnabled: returning {enabled}");
+        return enabled;
     }
 
     public static bool enableBluetooth(bool flag)
     {
-        logger.error($"Util.enableBluetooth({flag}): NotImplemented");
-        // var platformUtil = DependencyService.Get<IPlatformUtil>();
-        // return platformUtil.enableBluetooth(flag);
-        return false;
+        logger.error($"Util.enableBluetooth({flag}): start");
+    #if ANDROID
+        logger.error($"Util.enableBluetooth({flag}): generating intent");
+        var request = flag ? Android.Bluetooth.BluetoothAdapter.ActionRequestEnable 
+                           : Android.Bluetooth.BluetoothAdapter.ActionRequestDiscoverable;
+        var intent = new Android.Content.Intent(request);
+        intent.SetFlags(Android.Content.ActivityFlags.NewTask);
+        logger.error($"Util.enableBluetooth({flag}): sending intent");
+        Android.App.Application.Context.StartActivity(intent);
+    #endif
+        logger.error($"Util.enableBluetooth({flag}): done");
+        return true;
     }
 
     // View is there for iOS (Android doesn't need it)
