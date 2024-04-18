@@ -307,7 +307,7 @@ public class EEPROM
         }
         catch (Exception ex)
         {
-            logger.error("EEPROM: caught exception: {0}", ex.Message);
+            logger.error($"EEPROM: caught exception: {ex.Message}");
             return false;
         }
 
@@ -353,7 +353,7 @@ public class EEPROM
 
         if (minIntegrationTimeMS < 1)
         {
-            logger.error("invalid minIntegrationTimeMS found ({0}), defaulting to 1", minIntegrationTimeMS);
+            logger.error($"invalid minIntegrationTimeMS found ({minIntegrationTimeMS}), defaulting to 1");
             minIntegrationTimeMS = 1;
         }
 

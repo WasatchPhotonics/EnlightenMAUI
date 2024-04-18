@@ -192,20 +192,20 @@ public class Spectrometer : INotifyPropertyChanged
         pixels = eeprom.activePixelsHoriz;
 
         await updateBatteryAsync(); 
-        integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 3);
+        integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         gainDb = eeprom.detectorGain;
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
 
-        logger.info($"initialized {eeprom.model} {eeprom.serialNumber}");
+        logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
         logger.info($"  pixels: {pixels}");
         logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
-        logger.info( "  excitation: {0:f2}nm", laserExcitationNM);
-        logger.info( "  wavelengths: ({0:f2}, {1:f2})", wavelengths[0], wavelengths[pixels-1]);
+        logger.info($"  excitation: {laserExcitationNM:f3}nm");
+        logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels-1]:f2})");
         if (wavenumbers != null)
-            logger.info("  wavenumbers: ({0:f2}, {1:f2})", wavenumbers[0], wavenumbers[pixels-1]);
+            logger.info($"  wavenumbers: ({wavenumbers[0]:f2}, {wavenumbers[pixels-1]:f2})");
 
         // I'm honestly not sure where we should initialize location, but it 
         // should probably happen after we've successfully connected to a
@@ -218,11 +218,13 @@ public class Spectrometer : INotifyPropertyChanged
         return true;
     }
 
+    public string fullModelName { get => $"{eeprom.model}{eeprom.productConfiguration}"; }
+
     async Task<List<byte[]>> readEEPROMAsync()
     {
         logger.info("reading EEPROM");
-        Plugin.BLE.Abstractions.Contracts.ICharacteristic eepromCmd;
-        Plugin.BLE.Abstractions.Contracts.ICharacteristic eepromData;
+        ICharacteristic eepromCmd;
+        ICharacteristic eepromData;
 
         if (characteristicsByName.ContainsKey("eepromCmd") && characteristicsByName.ContainsKey("eepromData"))
         {
@@ -304,6 +306,8 @@ public class Spectrometer : INotifyPropertyChanged
                 logger.debug($"Spectrometer.scansToAverage -> {value}");
                 _scansToAverage = value;
             }
+            else
+                _scansToAverage = 1;
         }
     }
     uint _scansToAverage = 1;
@@ -319,7 +323,7 @@ public class Spectrometer : INotifyPropertyChanged
         { 
             _nextIntegrationTimeMS = value;
             logger.debug($"Spectrometer.integrationTimeMS: next = {value}");
-            _ = syncIntegrationTimeMSAsync();
+            // _ = syncIntegrationTimeMSAsync();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
         }
     }
@@ -341,7 +345,7 @@ public class Spectrometer : INotifyPropertyChanged
             return false;
         }
 
-        ushort value = Math.Min((ushort)5000, Math.Max((ushort)3, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
+        ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
         byte[] request = ToBLEData.convert(value, len: 4);
 
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
@@ -375,7 +379,7 @@ public class Spectrometer : INotifyPropertyChanged
             {
                 _nextGainDb = value;
                 logger.debug($"Spectrometer.gainDb: next = {value}");
-                _ = syncGainDbAsync();
+                // _ = syncGainDbAsync();
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(gainDb)));
             }
             else
@@ -384,8 +388,8 @@ public class Spectrometer : INotifyPropertyChanged
             }
         }
     }
-    float _nextGainDb = 24.0f;
-    float _lastGainDb = 99.0f;
+    float _nextGainDb = 24;
+    float _lastGainDb = -1;
 
     async Task<bool> syncGainDbAsync()
     {

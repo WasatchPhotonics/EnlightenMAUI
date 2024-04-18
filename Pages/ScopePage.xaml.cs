@@ -8,12 +8,12 @@ namespace EnlightenMAUI;
 [XamlCompilation(XamlCompilationOptions.Compile)]
 public partial class ScopePage : ContentPage
 {
-    bool lastLandscape;
-    bool showingControls = true;
+    // bool lastLandscape;
+    // bool showingControls = true;
     static readonly SemaphoreSlim semRotate = new SemaphoreSlim(1, 1);
 
     // ZXingScannerPage scanPage; // for QR codes
-    //
+    
     const string rightArrow = ">>";
     const string leftArrow = "<<";
 
@@ -30,16 +30,32 @@ public partial class ScopePage : ContentPage
 
         // ScopeView has numerous View <--> ViewModel interactions, so grab
         // a handle to the ViewModel
-        //
-        // svm = (ScopeViewModel)BindingContext; // MZ: fix
+        svm = (ScopeViewModel)BindingContext; // MZ: fix
 
         // Give the ScopeViewModel an ability to display "toast" messages on
         // the View (such as "saved foo.csv") by having the View monitor for
         // notifications, and if one is received
         // https://stackoverflow.com/a/26038700/11615696
-        // svm.notifyToast += (string msg) => Util.toast(msg, scrollOptions);
+        // svm.notifyToast += (string msg) => Util.toast(msg, scrollOptions); // MZ: fix
 
-        // svm.theChart = chart; // MZ: fix
+        svm.theChart = chart; 
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Sliders
+    ////////////////////////////////////////////////////////////////////////
+
+    void integSlider_ValueChanged(Object sender, ValueChangedEventArgs args) 
+    {
+        logger.debug($"integSlider_ValueChanged: old {args.OldValue} -> new {args.NewValue}"); 
+    }
+    void gainSlider_ValueChanged(Object sender, ValueChangedEventArgs args)
+    {
+        logger.debug($"gainSlider_ValueChanged: old {args.OldValue} -> new {args.NewValue}"); 
+    }
+    void avgSlider_ValueChanged(Object sender, ValueChangedEventArgs args) 
+    {
+        logger.debug($"avgSlider_ValueChanged: old {args.OldValue} -> new {args.NewValue}"); 
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -52,34 +68,9 @@ public partial class ScopePage : ContentPage
         var entry = sender as Entry;
         entry.Text = "";
     }
-    
-    void Callback_IntegrationTimeMS(Object sender, EventArgs e)
-    {
-        var slider = sender as Slider;
-
-        // svm.spec.integrationTimeMS = (uint)(slider.Value); // MZ: fix
-        Label LabelIntegrationTime = this.FindByName("LabelIntegrationTime") as Label;
-        LabelIntegrationTime.Text = svm is null ? "unk ms" : svm.label_integration;
-    }
-
-    void Callback_GainDb(Object sender, EventArgs e)
-    {
-        var slider = sender as Slider;
-        // svm.spec.gainDb = (int)(slider.Value+.5); // MZ: fix
-        Label LabelGain = this.FindByName("LabelGain") as Label;
-        LabelGain.Text = svm is null ? "unk dB" : svm.label_gain;
-    }
 
     async void notifyUserAsync(string title, string message, string button) =>
        await DisplayAlert(title, message, button);
-
-    void Callback_ScansToAverage(Object sender, EventArgs e)
-    {
-        var slider = sender as Slider;
-        // svm.spec.scansToAverage = (uint)(slider.Value + .5); // MZ: fix
-        Label LabelScanAveraging = this.FindByName("LabelScanAveraging") as Label;
-        LabelScanAveraging.Text = svm is null ? "unk avg" : svm.label_averaging;
-    }
 
     ////////////////////////////////////////////////////////////////////////
     // Expand / hide control palette in Landscape mode

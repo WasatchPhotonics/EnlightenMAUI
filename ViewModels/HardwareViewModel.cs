@@ -51,7 +51,7 @@ public class HardwareViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public string serialNumber { get => eeprom?.serialNumber; }
-    public string fullModelName { get => $"{eeprom?.model}{eeprom?.productConfiguration}"; }
+    public string fullModelName { get => spec.fullModelName; }
 
     ////////////////////////////////////////////////////////////////////////
     // BLE Device Info

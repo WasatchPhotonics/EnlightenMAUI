@@ -50,19 +50,18 @@
                                                YValueBinding="intensity"
                                                Stroke="#27c0a1"
                                                DisplayName="Live"
+                                               x:DataType="local:ViewModels.ScopeViewModel"
                                                ItemsSource="{Binding chartData}" />
 
                     <!-- I couldn't find a way to add these programmatically at runtime (and appear on the graph) -->
-                    <!-- 
-                    <telerik:ScatterLineSeries DisplayName="Trace #0" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #1" Stroke="#6758c5" ItemsSource="{Binding trace1}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #2" Stroke="#f7e842" ItemsSource="{Binding trace2}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #3" Stroke="#4a5da9" ItemsSource="{Binding trace3}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #4" Stroke="#f79a1c" ItemsSource="{Binding trace4}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #5" Stroke="#60b34e" ItemsSource="{Binding trace5}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #6" Stroke="#cd242b" ItemsSource="{Binding trace6}" XValueBinding="xValue" YValueBinding="intensity" />
-                    <telerik:ScatterLineSeries DisplayName="Trace #7" Stroke="#2994d3" ItemsSource="{Binding trace7}" XValueBinding="xValue" YValueBinding="intensity" />
-                    -->
+                    <telerik:ScatterLineSeries DisplayName="Trace #0" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #1" Stroke="#6758c5" ItemsSource="{Binding trace1}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #2" Stroke="#f7e842" ItemsSource="{Binding trace2}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #3" Stroke="#4a5da9" ItemsSource="{Binding trace3}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #4" Stroke="#f79a1c" ItemsSource="{Binding trace4}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #5" Stroke="#60b34e" ItemsSource="{Binding trace5}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #6" Stroke="#cd242b" ItemsSource="{Binding trace6}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                    <telerik:ScatterLineSeries DisplayName="Trace #7" Stroke="#2994d3" ItemsSource="{Binding trace7}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
                 </telerik:RadCartesianChart.Series>
 
                 <!-- pan and zoom -->
@@ -74,9 +73,8 @@
                 </telerik:RadCartesianChart.ChartBehaviors>
             </telerik:RadCartesianChart>
 
-            <Grid x:Name="innerGrid" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" IsEnabled="{Binding paired}">
+            <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" IsEnabled="{Binding paired}">
 
-                <!-- initialize to Portrait mode (1 col, 2 rows) -->
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!--      ProgressBar       -->
                     <RowDefinition Height="Auto"/> <!-- Acquire Save Add Clear -->
@@ -88,20 +86,30 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Acquisition ProgressBar -->
-                <ProgressBar Grid.Row="0" Grid.Column="0"
-                                 Progress="{Binding acquisitionProgress}"
-                                 ProgressColor="#2994d3"/>
+                <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#2994d3"/> 
 
                 <!-- Command buttons -->
                 <StackLayout Grid.Row="1" Grid.Column="0" Margin="2">
 
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
-                        <Button Margin="2" Padding="6" HorizontalOptions="StartAndExpand" Text="Turn Laser On" />
-                        <Button Margin="2" Text="Acquire" 
+                        <!-- Laser -->
+                        <Button Margin="2" 
+                                Padding="6" 
+                                HorizontalOptions="StartAndExpand" 
+                                Text="{Binding laserButtonText}" />
+
+                        <!-- Acquire -->
+                        <Button Margin="2" 
+                                Text="Acquire" 
+                                Command="{Binding acquireCmd}"
                                 TextColor="{Binding acquireButtonTextColor}" 
-                                BackgroundColor="{Binding acquireButtonBackgroundColor}" /> <!-- Command="{Binding acquireCmd}" -->
-                        <Button Margin="2" Text="Save" /> <!-- Command="{Binding saveCmd}" -->
+                                BackgroundColor="{Binding acquireButtonBackgroundColor}" />
+
+                        <!-- Save -->
+                        <Button Margin="2" 
+                                Text="Save"  
+                                Command="{Binding saveCmd}" />
 
                         <!-- <Button Margin="2" Text="Add" Command="{Binding addCmd}" /> -->
                         <!-- <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" /> -->
@@ -114,33 +122,35 @@
 
                     <!-- integration time -->
                     <StackLayout>
-                        <Label x:Name="LabelIntegrationTime"
-                               Text="{Binding label_integration}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="CenterAndExpand" />
-
-                        <!-- You must set the Maximum value before the Minimum -->
-                        <Slider x:Name="IntegrationTimeMsSlider" Maximum="5000"  Minimum="1" Value="500" ValueChanged="Callback_IntegrationTimeMS" ThumbImageSource="ui_slider_knob.png"/>
+                        <Label Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Slider Maximum="5000"  
+                                Minimum="1" 
+                                Value="{Binding integSlider}" 
+                                ValueChanged="integSlider_ValueChanged" 
+                                DragCompletedCommand="{Binding integCmd}" 
+                                ThumbColor="Teal"/>
                     </StackLayout>
 
                     <!-- gain -->
                     <StackLayout>
-                        <Label x:Name="LabelGain"
-                               Text="{Binding label_gain}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="CenterAndExpand" />
-
-                        <Slider x:Name="GainDBSlider"  Maximum="72" Minimum="0" Value="16" ValueChanged="Callback_GainDb" ThumbImageSource="ui_slider_knob.png" />
+                        <Label Text="{Binding label_gain}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Slider Maximum="72" 
+                                Minimum="0" 
+                                Value="{Binding gainSlider}" 
+                                ValueChanged="gainSlider_ValueChanged" 
+                                DragCompletedCommand="{Binding gainCmd}" 
+                                ThumbColor="Teal" />
                     </StackLayout>
 
                     <!-- averaging -->
                     <StackLayout>
-                        <Label x:Name="LabelScanAveraging"
-                               Text="{Binding label_averaging}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="CenterAndExpand" />
-
-                        <Slider x:Name="ScanAveragingSlider" Maximum="32" Minimum="1" Value="1" ValueChanged="Callback_ScansToAverage" ThumbImageSource="ui_slider_knob.png"/>
+                        <Label Text="{Binding label_avg}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+                        <Slider Maximum="32" 
+                                Minimum="1" 
+                                Value="{Binding avgSlider}" 
+                                ValueChanged="avgSlider_ValueChanged" 
+                                DragCompletedCommand="{Binding avgCmd}" 
+                                ThumbColor="Teal"/>
                     </StackLayout>
                 </StackLayout>
             </Grid>

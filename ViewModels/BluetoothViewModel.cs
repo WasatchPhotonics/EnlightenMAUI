@@ -136,19 +136,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
     double _connectionProgress = 0;
 
     ////////////////////////////////////////////////////////////////////////
-    // paired
+    // Bluetooth Enabled
     ////////////////////////////////////////////////////////////////////////
-
-    public bool paired
-    {
-        get => _paired;
-        set
-        {
-            _paired = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
-        }
-    }
-    bool _paired = false;
 
     public bool bluetoothEnabled 
     { 
@@ -162,7 +151,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     }
     bool _bluetoothEnabled = Util.bluetoothEnabled(); // initialize from phone state at launch
 
-
     ////////////////////////////////////////////////////////////////////////
     // Reset (no longer a Command)
     ////////////////////////////////////////////////////////////////////////
@@ -175,7 +163,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.doResetAsync: attempting to disable Bluetooth");
 
         bleDeviceList.Clear();
-        paired = false;
+        BLEDevice.paired = false;
         buttonConnectEnabled = false;
         
         if (!Util.enableBluetooth(false))
@@ -242,7 +230,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         logger.debug("BVM.doScanAsync[Step 1]: start");
 
-        if (paired)
+        if (BLEDevice.paired)
         {
             logger.debug("BVM.doScanAsync: paired so disconnecting");
             await doDisconnectAsync();
@@ -277,7 +265,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            logger.error("caught exception during scan button event: {0}", ex.Message);
+            logger.error($"caught exception during scan button event: {ex.Message}");
             notifyUser("EnlightenMAUI", "Caught exception during BLE scan: " + ex.Message, "Ok");
         }
 
@@ -320,7 +308,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     // Connect Button
     ////////////////////////////////////////////////////////////////////////
 
-    public string buttonConnectText { get => paired ? "Disconnect" : "Connect"; }
+    public string buttonConnectText { get => BLEDevice.paired ? "Disconnect" : "Connect"; }
 
     public bool buttonConnectEnabled 
     { 
@@ -344,7 +332,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     private async Task<bool> doConnectOrDisconnectAsync()
     {
         logger.debug("BVM.doConnectOrDisconnect[Step 4]: start");
-        if (paired)
+        if (BLEDevice.paired)
         {
             logger.debug("BVM.doConnectOrDisconnect: disconnecting");
             await doDisconnectAsync();
@@ -352,8 +340,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
         else
         {
             logger.debug("BVM.doConnectOrDisconnect: connecting");
-            paired = await doConnectAsync();
-            if (paired)
+            BLEDevice.paired = await doConnectAsync();
+            if (BLEDevice.paired)
             {
                 logger.debug("BVM.doConnectOrDisconnect: switching to ScopePage");
                 await Shell.Current.GoToAsync("ScopePage");
@@ -372,7 +360,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         if (bleDevice is null && spec.bleDevice is null)
         {
             logger.error("BVM.doDisconnectAsync: attempt to disconnect without bleDevice");
-            paired = false;
+            BLEDevice.paired = false;
             return false;
         }
 
@@ -400,7 +388,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
 
         logger.debug("BVM.doDisconnectAsync: done");
-        paired = false;
+        BLEDevice.paired = false;
         return true;
     }
 
@@ -448,7 +436,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
         catch (DeviceConnectionException ex)
         {
-            logger.error("BVM.doConnectAsync: exception connecting to device ({0})", ex.Message);
+            logger.error($"BVM.doConnectAsync: exception connecting to device ({ex.Message})");
 
             // kick off the reset WHILE the alert message is running
             logger.error("BVM.doConnectAsync: resetting");
