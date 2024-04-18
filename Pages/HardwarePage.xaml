@@ -18,8 +18,6 @@
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <Label Text="Hardware" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
-
             <!-- BLE Device Info -->
             <Label FontSize="Large" Text="BLE Device Info"/>
             <StackLayout Margin="10, 0, 10, 0">
