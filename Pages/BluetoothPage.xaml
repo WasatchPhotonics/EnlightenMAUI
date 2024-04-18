@@ -10,19 +10,23 @@
     </ContentPage.BindingContext>
 
     <ContentPage.Content>
-        <StackLayout Orientation="Vertical" BackgroundColor="#333">
+        <StackLayout BackgroundColor="#333" Orientation="Vertical">
 
-            <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
             <!-- Button Bar -->
             <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
                 <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
                     <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand" x:DataType="local:ViewModels.BluetoothViewModel">
-                        <Button Text="Scan" Command="{Binding scanCmd}" IsEnabled="{Binding bluetoothEnabled}"
+                        <Button Text="Scan" 
+                                Padding="0, 0, 20, 0"
+                                Command="{Binding scanCmd}" 
+                                IsEnabled="{Binding bluetoothEnabled}"
                                 TextColor="{Binding scanButtonTextColor}" 
                                 BackgroundColor="{Binding scanButtonBackgroundColor}" />
-                        <Button Text="{Binding buttonConnectText}" Command="{Binding connectCmd}" IsEnabled="{Binding buttonConnectEnabled}" /> 
+                        <Button Text="{Binding buttonConnectText}" 
+                                Command="{Binding connectCmd}" 
+                                IsEnabled="{Binding buttonConnectEnabled}" /> 
                     </StackLayout>
                 </Frame>
             </Frame>
@@ -44,7 +48,7 @@
                         <ViewCell x:DataType="local:Models.BLEDevice">
                             <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
                                 <StackLayout Orientation="Horizontal">
-                                    <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large"/>
+                                    <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large" Padding="0, 0, 20, 0"/>
                                     <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
                                 </StackLayout>
                                 <Label TextColor="#cccccc" Text="{Binding id}"/>

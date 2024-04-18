@@ -16,8 +16,6 @@
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <Label Text="Clipboard" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
-
         </VerticalStackLayout>
     </ScrollView>
 

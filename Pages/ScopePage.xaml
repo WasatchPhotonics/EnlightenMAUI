@@ -13,7 +13,6 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="30,0" Spacing="25">
-            <Label Text="Scope" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>

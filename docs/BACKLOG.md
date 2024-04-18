@@ -2,7 +2,7 @@
 
 - visualize "EEPROM is corrupt" to user
 - spacing in Bluetooth page
-- Spectrometer.FullModel on Hardware page
+- Logo FG
 
 - 1.0 (Android-only)
     - read spectra over BLE
