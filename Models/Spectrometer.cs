@@ -40,12 +40,12 @@ public class Spectrometer : INotifyPropertyChanged
 
     public Measurement measurement;
     public string note { get; set; }
-    public string qrValue { get; set; } // MZ: ???
+    public string qrValue { get; set; } // parsed QR code
 
     ushort lastCRC;
 
     // @see https://forums.xamarin.com/discussion/93330/mutex-is-bugged-in-xamarin
-    static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1); // MZ: check
+    static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1); 
 
     const int MAX_RETRIES = 4;
     const int THROWAWAY_SPECTRA = 6;
@@ -323,6 +323,7 @@ public class Spectrometer : INotifyPropertyChanged
         { 
             _nextIntegrationTimeMS = value;
             logger.debug($"Spectrometer.integrationTimeMS: next = {value}");
+            logger.debug("MZ: disabled BLE integration time");
             // _ = syncIntegrationTimeMSAsync();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
         }
@@ -379,7 +380,8 @@ public class Spectrometer : INotifyPropertyChanged
             {
                 _nextGainDb = value;
                 logger.debug($"Spectrometer.gainDb: next = {value}");
-                // _ = syncGainDbAsync();
+                logger.debug("MZ: disabled BLE gain");
+                _ = syncGainDbAsync();
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(gainDb)));
             }
             else

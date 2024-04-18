@@ -147,20 +147,18 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _integSlider = value;
-            logger.debug($"integSlider: {value}ms");
+            // logger.debug($"integSlider: {value}ms");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_integ)));
         }
     }
     private UInt32 _integSlider = 400;
-    public string label_integ { get => "Integration Time: {integSlider}ms"; }
+    public string label_integ { get => $"Integration Time: {integSlider}ms"; }
     public Command integCmd { get; }
     bool latchInteg()
     {
-        logger.debug("latchInteg: start");
         UInt32 value = integSlider;
         logger.debug($"latchInteg: sending current slider value {value} downstream");
         spec.integrationTimeMS = value;
-        logger.debug("latchInteg: done");
         return true;
     }
 
@@ -174,20 +172,18 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _gainSlider = value;
-            logger.debug($"gainSlider: {value}dB");
+            // logger.debug($"gainSlider: {value}dB");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_gain)));
         }
     }
     private float _gainSlider = 8;
-    public string label_gain { get => "Gain: {gainSlider}dB"; }
+    public string label_gain { get => $"Gain: {gainSlider}dB"; }
     public Command gainCmd { get; }
     bool latchGain()
     {
-        logger.debug("latchGain: start");
         float value = gainSlider;
         logger.debug($"latchGain: sending current slider value {value} downstream");
         spec.gainDb = value;
-        logger.debug("latchGain: done");
         return true;
     }
 
@@ -201,20 +197,18 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _avgSlider = value;
-            logger.debug($"avgSlider: {value}");
+            // logger.debug($"avgSlider: {value}");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_avg)));
         }
     }
     private Byte _avgSlider = 1;
-    public string label_avg { get => "Scan Averaging: {avgSlider}"; }
+    public string label_avg { get => $"Scan Averaging: {avgSlider}"; }
     public Command avgCmd { get; }
     bool latchAvg()
     {
-        logger.debug("latchAvg: start");
         Byte value = avgSlider;
         logger.debug($"latchAvg: sending current slider value {value} downstream");
         spec.scansToAverage = value;
-        logger.debug("latchAvg: done");
         return true;
     }
 

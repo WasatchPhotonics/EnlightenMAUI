@@ -126,7 +126,6 @@
                         <Slider Maximum="5000"  
                                 Minimum="1" 
                                 Value="{Binding integSlider}" 
-                                ValueChanged="integSlider_ValueChanged" 
                                 DragCompletedCommand="{Binding integCmd}" 
                                 ThumbColor="Teal"/>
                     </StackLayout>
@@ -137,7 +136,6 @@
                         <Slider Maximum="72" 
                                 Minimum="0" 
                                 Value="{Binding gainSlider}" 
-                                ValueChanged="gainSlider_ValueChanged" 
                                 DragCompletedCommand="{Binding gainCmd}" 
                                 ThumbColor="Teal" />
                     </StackLayout>
@@ -148,7 +146,6 @@
                         <Slider Maximum="32" 
                                 Minimum="1" 
                                 Value="{Binding avgSlider}" 
-                                ValueChanged="avgSlider_ValueChanged" 
                                 DragCompletedCommand="{Binding avgCmd}" 
                                 ThumbColor="Teal"/>
                     </StackLayout>

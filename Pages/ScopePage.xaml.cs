@@ -42,23 +42,6 @@ public partial class ScopePage : ContentPage
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Sliders
-    ////////////////////////////////////////////////////////////////////////
-
-    void integSlider_ValueChanged(Object sender, ValueChangedEventArgs args) 
-    {
-        logger.debug($"integSlider_ValueChanged: old {args.OldValue} -> new {args.NewValue}"); 
-    }
-    void gainSlider_ValueChanged(Object sender, ValueChangedEventArgs args)
-    {
-        logger.debug($"gainSlider_ValueChanged: old {args.OldValue} -> new {args.NewValue}"); 
-    }
-    void avgSlider_ValueChanged(Object sender, ValueChangedEventArgs args) 
-    {
-        logger.debug($"avgSlider_ValueChanged: old {args.OldValue} -> new {args.NewValue}"); 
-    }
-
-    ////////////////////////////////////////////////////////////////////////
     // Entries
     ////////////////////////////////////////////////////////////////////////
 
