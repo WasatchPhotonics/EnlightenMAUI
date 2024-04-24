@@ -18,15 +18,27 @@
             <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
                 <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
                     <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand" x:DataType="local:ViewModels.BluetoothViewModel">
+
+                        <!-- Scan Button -->
                         <Button Text="Scan" 
-                                Padding="0, 0, 20, 0"
+                                Margin="0,0,20,0"
+                                Padding="20,0,20,0"
                                 Command="{Binding scanCmd}" 
                                 IsEnabled="{Binding bluetoothEnabled}"
                                 TextColor="{Binding scanButtonTextColor}" 
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
                                 BackgroundColor="{Binding scanButtonBackgroundColor}" />
+
+                        <!-- Connect/Disconnect Button -->
                         <Button Text="{Binding buttonConnectText}" 
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
+                                Padding="20,0,20,0"
                                 Command="{Binding connectCmd}" 
+                                BackgroundColor="{Binding connectButtonBackgroundColor}"
                                 IsEnabled="{Binding buttonConnectEnabled}" /> 
+
                     </StackLayout>
                 </Frame>
             </Frame>

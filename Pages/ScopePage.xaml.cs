@@ -25,12 +25,11 @@ public partial class ScopePage : ContentPage
     {
         InitializeComponent();
 
-        // needed?
-        // OnSizeAllocated(Width, Height);
+        // OnSizeAllocated(Width, Height); // MZ: landscape features disabled
 
         // ScopeView has numerous View <--> ViewModel interactions, so grab
         // a handle to the ViewModel
-        svm = (ScopeViewModel)BindingContext; // MZ: fix
+        svm = (ScopeViewModel)BindingContext;
 
         // Give the ScopeViewModel an ability to display "toast" messages on
         // the View (such as "saved foo.csv") by having the View monitor for
@@ -45,12 +44,15 @@ public partial class ScopePage : ContentPage
     // Entries
     ////////////////////////////////////////////////////////////////////////
 
+    /* Not currently using any text entry fields.
+
     // the user clicked in an Entry, so clear the field
     void entry_Focused(Object sender, FocusEventArgs e)
     {
         var entry = sender as Entry;
         entry.Text = "";
     }
+    */
 
     async void notifyUserAsync(string title, string message, string button) =>
        await DisplayAlert(title, message, button);

@@ -44,6 +44,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public ScopeViewModel()
     {
+        logger.debug("SVM.ctor: start");
+
         spec = Spectrometer.getInstance();
         settings = Settings.getInstance();
 
@@ -70,7 +72,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         };
         xAxisOption = xAxisOptions[0];
 
+        logger.debug("SVM.ctor: updating chart");
         updateChart();
+        
+        logger.debug("SVM.ctor: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -146,8 +151,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => _integSlider;
         set
         {
+            logger.debug($"integSlider: {value}ms");
             _integSlider = value;
-            // logger.debug($"integSlider: {value}ms");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_integ)));
         }
     }
@@ -171,8 +176,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => _gainSlider;
         set
         {
+            logger.debug($"gainSlider: {value}dB");
             _gainSlider = value;
-            // logger.debug($"gainSlider: {value}dB");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_gain)));
         }
     }
@@ -196,8 +201,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => _avgSlider;
         set
         {
+            logger.debug($"avgSlider: {value}");
             _avgSlider = value;
-            // logger.debug($"avgSlider: {value}");
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_avg)));
         }
     }
@@ -317,7 +322,6 @@ public class ScopeViewModel : INotifyPropertyChanged
             _isRefreshing = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isRefreshing)));
         }
-        
     }
 
     bool _isRefreshing;
@@ -447,8 +451,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec.acquiring)
             return false;
 
+        logger.debug("doAcquireAsync: =======================================");
+        logger.debug("doAcquireAsync: Attempting to take one averaged reading");
+        logger.debug("doAcquireAsync: =======================================");
+
         // take a fresh Measurement
-        logger.debug("Attempting to take one averaged reading.");
         var startTime = DateTime.Now;
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
@@ -591,9 +598,11 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     void updateChart()
     {
+        logger.debug("updateChart: start");
         refreshChartData();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(chartData)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumMax)));
+        logger.debug("updateChart: done");
     }
 
     void updateTrace(int trace) => 
@@ -601,6 +610,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     private void refreshChartData()
     {
+        logger.debug("refreshChartData: start");
         // use last Measurement from the Spectrometer
         uint pixels = spec.pixels;
         double[] intensities = spec.measurement.processed;
@@ -637,13 +647,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
             xAxisMinimum = xAxis[0];
             xAxisMaximum = xAxis[pixels-1];
-            return;
         }
-        catch
-        {
-            return;
+        catch (Exception ex)
+        { 
+            logger.debug($"refreshChartData: caught exception {ex}");
         }
-        
+        logger.debug("refreshChartData: done");
     }
 
     bool doAdd()
@@ -705,7 +714,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     void handleSpectrometerChange(object sender, PropertyChangedEventArgs e)
     {
         var name = e.PropertyName;
-        logger.debug($"SVM.handleSpectrometerChange: received notification from {sender} that property '{name}' changed");
+        logger.debug($"SVM.handleSpectrometerChange: received notification from {sender} that property {name} changed");
 
         if (name == "acquiring")
             updateAcquireButtonProperties();
