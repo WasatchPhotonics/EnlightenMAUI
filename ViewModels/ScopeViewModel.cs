@@ -53,15 +53,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress; // closure?
 
-        // bind closures (method calls) to each Command
+        // ScopePage Button events
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); }); 
+        laserCmd   = new Command(() => { _ = doLaser       (); }); 
         saveCmd    = new Command(() => { _ = doSave        (); });
-        addCmd     = new Command(() => { _ = doAdd         (); });
-        clearCmd   = new Command(() => { _ = doClear       (); });
+        darkCmd    = new Command(() => { _ = doDark        (); });
+
+        // ScopePage Slider.DragCompletedCommand events
         integCmd   = new Command(() => { _ = latchInteg    (); });
         gainCmd    = new Command(() => { _ = latchGain     (); });
         avgCmd     = new Command(() => { _ = latchAvg      (); });
+
+        // commented-out on GUI?
+        addCmd     = new Command(() => { _ = doAdd         (); });
+        clearCmd   = new Command(() => { _ = doClear       (); });
 
         xAxisOptions = new ObservableCollection<XAxisOption>()
         {
@@ -218,19 +224,39 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // misc acquisition parameters
+    // dark subtraction
     ////////////////////////////////////////////////////////////////////////
 
-    public bool darkEnabled
+    public Command darkCmd { get; }
+
+    public string darkButtonForegroundColor
     {
-        get => spec.dark != null;
-        set
-        {
-            spec.toggleDark();
-            spec.measurement.reload(spec);
-            updateChart();
-        }
+        get => spec.dark != null ? "#eee" : "#666";
     }
+
+    public string darkButtonBackgroundColor
+    {
+        get => spec.dark != null ? "#ba0a0a" : "#ccc";
+    }
+
+    private void updateDarkButton()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(darkButtonForegroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(darkButtonBackgroundColor)));
+    }
+
+    bool doDark()
+    {
+        spec.toggleDark();
+        spec.measurement.reload(spec);
+        updateDarkButton();
+        updateChart();
+        return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // misc acquisition parameters
+    ////////////////////////////////////////////////////////////////////////
 
     public string note
     {
@@ -241,6 +267,33 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
     // Laser Shenanigans
     ////////////////////////////////////////////////////////////////////////
+
+    public Command laserCmd { get; }
+
+    public string laserButtonForegroundColor
+    {
+        get => spec.laserEnabled ? "#eee" : "#666";
+    }
+
+    public string laserButtonBackgroundColor
+    {
+        get => spec.laserEnabled ? "#ba0a0a" : "#ccc";
+    }
+
+    private void updateLaserButton()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonForegroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonBackgroundColor)));
+    }
+
+    bool doLaser()
+    {
+        logger.debug("SVM.doLaser: start");
+        spec.toggleLaser();
+        updateLaserButton();
+        logger.debug("SVM.doLaser: done");
+        return true;
+    }
 
     public string laserButtonText
     {
@@ -283,6 +336,19 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
 
+    public void updateLaserProperties()
+    { 
+        logger.debug("SVM.updateLaserProperties: start");
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ramanModeEnabled)));
+        logger.debug("SVM.updateLaserProperties: done");
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Authentication
+    ////////////////////////////////////////////////////////////////////////
+
     // Provided so the View can only show/enable certain controls if we're
     // logged-in.
     public bool isAuthenticated
@@ -298,15 +364,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
 
         updateLaserProperties();
-    }
-
-    public void updateLaserProperties()
-    { 
-        logger.debug("SVM.updateLaserProperties: start");
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ramanModeEnabled)));
-        logger.debug("SVM.updateLaserProperties: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -434,6 +491,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string acquireButtonBackgroundColor
     {
+        // @todo move #ba0a0a to app-wide palette
         get => spec.acquiring ? "#ba0a0a" : "#ccc";
     }
 

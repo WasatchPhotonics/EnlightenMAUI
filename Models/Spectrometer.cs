@@ -16,6 +16,8 @@ public class Spectrometer : INotifyPropertyChanged
 {
     const bool DISABLE_PARAMS = true;
 
+    const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
+
     // Singleton
     static Spectrometer instance = null;
 
@@ -593,11 +595,19 @@ public class Spectrometer : INotifyPropertyChanged
         }
     }
 
+    public void toggleLaser()
+    {
+        logger.debug($"toggleLaser: laserEnabled was {laserEnabled}");
+        laserEnabled = !laserEnabled;
+        logger.debug($"toggleLaser: laserEnabled now {laserEnabled}");
+    }
+
     public bool laserEnabled
     {
         get => laserState.enabled;
         set
         {
+            logger.debug($"laserEnabled.set: setting {value}");
             if (laserState.enabled != value)
             {
                 laserState.enabled = value;
@@ -606,6 +616,7 @@ public class Spectrometer : INotifyPropertyChanged
             }
             else
                 logger.debug($"Spectrometer.laserEnabled: already {value}");
+            logger.debug("laserEnabled.set: done");
         }
     }
 
@@ -651,19 +662,15 @@ public class Spectrometer : INotifyPropertyChanged
         byte[] request = laserState.serialize();
         logger.hexdump(request, "Spectrometer.syncLaserStateAsync: ");
 
-        if (DISABLE_PARAMS)
+        if (BLE_SUCCESS != await characteristic.WriteAsync(request))
         {
-            logger.error("Spectrometer.syncLaserStateAsync: params disabled");
-            return true;
+            logger.error($"Failed to set laserState");
+            return false;
         }
 
-        var ok = 0 == await characteristic.WriteAsync(request);
-        if (ok)
-            await pauseAsync("syncLaserStateAsync");
-        else
-            logger.error($"Failed to set laserState");
-
-        return ok;
+        logger.debug("successfully wrote laserState");
+        await pauseAsync("syncLaserStateAsync");
+        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////

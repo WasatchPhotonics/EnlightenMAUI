@@ -1,5 +1,10 @@
 # Changelog
 
+- 2024-04-26 0.2.1
+    - dark button works
+    - laser button works
+- 2024-04-20
+    - reads spectra
 - 2024-04-17
     - connects over BLE
     - reads and displays EEPROM

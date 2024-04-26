@@ -10,6 +10,7 @@ public partial class AboutPage : ContentPage
         InitializeComponent();
     }
 
+    // could go in ViewModel
     private async void Button_Clicked(object sender, EventArgs e)
     {
         Settings settings = Settings.getInstance();

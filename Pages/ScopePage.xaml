@@ -97,7 +97,10 @@
                         <Button Margin="2" 
                                 Padding="6" 
                                 HorizontalOptions="StartAndExpand" 
-                                Text="{Binding laserButtonText}" />
+                                Command="{Binding laserCmd}"
+                                Text="{Binding laserButtonText}" 
+                                TextColor="{Binding laserButtonForegroundColor}" 
+                                BackgroundColor="{Binding laserButtonBackgroundColor}" />
 
                         <!-- Acquire -->
                         <Button Margin="2" 
@@ -105,6 +108,13 @@
                                 Command="{Binding acquireCmd}"
                                 TextColor="{Binding acquireButtonTextColor}" 
                                 BackgroundColor="{Binding acquireButtonBackgroundColor}" />
+
+                        <!-- Dark -->
+                        <Button Margin="2" 
+                                Text="Dark" 
+                                Command="{Binding darkCmd}"
+                                TextColor="{Binding darkButtonForegroundColor}"
+                                BackgroundColor="{Binding darkButtonBackgroundColor}" />
 
                         <!-- Save -->
                         <Button Margin="2" 
