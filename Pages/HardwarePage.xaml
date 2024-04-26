@@ -13,15 +13,17 @@
 
     <ScrollView>
 
-        <VerticalStackLayout Padding="10,0,10,0" Spacing="25" BackgroundColor="#333">
+        <VerticalStackLayout> <!-- Spacing="25" BackgroundColor="#333" -->
 
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <Label Text="Hardware" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
+            <Label FontSize="Large" Text="{Binding serialNumber}"/>
+            <Label FontSize="Large" Text="{Binding fullModelName}"/>
 
             <!-- BLE Device Info -->
             <Label FontSize="Large" Text="BLE Device Info"/>
+
             <StackLayout Margin="10, 0, 10, 0">
                 <FlexLayout JustifyContent="SpaceBetween">
                     <Label Text="Device Name"/>
@@ -45,8 +47,9 @@
                 </FlexLayout>
             </StackLayout>
 
-            <!-- Scrolling ListView of EEPROM (name, value) tuples -->
             <Label Text="EEPROM" FontSize="Large" Margin="0, 10, 0, 0"/>
+
+            <!-- Scrolling ListView of EEPROM (name, value) tuples -->
             <ListView ItemsSource="{Binding eepromFields}" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -59,9 +62,6 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-
         </VerticalStackLayout>
-
     </ScrollView>
-
 </ContentPage>

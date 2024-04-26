@@ -136,19 +136,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
     double _connectionProgress = 0;
 
     ////////////////////////////////////////////////////////////////////////
-    // paired
+    // Bluetooth Enabled
     ////////////////////////////////////////////////////////////////////////
-
-    public bool paired
-    {
-        get => _paired;
-        set
-        {
-            _paired = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
-        }
-    }
-    bool _paired = false;
 
     public bool bluetoothEnabled 
     { 
@@ -162,7 +151,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     }
     bool _bluetoothEnabled = Util.bluetoothEnabled(); // initialize from phone state at launch
 
-
     ////////////////////////////////////////////////////////////////////////
     // Reset (no longer a Command)
     ////////////////////////////////////////////////////////////////////////
@@ -175,8 +163,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.doResetAsync: attempting to disable Bluetooth");
 
         bleDeviceList.Clear();
-        paired = false;
+        BLEDevice.paired = false;
         buttonConnectEnabled = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
         
         if (!Util.enableBluetooth(false))
             logger.error("BVM.doResetAsync: Unable to disable Bluetooth");
@@ -213,6 +202,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("updating scan button properties");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scanButtonTextColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scanButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
     }
 
     public string scanButtonBackgroundColor
@@ -235,6 +225,21 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
     }
 
+    public string connectButtonBackgroundColor
+    {
+        get
+        {
+            if (BLEDevice.paired)
+                return "#ba0a0a";
+            else if (ble.Adapter.IsScanning)
+                return "#eee";
+            else if (!buttonConnectEnabled)
+                return "#999";
+            else
+                return "#ccc";
+        }
+    }
+
     /// <summary>
     /// Step 1: user clicked "Scan"
     /// </summary> 
@@ -242,7 +247,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         logger.debug("BVM.doScanAsync[Step 1]: start");
 
-        if (paired)
+        if (BLEDevice.paired)
         {
             logger.debug("BVM.doScanAsync: paired so disconnecting");
             await doDisconnectAsync();
@@ -277,7 +282,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            logger.error("caught exception during scan button event: {0}", ex.Message);
+            logger.error($"caught exception during scan button event: {ex.Message}");
             notifyUser("EnlightenMAUI", "Caught exception during BLE scan: " + ex.Message, "Ok");
         }
 
@@ -320,7 +325,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     // Connect Button
     ////////////////////////////////////////////////////////////////////////
 
-    public string buttonConnectText { get => paired ? "Disconnect" : "Connect"; }
+    public string buttonConnectText { get => BLEDevice.paired ? "Disconnect" : "Connect"; }
 
     public bool buttonConnectEnabled 
     { 
@@ -344,7 +349,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     private async Task<bool> doConnectOrDisconnectAsync()
     {
         logger.debug("BVM.doConnectOrDisconnect[Step 4]: start");
-        if (paired)
+        if (BLEDevice.paired)
         {
             logger.debug("BVM.doConnectOrDisconnect: disconnecting");
             await doDisconnectAsync();
@@ -352,11 +357,11 @@ public class BluetoothViewModel : INotifyPropertyChanged
         else
         {
             logger.debug("BVM.doConnectOrDisconnect: connecting");
-            paired = await doConnectAsync();
-            if (paired)
+            BLEDevice.paired = await doConnectAsync();
+            if (BLEDevice.paired)
             {
-                logger.debug("BVM.doConnectOrDisconnect: switching to ScopePage");
-                await Shell.Current.GoToAsync("ScopePage");
+                logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
+                await Shell.Current.GoToAsync("//ScopePage");
             }
         }
         logger.debug("BVM.doConnectOrDisconnect: done");
@@ -368,11 +373,12 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         logger.debug("BVM.doDisconnectAsync: attempting to disconnect");
         spec.disconnect();
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
 
         if (bleDevice is null && spec.bleDevice is null)
         {
             logger.error("BVM.doDisconnectAsync: attempt to disconnect without bleDevice");
-            paired = false;
+            BLEDevice.paired = false;
             return false;
         }
 
@@ -400,7 +406,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
 
         logger.debug("BVM.doDisconnectAsync: done");
-        paired = false;
+        BLEDevice.paired = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
         return true;
     }
 
@@ -408,6 +415,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         logger.debug("BVM.doConnectAsync: start");
         buttonConnectEnabled = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
 
         connectionProgress = 0;
         if (bleDevice is null)
@@ -448,7 +456,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
         catch (DeviceConnectionException ex)
         {
-            logger.error("BVM.doConnectAsync: exception connecting to device ({0})", ex.Message);
+            logger.error($"BVM.doConnectAsync: exception connecting to device ({ex.Message})");
 
             // kick off the reset WHILE the alert message is running
             logger.error("BVM.doConnectAsync: resetting");
@@ -464,6 +472,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             return logger.error($"BVM.doConnectAsync: failed connection to {bleDevice.name}");
 
         logger.info($"BVM.doConnectAsync: successfully connected to {bleDevice.name}");
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
         connectionProgress = 0.05;
 
         // Step 6: connect to primary service
@@ -587,6 +596,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         // allow disconnect
         buttonConnectEnabled = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
 
         return true;
     }
@@ -697,6 +707,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             bleDevice = null;
             service = null;
             buttonConnectEnabled = false;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
             return;
         }
 
@@ -709,6 +720,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             dev.selected = dev.device.Id == bleDevice.device.Id;
 
         buttonConnectEnabled = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
 
         logger.debug($"BVM.selectBLEDevice: done");
     }

@@ -34,25 +34,24 @@ public class HardwareViewModel : INotifyPropertyChanged
 
         logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
         spec.bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
-
-        // refreshEEPROMFields();
     }
 
     private void refreshEEPROMFields()
     {
-        logger.debug("HVM.refreshEEPROMFields: start");
-        // eepromFields.Clear();
-        // foreach (var vs in eeprom.viewableSettings)
-        //     eepromFields.Add(vs);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(eepromFields)));
-        logger.debug($"eeprom.viewableSettings count {eeprom.viewableSettings.Count}");
-        logger.debug($"HVM.eepromFields count {eepromFields.Count}");
     }
 
     // the BluetoothView code-behind has registered some metadata, so update 
     // our display properties
     void _bleDeviceUpdate(object sender, PropertyChangedEventArgs e) =>
         refresh(e.PropertyName);
+
+    ////////////////////////////////////////////////////////////////////////
+    // Headline properties
+    ////////////////////////////////////////////////////////////////////////
+
+    public string serialNumber { get => eeprom?.serialNumber; }
+    public string fullModelName { get => spec.fullModelName; }
 
     ////////////////////////////////////////////////////////////////////////
     // BLE Device Info

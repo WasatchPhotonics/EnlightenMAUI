@@ -172,9 +172,24 @@ namespace EnlightenMAUI
             if (lvl < level || saving)
                 return;
 
-            string msg = getTimestamp() + lvl + ": " + String.Format(fmt, obj);
+            string msg = "";
+            if (obj == null)
+            {
+                msg = getTimestamp() + lvl + ": " + fmt;
+            }
+            else
+            {
+                try
+                {
+                    msg = getTimestamp() + lvl + ": " + String.Format(fmt, obj);
+                }
+                catch
+                {
+                    msg = getTimestamp() + lvl + ": [NO ARGS] " + fmt;
+                }
+            }
 
-            // Console gets littered with a lot of Xamarin messages, so flag ours
+            // Console gets littered with a lot of [DOTNET] messages, so mark ours
             Console.WriteLine("[Wasatch] " + msg);
 
             lock (instance)

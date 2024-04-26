@@ -88,6 +88,7 @@ public class LaserState
                 data[4] = 0;
                 data[5] = 0;
             }
+            /*
             else
             {
                 // If We're in HW Raman Mode, auto-enable the laser and 
@@ -95,6 +96,7 @@ public class LaserState
                 data[2] = 1; // laserEnable = true
                 data[3] = 0; // watchdogSec = 0
             }
+            */
         }
 
         return data;
@@ -192,8 +194,8 @@ public class LaserState
         watchdogSec = newWatchdog;
         laserDelayMS = newLaserDelayMS;
 
-        if (!SW_RAMAN_MODE)
-            mode = newMode;
+        // if (!SW_RAMAN_MODE)
+        //     mode = newMode;
 
         dump();
 

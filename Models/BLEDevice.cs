@@ -19,6 +19,21 @@ public class BLEDevice : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler PropertyChanged;
 
+    /// <summary>
+    /// This is where we master whether the app is paired with a Bluetooth device or not.
+    /// </summary>
+    /// <remarks>
+    /// This is not an ideal location, because most of this "BLEDevice" Model 
+    /// relates to A SPECIFIC BLEDevice, and not the general application state of
+    /// being paired. However, it is at least encapsulated in a MODEL, which 
+    /// means that all ViewModels can refer to it; this beats the previous 
+    /// approach of having separate flags in ScopeViewModel and 
+    /// BluetoothViewModel, or having ViewModels reference each other etc. Maybe
+    /// someday we'll add Models.Application[Bluetooth]State, but this is fine
+    /// for now. Making static to distinguish from the instance :-)
+    /// </remarks>
+    public static bool paired { get; set; }
+
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle
     ////////////////////////////////////////////////////////////////////////
@@ -70,8 +85,7 @@ public class BLEDevice : INotifyPropertyChanged
     // GUI selection state
     ////////////////////////////////////////////////////////////////////////
 
-    // would be less egregious to return a named color, where the XAML 
-    // defined the names
+    // Models generally shouldn't determine GUI colors...
     public string backgroundColor
     {
         get => selected ? "#555" : "#444";

@@ -3,16 +3,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
-             x:Class="EnlightenMAUI.AboutPage">
+             x:Class="EnlightenMAUI.AboutPage"
+             x:DataType="local:ViewModels.AboutViewModel"
+             BackgroundColor="#333">
 
-    <FlexLayout BackgroundColor="#333" 
-                Direction="Column"
+    <ContentPage.BindingContext>
+        <local:ViewModels.AboutViewModel/>
+    </ContentPage.BindingContext>
+
+    <FlexLayout Direction="Column"
                 AlignItems="Center"
                 JustifyContent="SpaceEvenly">
 
         <Image Source="enlighten_logo.png" HeightRequest="100" />
 
-        <Label FontSize="22" TextColor="#eee" Text="EnlightenMAUI 0.0.4" />
+        <Label FontSize="22" TextColor="#eee" Text="{Binding version}" />
 
         <Button Padding="40,10,40,10" 
                 Text="Learn more" 

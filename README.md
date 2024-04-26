@@ -1,8 +1,13 @@
 # Overview
 
 EnlightenMAUI is a port of the earlier Xamarin-based EnlightenMobile. Microsoft 
-is killing support for Xamarin, but MAUI seems pretty similiar (better, even),
-so the port is non-optional.
+is killing support for Xamarin, so the port is non-optional (yet largely 
+painless).
+
+# Dependencies
+
+- Visual Studio 2022 Community Edition
+- Telerik UI for MAUI (free demo works)
 
 # Porting Notes
 
@@ -15,41 +20,34 @@ For expediency, kept Telerik, moving to their new MAUI product.
 
 # Roadmap
 
-- 1.0 (Android-only)
-    - read spectra over BLE
-    - graph spectra
-- 1.1
-    - turn laser on/off
-    - read EEPROM
-    - set integration time
-    - set gainDB
-    - perform dark subtraction
-- 1.2
-    - Add Pearson and simple library
-- 1.3 
-    - Make pretty (headline logo, app icon, color theme)
-    - save spectra
-- Future
-    - HW scan averaging
-    - battery readout
-    - Raman Mode
-    - update Pearson to use external library
-    - add save-to-library
-    - add Tensorflow
-    - support iPhone
-    - explore maccatalyst (iPad?)
-    - explore iWatch
-    - geolocation
-    - ...
+See [docs/BACKLOG.md](BACKLOG).
 
 # Troubleshooting
+
+## OpenGL
 
     [libEGL] call to OpenGL ES API with no current context (logged once per thread)
     **System.Reflection.TargetInvocationException:** 'Exception has been thrown by the target of an invocation.'
 
-[Register Telerik handles](https://docs.telerik.com/devtools/maui/get-started/windows/first-steps-nuget#step-5-register-the-required-handlers)
+[Register Telerik handles](https://docs.telerik.com/devtools/maui/get-started/windows/first-steps-nuget#step-5-register-the-required-handlers).
 
+## appicon 
+
+Periodically Visual Studio forgets how to build the solution and complains about
+missing appicon and appiconfg files in AndroidManifest.xml, even though they're
+plainly there. Current solution:
+
+- close Visual Studio
+- 'make clean'
+- re-launch Visual Studio
+- delete Resources/appicon and appiconfg
+- re-add appicon and appconfg (copy from EnlightenMobile's MAUI branch)
+- set both to "Build Action: MauiIcon"
+- rebuild
+
+# Changelog
+
+See [CHANGELOG.md](CHANGELOG).
 # References
 
 - ...
-- 

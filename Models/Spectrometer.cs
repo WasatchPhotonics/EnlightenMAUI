@@ -14,6 +14,10 @@ namespace EnlightenMAUI.Models;
 // encapsulated here.
 public class Spectrometer : INotifyPropertyChanged
 {
+    const bool DISABLE_PARAMS = true;
+
+    const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
+
     // Singleton
     static Spectrometer instance = null;
 
@@ -40,15 +44,15 @@ public class Spectrometer : INotifyPropertyChanged
 
     public Measurement measurement;
     public string note { get; set; }
-    public string qrValue { get; set; } // MZ: ???
+    public string qrValue { get; set; } // parsed QR code
 
     ushort lastCRC;
 
     // @see https://forums.xamarin.com/discussion/93330/mutex-is-bugged-in-xamarin
-    static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1); // MZ: check
+    static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1); 
 
     const int MAX_RETRIES = 4;
-    const int THROWAWAY_SPECTRA = 6;
+    const int THROWAWAY_SPECTRA = 9;
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
@@ -191,21 +195,23 @@ public class Spectrometer : INotifyPropertyChanged
         logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
+        // MZ: temporarily disabled
         await updateBatteryAsync(); 
-        integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 3);
+
+        integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         gainDb = eeprom.detectorGain;
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
 
-        logger.info($"initialized {eeprom.model} {eeprom.serialNumber}");
+        logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
         logger.info($"  pixels: {pixels}");
         logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
-        logger.info( "  excitation: {0:f2}nm", laserExcitationNM);
-        logger.info( "  wavelengths: ({0:f2}, {1:f2})", wavelengths[0], wavelengths[pixels-1]);
+        logger.info($"  excitation: {laserExcitationNM:f3}nm");
+        logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels-1]:f2})");
         if (wavenumbers != null)
-            logger.info("  wavenumbers: ({0:f2}, {1:f2})", wavenumbers[0], wavenumbers[pixels-1]);
+            logger.info($"  wavenumbers: ({wavenumbers[0]:f2}, {wavenumbers[pixels-1]:f2})");
 
         // I'm honestly not sure where we should initialize location, but it 
         // should probably happen after we've successfully connected to a
@@ -218,11 +224,13 @@ public class Spectrometer : INotifyPropertyChanged
         return true;
     }
 
+    public string fullModelName { get => $"{eeprom.model}{eeprom.productConfiguration}"; }
+
     async Task<List<byte[]>> readEEPROMAsync()
     {
         logger.info("reading EEPROM");
-        Plugin.BLE.Abstractions.Contracts.ICharacteristic eepromCmd;
-        Plugin.BLE.Abstractions.Contracts.ICharacteristic eepromData;
+        ICharacteristic eepromCmd;
+        ICharacteristic eepromData;
 
         if (characteristicsByName.ContainsKey("eepromCmd") && characteristicsByName.ContainsKey("eepromData"))
         {
@@ -294,6 +302,7 @@ public class Spectrometer : INotifyPropertyChanged
     // scansToAverage
     ////////////////////////////////////////////////////////////////////////
 
+    // @todo: move to on-board scan averaging
     public uint scansToAverage 
     { 
         get => _scansToAverage;
@@ -304,6 +313,8 @@ public class Spectrometer : INotifyPropertyChanged
                 logger.debug($"Spectrometer.scansToAverage -> {value}");
                 _scansToAverage = value;
             }
+            else
+                _scansToAverage = 1;
         }
     }
     uint _scansToAverage = 1;
@@ -341,11 +352,17 @@ public class Spectrometer : INotifyPropertyChanged
             return false;
         }
 
-        ushort value = Math.Min((ushort)5000, Math.Max((ushort)3, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
+        ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
         byte[] request = ToBLEData.convert(value, len: 4);
 
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
+
+        if (DISABLE_PARAMS)
+        {
+            logger.error("Spectrometer.syncIntegrationTimeMSAsync: params disabled");
+            return true;
+        }
 
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
@@ -384,8 +401,8 @@ public class Spectrometer : INotifyPropertyChanged
             }
         }
     }
-    float _nextGainDb = 24.0f;
-    float _lastGainDb = 99.0f;
+    float _nextGainDb = 24;
+    float _lastGainDb = -1;
 
     async Task<bool> syncGainDbAsync()
     {
@@ -414,6 +431,12 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
         logger.hexdump(request, "data: ");
+
+        if (DISABLE_PARAMS)
+        {
+            logger.error("Spectrometer.syncGainDBAsync: params disabled");
+            return true;
+        }
 
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
@@ -513,6 +536,12 @@ public class Spectrometer : INotifyPropertyChanged
         logger.info($"Spectrometer.syncROIAsync({verticalROIStartLine}, {verticalROIStopLine})"); 
         logger.hexdump(request, "data: ");
 
+        if (DISABLE_PARAMS)
+        {
+            logger.error("Spectrometer.syncROIAsync: params disabled");
+            return true;
+        }
+
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
         {
@@ -566,11 +595,19 @@ public class Spectrometer : INotifyPropertyChanged
         }
     }
 
+    public void toggleLaser()
+    {
+        logger.debug($"toggleLaser: laserEnabled was {laserEnabled}");
+        laserEnabled = !laserEnabled;
+        logger.debug($"toggleLaser: laserEnabled now {laserEnabled}");
+    }
+
     public bool laserEnabled
     {
         get => laserState.enabled;
         set
         {
+            logger.debug($"laserEnabled.set: setting {value}");
             if (laserState.enabled != value)
             {
                 laserState.enabled = value;
@@ -579,6 +616,7 @@ public class Spectrometer : INotifyPropertyChanged
             }
             else
                 logger.debug($"Spectrometer.laserEnabled: already {value}");
+            logger.debug("laserEnabled.set: done");
         }
     }
 
@@ -601,10 +639,10 @@ public class Spectrometer : INotifyPropertyChanged
 
     async Task<bool> syncLaserStateAsync()
     {
-        logger.debug("syncLaserStateAsync: start");
+        logger.debug("Spectrometer.syncLaserStateAsync: start");
         if (!laserSyncEnabled)
         {
-            logger.debug("syncLaserState: skipping");
+            logger.debug("Spectrometer.syncLaserStateAsync: skipping");
             return false;
         }
 
@@ -617,20 +655,22 @@ public class Spectrometer : INotifyPropertyChanged
         characteristicsByName.TryGetValue("laserState", out characteristic);
         if (characteristic is null)
         {
-            logger.error("laserState characteristic not found");
+            logger.error("Spectrometer.syncLaserState: laserState characteristic not found");
             return false;
         }
 
         byte[] request = laserState.serialize();
         logger.hexdump(request, "Spectrometer.syncLaserStateAsync: ");
 
-        var ok = 0 == await characteristic.WriteAsync(request);
-        if (ok)
-            await pauseAsync("syncLaserStateAsync");
-        else
+        if (BLE_SUCCESS != await characteristic.WriteAsync(request))
+        {
             logger.error($"Failed to set laserState");
+            return false;
+        }
 
-        return ok;
+        logger.debug("successfully wrote laserState");
+        await pauseAsync("syncLaserStateAsync");
+        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -642,11 +682,14 @@ public class Spectrometer : INotifyPropertyChanged
     // seems to work better?
     async Task<bool> updateBatteryAsync()
     {
-        logger.debug("updateBatteryAsync: starting");
+        logger.debug("Spectrometer.updateBatteryAsync: skipping");
+        return false; // MZ: look at later
+
+        logger.debug("Spectrometer.updateBatteryAsync: starting");
 
         if (!battery.isExpired)
         {
-            logger.debug("battery state still valid, skipping");
+            logger.debug("Spectrometer.updateBatteryAsync: battery state still valid, skipping");
             return false;
         }
 
@@ -659,33 +702,33 @@ public class Spectrometer : INotifyPropertyChanged
         var characteristic = characteristicsByName["batteryStatus"];
         if (characteristic is null)
         {
-            logger.error("batteryUpdateAsync: can't find characteristic batteryStatus");
+            logger.error("Spectrometer.batteryUpdateAsync: can't find characteristic batteryStatus");
             return false;
         }
 
-        logger.debug("updateBatteryAsync: waiting on semaphore");
+        logger.debug("Spectrometer.updateBatteryAsync: waiting on semaphore");
         if (!await sem.WaitAsync(50))
         {
-            logger.error("updateBatteryAsync: couldn't get semaphore");
+            logger.error("Spectrometer.updateBatteryAsync: couldn't get semaphore");
             return false;
         }
 
-        logger.info("batteryUpdateAsync: reading battery status");
+        logger.info("Spectrometer.batteryUpdateAsync: reading battery status");
         var response = await characteristic.ReadAsync();
         if (response.data is null)
         {
-            logger.error("batteryUpdateAsync: failed reading battery");
+            logger.error("Spectrometer.batteryUpdateAsync: failed reading battery");
             sem.Release();
             return false;
         }
         logger.hexdump(response.data, "batteryStatus: ");
         battery.parse(response.data);
-        await pauseAsync("updateBatteryAsync");
+        await pauseAsync("Spectrometer.updateBatteryAsync");
 
-        logger.debug("updateBatteryAsync: sending batteryStatus notification");
+        logger.debug("Spectrometer.updateBatteryAsync: sending batteryStatus notification");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("batteryStatus"));
 
-        logger.debug("updateBatteryAsync: done");
+        logger.debug("Spectrometer.updateBatteryAsync: done");
         sem.Release();
         return true;
     }
@@ -713,16 +756,20 @@ public class Spectrometer : INotifyPropertyChanged
         if (!paired || characteristicsByName is null)
             return false;
 
+        logger.debug("Spectrometer.takeOneAveragedAsync: ------------------------");
+        logger.debug("Spectrometer.takeOneAveragedAsync: take one average reading");
+        logger.debug("Spectrometer.takeOneAveragedAsync: ------------------------");
+
         // push-down any changed acquisition parameters
-        logger.debug("take one average reading: syncing integration time");
+        logger.debug("Spectrometer.takeOneAveragedAsync: syncing integration time");
         if (! await syncIntegrationTimeMSAsync())
             return false;
-        logger.debug("take one averaged reading: syncing gain");
+        logger.debug("Spectrometer.takeOneAveragedAsync: syncing gain");
         if (! await syncGainDbAsync())
             return false;
 
         // update battery FIRST
-        logger.debug("take one averaged reading: updating battery");
+        logger.debug("Spectrometer.takeOneAveragedAsync: updating battery");
         await updateBatteryAsync();
 
         // for progress bar
@@ -737,7 +784,7 @@ public class Spectrometer : INotifyPropertyChanged
             const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
             var watchdogMS = (scansToAverage + 1) * (integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS);
             var watchdogSec = (byte)((Math.Max(MAX_SPECTRUM_READOUT_TIME_MS, watchdogMS) / 1000.0) * 2);
-            logger.debug($"takeOneAveragedAsync: setting laserWatchdogSec -> {watchdogSec}");
+            logger.debug($"Spectrometer.takeOneAveragedAsync: setting laserWatchdogSec -> {watchdogSec}");
 
             // since we're going to sync the laser state immediately after to turn on the laser,
             // skip this sync
@@ -745,14 +792,14 @@ public class Spectrometer : INotifyPropertyChanged
             laserWatchdogSec = watchdogSec;
             laserSyncEnabled = true;
 
-            logger.debug("takeOneAveragedAsync: setting laserEnabled = true");
+            logger.debug("Spectrometer.takeOneAveragedAsync: setting laserEnabled = true");
             laserEnabled = true;
 
-            logger.debug($"takeOneAveragedAsync: waiting {laserState.laserDelayMS}ms");
+            logger.debug($"Spectrometer.takeOneAveragedAsync: waiting {laserState.laserDelayMS}ms");
             await Task.Delay(laserState.laserDelayMS);
         }
 
-        logger.debug($"takeOneAveragedAsync: integrationTimeMS {integrationTimeMS}, gainDb {gainDb}, scansToAverage {scansToAverage}, laserWatchdogSec {laserWatchdogSec}");
+        logger.debug($"Spectrometer.takeOneAveragedAsync: integrationTimeMS {integrationTimeMS}, gainDb {gainDb}, scansToAverage {scansToAverage}, laserWatchdogSec {laserWatchdogSec}");
 
         double[] spectrum = null;
         for (int spectrumCount = 0; spectrumCount < scansToAverage; spectrumCount++)
@@ -761,26 +808,26 @@ public class Spectrometer : INotifyPropertyChanged
 
             if (!await sem.WaitAsync(100))
             {
-                logger.error("takeOneAveragedAsync: couldn't get semaphore");
+                logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
                 return false;                        
             }
 
             double[] tmp = await takeOneAsync(disableLaserAfterFirstPacket);
-            logger.debug("takeOneAveragedAsync: back from takeOneAsync");
+            logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
 
             sem.Release();
 
             if (tmp is null || (spectrum != null && tmp.Length != spectrum.Length))
             {
                 if (tmp is null)
-                    logger.error("takeOneAveragedAsnc: tmp is null");
+                    logger.error("Spectrometer.takeOneAveragedAsync: tmp is null");
                 else if (spectrum != null && tmp.Length != spectrum.Length)
-                    logger.error($"takeOneAveragedAsnc: length changed ({tmp.Length} != {spectrum.Length})");
+                    logger.error($"Spectrometer.takeOneAveragedAsync: length changed ({tmp.Length} != {spectrum.Length})");
 
                 if (swRamanMode)
                     laserEnabled = false;
 
-                logger.error("takeOneAveragedAsnc: giving up");
+                logger.error("Spectrometer.takeOneAveragedAsync: giving up");
                 return acquiring = false;
             }
 
@@ -798,9 +845,9 @@ public class Spectrometer : INotifyPropertyChanged
         lastSpectrum = spectrum;
         measurement.reset();
         measurement.reload(this);
-        logger.info($"acquired Measurement {measurement.measurementID}");
+        logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
 
-        logger.debug("takeOneAveragedAsync: done");
+        logger.debug("Spectrometer.takeOneAveragedAsync: done");
         acquiring = false;
         return true;
     }
@@ -906,7 +953,7 @@ public class Spectrometer : INotifyPropertyChanged
             short firstPixel = (short)((response.data[0] << 8) | response.data[1]);
             if (firstPixel > 2048 || firstPixel < 0)
             {
-                logger.error($"received NACK (firstPixel {firstPixel}, retrying");
+                logger.error($"received NACK (firstPixel {firstPixel}, retrying)");
                 requestRetry = true;
                 continue;
             }

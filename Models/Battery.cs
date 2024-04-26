@@ -66,7 +66,7 @@ public class Battery
         if (!initialized)
             return "???";
 
-        logger.debug("Battery: raw 0x{0:x4} (lvl {1}, st 0x{2:x2}) = {3:f2}", raw, rawLevel, rawState, level);
+        logger.debug($"Battery: raw 0x{raw:x4} (lvl {rawLevel}, st 0x{rawState:x2}) = {level:f2}");
 
         int intLevel = (int)Math.Round(level);
         return charging ? $"{intLevel}%>" : $"<{intLevel}%";
