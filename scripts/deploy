@@ -60,7 +60,7 @@ function post()
 
     local LOCAL_PATH="bin/Release/net8.0-android34.0/com.wasatchphotonics.enlightenmaui-Signed.apk"
     local LOCAL_NAME="enlighten-${VERSION}.apk"
-    local REMOTE_PATH="www/binaries/apps/EnlightenMobile/$LOCAL_NAME"
+    local REMOTE_PATH="www/binaries/apps/EnlightenMAUI/$LOCAL_NAME"
 
     if ! [ -f $LOCAL_PATH ]
     then
