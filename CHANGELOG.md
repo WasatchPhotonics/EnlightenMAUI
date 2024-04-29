@@ -4,6 +4,7 @@
     - added appiconsingle for posterity
     - fixed appicon
     - fixed app name
+    - fixed splashscreen
 - 2024-04-26 0.2.1
     - dark button works
     - laser button works

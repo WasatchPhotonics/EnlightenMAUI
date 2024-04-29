@@ -6,9 +6,8 @@ using System.Linq;
 
 namespace EnlightenMAUI.Models;
 
-// Mostly corresponds to ENLIGHTEN and WasatchNET's Measurement classes,
-// but right now we're re-using the existing measurement (via reload()) 
-// whilst tracking down a rogue memory leak.
+// Mostly corresponds to ENLIGHTEN and WasatchNET's Measurement classes, but
+// currently we're re-using a "singleton" Measurement for memory reasons.
 public class Measurement
 {
     public double[] raw = null;
@@ -27,6 +26,7 @@ public class Measurement
 
     public void reset()
     {
+        logger.debug("Measurement.reset: nulling everything");
         raw = dark = reference = processed = null;
         filename = measurementID = null;
         spec = null;
@@ -43,6 +43,7 @@ public class Measurement
 
         if (spec.lastSpectrum is null)
         {
+            logger.debug("Measurement.reload: zeroing spectrum as lastSpectrum null");
             // default measurement is zeroed out
             // double halfMax = 50000.0 / 2.0;
             raw = new double[spec.pixels];
@@ -51,6 +52,7 @@ public class Measurement
         }
         else
         {
+            logger.debug("Measurement.reload: re-using lastSpectrum");
             raw = spec.lastSpectrum;
         }
 

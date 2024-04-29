@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
 using Plugin.BLE.Abstractions.Contracts;
+using System.Linq;
 
 using EnlightenMAUI.Common;
 
@@ -739,11 +737,19 @@ public class Spectrometer : INotifyPropertyChanged
 
     public void toggleDark()
     {
+        logger.debug("Spectrometer.toggleDark: start");
         if (dark is null)
+        {
+            logger.debug("Spectrometer.dark: storing lastSpectrum as dark");
             dark = lastSpectrum; 
+        }
         else
+        {
+            logger.debug("Spectrometer.dark: clearing dark");
             dark = null;
-        logger.debug("Spectrometer.dark -> {0}", dark is null);
+        }
+        logger.debug("Spectrometer.toggleDark: dark {0} null", dark == null ? "is" : "IS NOT");
+        logger.debug("Spectrometer.toggleDark: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -756,14 +762,15 @@ public class Spectrometer : INotifyPropertyChanged
         if (!paired || characteristicsByName is null)
             return false;
 
-        logger.debug("Spectrometer.takeOneAveragedAsync: ------------------------");
-        logger.debug("Spectrometer.takeOneAveragedAsync: take one average reading");
-        logger.debug("Spectrometer.takeOneAveragedAsync: ------------------------");
+        logger.debug("Spectrometer.takeOneAveragedAsync: -------------------------");
+        logger.debug("Spectrometer.takeOneAveragedAsync: take one averaged reading");
+        logger.debug("Spectrometer.takeOneAveragedAsync: -------------------------");
 
         // push-down any changed acquisition parameters
         logger.debug("Spectrometer.takeOneAveragedAsync: syncing integration time");
         if (! await syncIntegrationTimeMSAsync())
             return false;
+
         logger.debug("Spectrometer.takeOneAveragedAsync: syncing gain");
         if (! await syncGainDbAsync())
             return false;
@@ -779,6 +786,7 @@ public class Spectrometer : INotifyPropertyChanged
 
         // TODO: integrate laserDelayMS into showProgress
         var swRamanMode = laserState.mode == LaserMode.RAMAN && LaserState.SW_RAMAN_MODE;
+        logger.debug($"Spectrometer.takeOneAveragedAsync: swRamanMode {swRamanMode}");
         if (swRamanMode)
         {
             const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
@@ -842,10 +850,20 @@ public class Spectrometer : INotifyPropertyChanged
             for (int i = 0; i < spectrum.Length; i++)
                 spectrum[i] /= scansToAverage;
 
+        logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
         lastSpectrum = spectrum;
+   
         measurement.reset();
         measurement.reload(this);
         logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
+
+        logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}", 
+            measurement.processed == null ? "null" : "NOT NULL");
+        if (measurement.processed != null)
+        {
+            logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed mean is {0:f2}",
+                measurement.processed.Average());
+        }
 
         logger.debug("Spectrometer.takeOneAveragedAsync: done");
         acquiring = false;

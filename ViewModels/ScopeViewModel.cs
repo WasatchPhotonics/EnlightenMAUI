@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 using Telerik.Maui.Controls.Compatibility.Chart;
 
@@ -247,10 +241,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     bool doDark()
     {
+        logger.debug("SVM.doDark: start");
         spec.toggleDark();
         spec.measurement.reload(spec);
         updateDarkButton();
         updateChart();
+        logger.debug("SVM.doDark: done");
         return true;
     }
 
@@ -669,6 +665,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     private void refreshChartData()
     {
         logger.debug("refreshChartData: start");
+
         // use last Measurement from the Spectrometer
         uint pixels = spec.pixels;
         double[] intensities = spec.measurement.processed;
@@ -678,7 +675,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             // pick our x-axis
             if (lastAxisType != null && lastAxisType == xAxisOption.name)
             {
-                // re-use previous axis
+                logger.debug("SVM.refreshChartData: re-use previous axis");
             }
             else 
             { 
@@ -691,6 +688,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     xAxis = spec.xAxisPixels;
 
                 lastAxisType = xAxisOption.name;
+                logger.debug($"SVM.refreshChartData: using x-axis {lastAxisType}");
             }
             if (intensities is null || xAxis is null)
                 return;
@@ -699,7 +697,9 @@ public class ScopeViewModel : INotifyPropertyChanged
             var updateChartData = new ObservableCollection<ChartDataPoint>();
 
             for (int i = 0; i < pixels; i++)
+            {
                 updateChartData.Add(new ChartDataPoint() { intensity = intensities[i], xValue = xAxis[i] });
+            }
 
             chartData = updateChartData;
 
