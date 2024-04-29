@@ -1,13 +1,13 @@
 # Changelog
 
 - 2024-04-29 0.2.2
-    - added appiconsingle for posterity
     - fixed appicon
     - fixed app name
     - fixed splashscreen
     - added bin2x2
-    - added RamanIntensityCorrection (needs Switch)
+    - added RamanIntensityCorrection
     - moved from trial Telerik to licensed
+    - x-axis Picker
 - 2024-04-26 0.2.1
     - dark button works
     - laser button works

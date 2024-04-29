@@ -14,8 +14,6 @@ namespace EnlightenMAUI.Models;
 // encapsulated here.
 public class Spectrometer : INotifyPropertyChanged
 {
-    const bool DISABLE_PARAMS = true;
-
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
 
     // Singleton
@@ -195,7 +193,6 @@ public class Spectrometer : INotifyPropertyChanged
         logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
-        // MZ: temporarily disabled
         await updateBatteryAsync(); 
 
         integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
@@ -358,12 +355,6 @@ public class Spectrometer : INotifyPropertyChanged
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
 
-        if (DISABLE_PARAMS)
-        {
-            logger.error("Spectrometer.syncIntegrationTimeMSAsync: params disabled");
-            return true;
-        }
-
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
         { 
@@ -431,12 +422,6 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
         logger.hexdump(request, "data: ");
-
-        if (DISABLE_PARAMS)
-        {
-            logger.error("Spectrometer.syncGainDBAsync: params disabled");
-            return true;
-        }
 
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
@@ -535,12 +520,6 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.info($"Spectrometer.syncROIAsync({verticalROIStartLine}, {verticalROIStopLine})"); 
         logger.hexdump(request, "data: ");
-
-        if (DISABLE_PARAMS)
-        {
-            logger.error("Spectrometer.syncROIAsync: params disabled");
-            return true;
-        }
 
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
@@ -1111,7 +1090,7 @@ public class Spectrometer : INotifyPropertyChanged
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Raman Intensity Correction (NIST SRM Calibration)
+    // 2x2 Binning
     ////////////////////////////////////////////////////////////////////////
 
     private void apply2x2Binning(double[] spectrum)
@@ -1121,12 +1100,24 @@ public class Spectrometer : INotifyPropertyChanged
                 spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
     }
 
-     /// <summary>
+    ////////////////////////////////////////////////////////////////////////
+    // Raman Intensity Correction (NIST SRM Calibration)
+    ////////////////////////////////////////////////////////////////////////
+
+    public bool useRamanIntensityCorrection { get; set; } = false;
+
+    /// <summary>
     /// Performs SRM correction on the given spectrum.
     /// Non-ROI pixels are not corrected. 
     /// </summary>
     private void applyRamanIntensityCorrection(double[] spectrum)
     {
+        if (!useRamanIntensityCorrection)
+        {
+            logger.debug("declining RamanIntensityCorrection: disabled");
+            return;
+        }
+
         if (dark == null)
         {
             logger.debug("declining RamanIntensityCorrection: not dark-corrected");
@@ -1136,6 +1127,12 @@ public class Spectrometer : INotifyPropertyChanged
         if (eeprom.ROIHorizStart >= eeprom.ROIHorizEnd)
         {
             logger.debug("declining RamanIntensityCorrection: invalid horizontal ROI");
+            return;
+        }
+
+        if (!laserEnabled)
+        {
+            logger.debug("declining RamanIntensityCorrection: laser not enabled");
             return;
         }
 
