@@ -1,5 +1,9 @@
 # Changelog
 
+- 2024-04-29 0.2.2
+    - added appiconsingle for posterity
+    - fixed appicon
+    - fixed app name
 - 2024-04-26 0.2.1
     - dark button works
     - laser button works
