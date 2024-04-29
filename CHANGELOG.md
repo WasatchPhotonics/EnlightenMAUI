@@ -1,6 +1,6 @@
 # Changelog
 
-- 2024-04-29 0.2.2
+- 2024-04-29 0.3.0
     - fixed appicon
     - fixed app name
     - fixed splashscreen

@@ -35,16 +35,25 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+		<Title>ENLIGHTEN™ for .NET MAUI</Title>
+		<Authors>mzieg, sbee</Authors>
+		<Company>Wasatch Photonics</Company>
+		<Description>Smartphone client for BLE-capable Wasatch Photonics spectrometers</Description>
+		<Copyright>2024</Copyright>
+		<PackageProjectUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>
+		<PackageTags>wasatch;spectrometer</PackageTags>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.2.1</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.2.1</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -116,6 +125,13 @@
 	  <MauiXaml Update="Views\DevicePage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 
 	<ProjectExtensions><VisualStudio><UserProperties XamarinHotReloadDebuggerTimeoutExceptionEnlightenMAUIHideInfoBar="True" /></VisualStudio></ProjectExtensions>
