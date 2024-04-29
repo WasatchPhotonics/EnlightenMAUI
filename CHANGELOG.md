@@ -5,6 +5,9 @@
     - fixed appicon
     - fixed app name
     - fixed splashscreen
+    - added bin2x2
+    - added RamanIntensityCorrection (needs Switch)
+    - moved from trial Telerik to licensed
 - 2024-04-26 0.2.1
     - dark button works
     - laser button works

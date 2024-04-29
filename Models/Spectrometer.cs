@@ -4,6 +4,8 @@ using Plugin.BLE.Abstractions.Contracts;
 using System.Linq;
 
 using EnlightenMAUI.Common;
+using static Android.Widget.GridLayout;
+using Android.Renderscripts;
 
 namespace EnlightenMAUI.Models;
 
@@ -850,6 +852,20 @@ public class Spectrometer : INotifyPropertyChanged
             for (int i = 0; i < spectrum.Length; i++)
                 spectrum[i] /= scansToAverage;
 
+        ////////////////////////////////////////////////////////////////////////
+        // Post-Processing
+        ////////////////////////////////////////////////////////////////////////
+
+        // Bin2x2
+        apply2x2Binning(spectrum);
+
+        // Raman Intensity Correction
+        applyRamanIntensityCorrection(spectrum);
+
+        ////////////////////////////////////////////////////////////////////////
+        // Store Measurement
+        ////////////////////////////////////////////////////////////////////////
+
         logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
         lastSpectrum = spectrum;
    
@@ -1092,5 +1108,48 @@ public class Spectrometer : INotifyPropertyChanged
         await Task.Delay(DELAY_MS);
         GC.Collect();
         return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Raman Intensity Correction (NIST SRM Calibration)
+    ////////////////////////////////////////////////////////////////////////
+
+    private void apply2x2Binning(double[] spectrum)
+    {
+        if (eeprom.featureMask.bin2x2)
+            for (int i = 0; i < spectrum.Length - 1; i++)
+                spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+    }
+
+     /// <summary>
+    /// Performs SRM correction on the given spectrum.
+    /// Non-ROI pixels are not corrected. 
+    /// </summary>
+    private void applyRamanIntensityCorrection(double[] spectrum)
+    {
+        if (dark == null)
+        {
+            logger.debug("declining RamanIntensityCorrection: not dark-corrected");
+            return;
+        }
+
+        if (eeprom.ROIHorizStart >= eeprom.ROIHorizEnd)
+        {
+            logger.debug("declining RamanIntensityCorrection: invalid horizontal ROI");
+            return;
+        }
+
+        for (int i = eeprom.ROIHorizStart; i <= eeprom.ROIHorizEnd; ++i)
+        {
+            double logTen = 0.0;
+            for (int j = 0; j < eeprom.intensityCorrectionCoeffs.Length; j++)
+            {
+                double x_to_i = Math.Pow(i, j);
+                double scaled = eeprom.intensityCorrectionCoeffs[j] * x_to_i;
+                logTen += scaled;
+            }
+            double factor = Math.Pow(10, logTen);
+            spectrum[i] *= factor;
+        }
     }
 }

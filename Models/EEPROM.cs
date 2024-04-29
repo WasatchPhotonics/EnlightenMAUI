@@ -133,6 +133,11 @@ public class EEPROM
     public string productConfiguration { get; set; }
 
     /////////////////////////////////////////////////////////////////////////
+    // Page 6
+    /////////////////////////////////////////////////////////////////////////
+
+
+    /////////////////////////////////////////////////////////////////////////
     // private methods
     /////////////////////////////////////////////////////////////////////////
 
@@ -381,6 +386,7 @@ public class EEPROM
         register("hasCooling", hasCooling);
         register("hasBattery", hasBattery);
         register("hasLaser", hasLaser);
+        register("featureMask", $"0x{featureMask.toUInt16():x4}");
         register("invertXAxis", featureMask.invertXAxis);
         register("bin2x2", featureMask.bin2x2);
         register("slitSizeUM", slitSizeUM);
@@ -431,6 +437,10 @@ public class EEPROM
             register($"badPixels[{i}]", badPixels[i]);
 
         register("productConfiguration", productConfiguration);
+
+        register("intensityCorrectionOrder", intensityCorrectionOrder);
+        for (int i = 0; i < intensityCorrectionCoeffs.Length; i++)
+            register($"intensityCorrectionCoeffs[{i}]", intensityCorrectionCoeffs[i]);
 
         logger.debug("EEPROM.registerAll: done");
     }
