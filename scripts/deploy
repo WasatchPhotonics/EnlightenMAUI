@@ -1,0 +1,82 @@
+#!/bin/bash
+################################################################################
+#                                  deploy                                      #
+################################################################################
+#                                                                              #
+#  DESCRIPTION:  Quick script to consistently and reliably upload releases     #
+#                to our website.                                               #
+#                                                                              #
+#  AUTHOR:       Mark Zieg <mzieg@wasatchphotonics.com>                        #
+#                                                                              #
+################################################################################
+
+function checkVersion()
+{
+    local VERSION="$1"
+
+    local PROJ="EnlightenMAUI.csproj"
+    local XML="Platforms/Android/AndroidManifest.xml"
+
+    local ERROR=false
+
+    if grep -q "<ApplicationDisplayVersion>$VERSION</ApplicationDisplayVersion>" $PROJ
+    then
+        echo "$VERSION found in $PROJ"
+    else
+        echo "ERROR: could not find $VERSION in $PROJ"
+        ERROR=true
+    fi
+    
+    if grep -q "android:versionName=\"$VERSION\"" $XML
+    then
+        echo "$VERSION found in $XML"
+    else
+        echo "ERROR: could not find $VERSION in $XML"
+        ERROR=true
+    fi
+
+    if $ERROR
+    then
+        echo "Error(s) encountered, unable to deploy"
+        exit 1
+    fi
+}
+
+function checkGit()
+{
+    local VERSION="$1"
+    if git tag | egrep -q $VERSION
+    then
+        echo "Found Git tag $VERSION"
+    else
+        echo "Git tag not found: $VERSION"
+        exit 1
+    fi
+}
+
+function post()
+{
+    local VERSION="$1"
+
+    local LOCAL_PATH="bin/Release/net8.0-android34.0/com.wasatchphotonics.enlightenmaui-Signed.apk"
+    local LOCAL_NAME="enlighten-${VERSION}.apk"
+    local REMOTE_PATH="www/binaries/apps/EnlightenMobile/$LOCAL_NAME"
+
+    if ! [ -f $LOCAL_PATH ]
+    then
+        echo "ERROR: can't find $LOCAL_PATH"
+        exit 1
+    fi
+
+    mkdir -p releases
+    mv -f -v $LOCAL_PATH releases/$LOCAL_NAME
+
+    scp releases/$LOCAL_NAME $USERNAME@wasatchphotonics.com:$REMOTE_PATH
+}
+
+read -p "Username: " USERNAME
+read -p "Version:  " VERSION 
+
+checkVersion $VERSION
+checkGit $VERSION
+post $VERSION
