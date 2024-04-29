@@ -12,7 +12,7 @@
     </ContentPage.BindingContext>
 
     <ScrollView>
-        <VerticalStackLayout Padding="30,0" Spacing="25">
+        <VerticalStackLayout Padding="0" Spacing="0">
 
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
@@ -26,6 +26,7 @@
                                        VerticalOptions="FillAndExpand"
                                        MinimumHeightRequest="100"
                                        HeightRequest="400"
+                                       Margin="0"
                                        BackgroundColor="#000">
 
                 <!-- axes -->
@@ -72,6 +73,8 @@
                     <telerik:ChartTooltipBehavior TriggerMode="Tap" />
                 </telerik:RadCartesianChart.ChartBehaviors>
             </telerik:RadCartesianChart>
+
+            <Picker ItemsSource="{Binding xAxisNames}" SelectedItem="{Binding xAxisName}" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
 
             <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" IsEnabled="{Binding paired}">
 
@@ -159,9 +162,25 @@
                                 DragCompletedCommand="{Binding avgCmd}" 
                                 ThumbColor="Teal"/>
                     </StackLayout>
+
+                    <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Horizontal ROI -->
+                            <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
+                        </Grid.RowDefinitions>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding useHorizontalROI}" />
+                        <Label Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
+
+                        <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding useRamanIntensityCorrection}" />
+                        <Label Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
+                    </Grid>
                 </StackLayout>
             </Grid>
-
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

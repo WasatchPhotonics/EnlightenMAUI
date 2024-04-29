@@ -1,5 +1,15 @@
 # Changelog
 
+- 2024-04-29 0.3.0
+    - fixed appicon
+    - fixed app name
+    - fixed splashscreen
+    - added bin2x2
+    - added RamanIntensityCorrection
+    - moved from trial Telerik to licensed
+    - x-axis Picker
+    - added scripts/deploy
+    - tested release .apk
 - 2024-04-26 0.2.1
     - dark button works
     - laser button works

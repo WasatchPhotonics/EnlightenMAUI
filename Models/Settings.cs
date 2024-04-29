@@ -73,7 +73,6 @@ public class Settings : INotifyPropertyChanged
 
     public string os
     {
-        // get => Device.RuntimePlatform.ToString();
         get => DeviceInfo.Platform.ToString();
     }
 
@@ -140,7 +139,6 @@ public class Settings : INotifyPropertyChanged
     {
         const string EXPECTED_PASSWORD = "DangerMan";
         authenticated = password == EXPECTED_PASSWORD;
-
 
         logger.debug($"authenticated = {authenticated}");
         return authenticated;

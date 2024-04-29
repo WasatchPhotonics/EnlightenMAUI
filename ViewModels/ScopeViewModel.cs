@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 using Telerik.Maui.Controls.Compatibility.Chart;
 
@@ -69,20 +63,29 @@ public class ScopeViewModel : INotifyPropertyChanged
         addCmd     = new Command(() => { _ = doAdd         (); });
         clearCmd   = new Command(() => { _ = doClear       (); });
 
-        xAxisOptions = new ObservableCollection<XAxisOption>()
-        {
-            // these names must match the fields in ChartDataPoint
-            new XAxisOption() { name = "pixel", unit = "px" },
-            new XAxisOption() { name = "wavelength", unit = "nm" },
-            new XAxisOption() { name = "wavenumber", unit = "cm⁻¹" }
-        };
-        xAxisOption = xAxisOptions[0];
+        xAxisNames = new ObservableCollection<string>();
+        xAxisNames.Add("Pixel");
+        xAxisNames.Add("Wavelength");
+        xAxisNames.Add("Wavenumber");
 
         logger.debug("SVM.ctor: updating chart");
         updateChart();
         
         logger.debug("SVM.ctor: done");
     }
+
+    public ObservableCollection<string> xAxisNames { get; set; }
+    public string xAxisName 
+    {
+        get => _xAxisName; 
+        set
+        {
+            _xAxisName = value;
+            updateChart();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisLabelFormat)));
+        }
+    }
+    string _xAxisName = "Wavenumber";
 
     ////////////////////////////////////////////////////////////////////////
     //
@@ -99,20 +102,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
     // X-Axis
     ////////////////////////////////////////////////////////////////////////
-
-    public ObservableCollection<XAxisOption> xAxisOptions { get; set; }
-    public XAxisOption xAxisOption
-    {
-        get => _xAxisOption;
-        set
-        {
-            logger.debug($"xAxisOption -> {value}");
-            _xAxisOption = value;
-            updateChart();
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisLabelFormat)));
-        }
-    }
-    XAxisOption _xAxisOption;
 
     public double xAxisMinimum
     {
@@ -138,7 +127,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string xAxisLabelFormat
     {
-        get => xAxisOption.name == "pixel" ? "F0" : "F2";
+        get => xAxisName == "Pixel" ? "F0" : "F2";
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -247,16 +236,37 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     bool doDark()
     {
+        logger.debug("SVM.doDark: start");
         spec.toggleDark();
         spec.measurement.reload(spec);
         updateDarkButton();
         updateChart();
+        logger.debug("SVM.doDark: done");
         return true;
     }
 
     ////////////////////////////////////////////////////////////////////////
     // misc acquisition parameters
     ////////////////////////////////////////////////////////////////////////
+
+    // @todo: let the user live-toggle this and update the on-screen spectrum
+    public bool useHorizontalROI 
+    { 
+        get => _useHorizontalROI;
+        set
+        {
+            _useHorizontalROI = value;
+            updateChart();
+        }
+    }
+    private bool _useHorizontalROI = true;
+
+    // @todo: let the user live-toggle this and update the on-screen spectrum
+    public bool useRamanIntensityCorrection 
+    { 
+        get => spec.useRamanIntensityCorrection;
+        set => spec.useRamanIntensityCorrection = value;
+    }
 
     public string note
     {
@@ -605,7 +615,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     public ObservableCollection<ChartDataPoint> trace7 { get; set; } = new ObservableCollection<ChartDataPoint>();
 
     double[] xAxis;
-    string lastAxisType;
     int nextTrace = 0;
     const int MAX_TRACES = 8;
     void setTraceData(int trace, ObservableCollection<ChartDataPoint> data)
@@ -669,42 +678,57 @@ public class ScopeViewModel : INotifyPropertyChanged
     private void refreshChartData()
     {
         logger.debug("refreshChartData: start");
+
         // use last Measurement from the Spectrometer
         uint pixels = spec.pixels;
         double[] intensities = spec.measurement.processed;
 
         try
         {
-            // pick our x-axis
-            if (lastAxisType != null && lastAxisType == xAxisOption.name)
-            {
-                // re-use previous axis
-            }
-            else 
-            { 
-                xAxis = null;
-                if (xAxisOption.name == "wavelength")
-                    xAxis = spec.wavelengths;
-                else if (xAxisOption.name == "wavenumber")
-                    xAxis = spec.wavenumbers;
-                else
-                    xAxis = spec.xAxisPixels;
+            xAxis = null;
+            if (xAxisName == "Wavelength")
+                xAxis = spec.wavelengths;
+            else if (xAxisName == "Wavenumber")
+                xAxis = spec.wavenumbers;
+            else
+                xAxis = spec.xAxisPixels;
 
-                lastAxisType = xAxisOption.name;
-            }
-            if (intensities is null || xAxis is null)
+            logger.debug($"SVM.refreshChartData: using x-axis {xAxisName}");
+            if (intensities is null || xAxis is null || xAxis.Length == 0)
+            {
+                logger.error("SVM.refreshChartData: no x-axis or intensities");
                 return;
+            }
 
             logger.info("populating ChartData");
             var updateChartData = new ObservableCollection<ChartDataPoint>();
 
+            int pxLo = -1;
+            int pxHi = -1;
             for (int i = 0; i < pixels; i++)
+            {
+                if (useHorizontalROI && 
+                    spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd && 
+                    (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
+                        continue;
+
                 updateChartData.Add(new ChartDataPoint() { intensity = intensities[i], xValue = xAxis[i] });
+                if (pxLo < 0)
+                    pxLo = i;
+                pxHi = i;
+            }
+
+            if (pxLo == pxHi)
+            {
+                logger.error("Bad axis data...giving up");
+                return;
+            }
 
             chartData = updateChartData;
 
-            xAxisMinimum = xAxis[0];
-            xAxisMaximum = xAxis[pixels-1];
+            xAxisMinimum = xAxis[pxLo];
+            xAxisMaximum = xAxis[pxHi];
+            logger.debug($"refreshChartData: pxLo {pxLo}, pxHi {pxHi}, xMin {xAxisMinimum:f2}, xMax {xAxisMaximum:f2}");
         }
         catch (Exception ex)
         { 

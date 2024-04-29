@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
 using Plugin.BLE.Abstractions.Contracts;
+using System.Linq;
 
 using EnlightenMAUI.Common;
+using static Android.Widget.GridLayout;
+using Android.Renderscripts;
 
 namespace EnlightenMAUI.Models;
 
@@ -14,8 +14,6 @@ namespace EnlightenMAUI.Models;
 // encapsulated here.
 public class Spectrometer : INotifyPropertyChanged
 {
-    const bool DISABLE_PARAMS = true;
-
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
 
     // Singleton
@@ -195,7 +193,6 @@ public class Spectrometer : INotifyPropertyChanged
         logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
-        // MZ: temporarily disabled
         await updateBatteryAsync(); 
 
         integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
@@ -358,12 +355,6 @@ public class Spectrometer : INotifyPropertyChanged
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
 
-        if (DISABLE_PARAMS)
-        {
-            logger.error("Spectrometer.syncIntegrationTimeMSAsync: params disabled");
-            return true;
-        }
-
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
         { 
@@ -431,12 +422,6 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
         logger.hexdump(request, "data: ");
-
-        if (DISABLE_PARAMS)
-        {
-            logger.error("Spectrometer.syncGainDBAsync: params disabled");
-            return true;
-        }
 
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
@@ -535,12 +520,6 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.info($"Spectrometer.syncROIAsync({verticalROIStartLine}, {verticalROIStopLine})"); 
         logger.hexdump(request, "data: ");
-
-        if (DISABLE_PARAMS)
-        {
-            logger.error("Spectrometer.syncROIAsync: params disabled");
-            return true;
-        }
 
         var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
@@ -739,11 +718,19 @@ public class Spectrometer : INotifyPropertyChanged
 
     public void toggleDark()
     {
+        logger.debug("Spectrometer.toggleDark: start");
         if (dark is null)
+        {
+            logger.debug("Spectrometer.dark: storing lastSpectrum as dark");
             dark = lastSpectrum; 
+        }
         else
+        {
+            logger.debug("Spectrometer.dark: clearing dark");
             dark = null;
-        logger.debug("Spectrometer.dark -> {0}", dark is null);
+        }
+        logger.debug("Spectrometer.toggleDark: dark {0} null", dark == null ? "is" : "IS NOT");
+        logger.debug("Spectrometer.toggleDark: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -756,14 +743,15 @@ public class Spectrometer : INotifyPropertyChanged
         if (!paired || characteristicsByName is null)
             return false;
 
-        logger.debug("Spectrometer.takeOneAveragedAsync: ------------------------");
-        logger.debug("Spectrometer.takeOneAveragedAsync: take one average reading");
-        logger.debug("Spectrometer.takeOneAveragedAsync: ------------------------");
+        logger.debug("Spectrometer.takeOneAveragedAsync: -------------------------");
+        logger.debug("Spectrometer.takeOneAveragedAsync: take one averaged reading");
+        logger.debug("Spectrometer.takeOneAveragedAsync: -------------------------");
 
         // push-down any changed acquisition parameters
         logger.debug("Spectrometer.takeOneAveragedAsync: syncing integration time");
         if (! await syncIntegrationTimeMSAsync())
             return false;
+
         logger.debug("Spectrometer.takeOneAveragedAsync: syncing gain");
         if (! await syncGainDbAsync())
             return false;
@@ -779,6 +767,7 @@ public class Spectrometer : INotifyPropertyChanged
 
         // TODO: integrate laserDelayMS into showProgress
         var swRamanMode = laserState.mode == LaserMode.RAMAN && LaserState.SW_RAMAN_MODE;
+        logger.debug($"Spectrometer.takeOneAveragedAsync: swRamanMode {swRamanMode}");
         if (swRamanMode)
         {
             const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
@@ -842,10 +831,34 @@ public class Spectrometer : INotifyPropertyChanged
             for (int i = 0; i < spectrum.Length; i++)
                 spectrum[i] /= scansToAverage;
 
+        ////////////////////////////////////////////////////////////////////////
+        // Post-Processing
+        ////////////////////////////////////////////////////////////////////////
+
+        // Bin2x2
+        apply2x2Binning(spectrum);
+
+        // Raman Intensity Correction
+        applyRamanIntensityCorrection(spectrum);
+
+        ////////////////////////////////////////////////////////////////////////
+        // Store Measurement
+        ////////////////////////////////////////////////////////////////////////
+
+        logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
         lastSpectrum = spectrum;
+   
         measurement.reset();
         measurement.reload(this);
         logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
+
+        logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}", 
+            measurement.processed == null ? "null" : "NOT NULL");
+        if (measurement.processed != null)
+        {
+            logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed mean is {0:f2}",
+                measurement.processed.Average());
+        }
 
         logger.debug("Spectrometer.takeOneAveragedAsync: done");
         acquiring = false;
@@ -1074,5 +1087,66 @@ public class Spectrometer : INotifyPropertyChanged
         await Task.Delay(DELAY_MS);
         GC.Collect();
         return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // 2x2 Binning
+    ////////////////////////////////////////////////////////////////////////
+
+    private void apply2x2Binning(double[] spectrum)
+    {
+        if (eeprom.featureMask.bin2x2)
+            for (int i = 0; i < spectrum.Length - 1; i++)
+                spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Raman Intensity Correction (NIST SRM Calibration)
+    ////////////////////////////////////////////////////////////////////////
+
+    public bool useRamanIntensityCorrection { get; set; } = false;
+
+    /// <summary>
+    /// Performs SRM correction on the given spectrum.
+    /// Non-ROI pixels are not corrected. 
+    /// </summary>
+    private void applyRamanIntensityCorrection(double[] spectrum)
+    {
+        if (!useRamanIntensityCorrection)
+        {
+            logger.debug("declining RamanIntensityCorrection: disabled");
+            return;
+        }
+
+        if (dark == null)
+        {
+            logger.debug("declining RamanIntensityCorrection: not dark-corrected");
+            return;
+        }
+
+        if (eeprom.ROIHorizStart >= eeprom.ROIHorizEnd)
+        {
+            logger.debug("declining RamanIntensityCorrection: invalid horizontal ROI");
+            return;
+        }
+
+        if (!laserEnabled)
+        {
+            logger.debug("declining RamanIntensityCorrection: laser not enabled");
+            return;
+        }
+
+        for (int i = eeprom.ROIHorizStart; i <= eeprom.ROIHorizEnd; ++i)
+        {
+            double logTen = 0.0;
+            for (int j = 0; j < eeprom.intensityCorrectionCoeffs.Length; j++)
+            {
+                double x_to_i = Math.Pow(i, j);
+                double scaled = eeprom.intensityCorrectionCoeffs[j] * x_to_i;
+                logTen += scaled;
+            }
+            double factor = Math.Pow(10, logTen);
+            spectrum[i] *= factor;
+        }
     }
 }
