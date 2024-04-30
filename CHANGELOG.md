@@ -2,6 +2,7 @@
 
 - 2024-04-30 0.3.1
     - saves to CSV
+    - Add, Clear buttons work
 - 2024-04-29 0.3.0
     - fixed appicon
     - fixed app name

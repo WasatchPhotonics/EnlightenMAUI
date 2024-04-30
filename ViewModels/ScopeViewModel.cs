@@ -53,15 +53,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         laserCmd   = new Command(() => { _ = doLaser       (); }); 
         saveCmd    = new Command(() => { _ = doSave        (); });
         darkCmd    = new Command(() => { _ = doDark        (); });
+        addCmd     = new Command(() => { _ = doAdd         (); });
+        clearCmd   = new Command(() => { _ = doClear       (); });
+
 
         // ScopePage Slider.DragCompletedCommand events
         integCmd   = new Command(() => { _ = latchInteg    (); });
         gainCmd    = new Command(() => { _ = latchGain     (); });
         avgCmd     = new Command(() => { _ = latchAvg      (); });
-
-        // commented-out on GUI?
-        addCmd     = new Command(() => { _ = doAdd         (); });
-        clearCmd   = new Command(() => { _ = doClear       (); });
 
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
@@ -740,33 +739,26 @@ public class ScopeViewModel : INotifyPropertyChanged
     bool doAdd()
     {
         logger.debug("Add button pressed");
-
         var name = getTraceName(nextTrace);
         logger.debug($"Populating trace {name}");
         var newData = new ObservableCollection<ChartDataPoint>();
         foreach (var orig in chartData)
             newData.Add(new ChartDataPoint() { xValue = orig.xValue, intensity = orig.intensity });
         setTraceData(nextTrace, newData);
-
         updateTrace(nextTrace);
-
         nextTrace = (nextTrace + 1) % MAX_TRACES;
-
         return true; 
     }
 
     bool doClear()
     {
         logger.debug("Clear button pressed");
-
         for (int i = 0; i < MAX_TRACES; i++)
         {
             getTraceData(i).Clear();
             updateTrace(i);
         }
-
         nextTrace = 0;
-
         return true;
     }
 
