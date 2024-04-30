@@ -1,5 +1,11 @@
-﻿using System;
+﻿using Android.Widget;
+using Microsoft.Maui;
+using System;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
+using System.Threading;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 
 namespace EnlightenMAUI.Common;
 
@@ -87,7 +93,7 @@ public class Util
     {
         logger.debug("Util.bluetoothEnabled: start");
         bool enabled = false;
-    #if ANDROID
+#if ANDROID
         logger.debug("Util.bluetoothEnabled: getting bluetoothManager");
         var bluetoothManager = (Android.Bluetooth.BluetoothManager)Android.App.Application.Context.GetSystemService(Android.Content.Context.BluetoothService);
         logger.debug("Util.bluetoothEnabled: getting bluetoothAdapter");
@@ -116,10 +122,12 @@ public class Util
     }
 
     // View is there for iOS (Android doesn't need it)
-    public static void toast(string msg, View view = null)
+    public static async void toast(string msg, View view = null)
     {
-        logger.error($"Util.toast({msg}): NotImplemented");
-        // var platformUtil = DependencyService.Get<IPlatformUtil>();
-        // platformUtil.toast(msg, view);
+        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        ToastDuration duration = ToastDuration.Short;
+        double fontSize = 14;
+        var toast = CommunityToolkit.Maui.Alerts.Toast.Make(msg, duration, fontSize);
+        await toast.Show(cancellationTokenSource.Token);
     }
 }

@@ -1,10 +1,7 @@
-﻿using System;
+﻿using EnlightenMAUI.Platforms;
+using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
-// using Xamarin.Forms;
-// using Xamarin.Essentials;
-
-// using EnlightenMobile.Services;
 
 namespace EnlightenMAUI.Models;
 
@@ -96,9 +93,13 @@ public class Settings : INotifyPropertyChanged
 
     public string getSavePath()
     {
-        // IPlatformUtil platformUtil = DependencyService.Get<IPlatformUtil>();
-        // return platformUtil.getSavePath();
-        return "NotImplemented";
+        return PlatformUtil.getSavePath();
+    }
+
+    // Write the file content to the app data directory
+    public void writeFile(string pathname, string text)
+    {
+        File.WriteAllText(pathname, text);
     }
 
     ////////////////////////////////////////////////////////////////////////
