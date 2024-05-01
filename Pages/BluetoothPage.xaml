@@ -23,11 +23,11 @@
                         <Button Text="Scan" 
                                 Margin="0,0,20,0"
                                 Padding="20,0,20,0"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"
                                 Command="{Binding scanCmd}" 
                                 IsEnabled="{Binding bluetoothEnabled}"
                                 TextColor="{Binding scanButtonTextColor}" 
-                                HorizontalOptions="Center"
-                                VerticalOptions="Center"
                                 BackgroundColor="{Binding scanButtonBackgroundColor}" />
 
                         <!-- Connect/Disconnect Button -->
@@ -44,7 +44,7 @@
             </Frame>
 
             <!-- Connection ProgressBar -->
-            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#2994d3" x:DataType="local:ViewModels.BluetoothViewModel"/>
+            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#27c0a1" x:DataType="local:ViewModels.BluetoothViewModel"/>
 
             <!-- List of discovered BLE devices -->
             <ListView x:Name="listView" 

@@ -80,7 +80,8 @@
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!--      ProgressBar       -->
-                    <RowDefinition Height="Auto"/> <!-- Acquire Save Add Clear -->
+                    <RowDefinition Height="Auto"/> <!--  Laser Acquire Dark    -->
+                    <RowDefinition Height="Auto"/> <!--    Save Add Clear      -->
                     <RowDefinition Height="Auto"/> <!-- Acquisition Parameters -->
                 </Grid.RowDefinitions>
 
@@ -89,11 +90,10 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Acquisition ProgressBar -->
-                <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#2994d3"/> 
+                <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/> <!-- ProgressColor="#2994d3"/> -->
 
                 <!-- Command buttons -->
                 <StackLayout Grid.Row="1" Grid.Column="0" Margin="2">
-
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Laser -->
@@ -118,22 +118,30 @@
                                 Command="{Binding darkCmd}"
                                 TextColor="{Binding darkButtonForegroundColor}"
                                 BackgroundColor="{Binding darkButtonBackgroundColor}" />
+                    </FlexLayout>
+                </StackLayout>
+
+                <StackLayout Grid.Row="2" Grid.Column="0" Margin="2">
+                    <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Save -->
-                        <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" />
+                        <!-- @todo disable unless spectra visible -->
+                        <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/>
 
                         <!-- Add -->
-                        <Button Margin="2" Text="Add" Command="{Binding addCmd}" /> 
+                        <!-- @todo disable unless spectra visible -->
+                        <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/>
 
                         <!-- Clear -->
-                        <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" /> 
+                        <!-- @todo disable if traces empty -->
+                        <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" IsEnabled="{Binding hasTraces}"/>
 
                         <!-- <Button Margin="2" Text="QR" Clicked="qrScan" /> -->
                         <!-- <Button Margin="2" Text="Photo" Clicked="photoCapture" /> -->
                     </FlexLayout>
                 </StackLayout>
 
-                <StackLayout Grid.Row="2" Grid.Column="0" HorizontalOptions="FillAndExpand" Padding="20, 10, 20, 10">
+                <StackLayout Grid.Row="3" Grid.Column="0" HorizontalOptions="FillAndExpand" Padding="20, 10, 20, 10">
 
                     <!-- integration time -->
                     <StackLayout>

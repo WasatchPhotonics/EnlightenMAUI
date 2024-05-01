@@ -210,7 +210,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         get
         { 
             // string color = "#ff0000";
-            string color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
+            string color = ble.Adapter.IsScanning ? "#ba0a0a" : "#515151";
             return color;
         }
     }
@@ -219,8 +219,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         get
         {
-            // string color = "#ffcc00";
-            string color = ble.Adapter.IsScanning ? "#fff" : "#333";
+            string color = ble.Adapter.IsScanning ? "#eee" : "#ccc";
             return color;
         }
     }
@@ -231,12 +230,12 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             if (BLEDevice.paired)
                 return "#ba0a0a";
-            else if (ble.Adapter.IsScanning)
-                return "#eee";
-            else if (!buttonConnectEnabled)
-                return "#999";
+            // else if (ble.Adapter.IsScanning)
+            //     return "#eee";
+            // else if (!buttonConnectEnabled)
+            //     return "#ccc";
             else
-                return "#ccc";
+                return "#515151";
         }
     }
 

@@ -21,8 +21,8 @@
 
         <Button Padding="40,10,40,10" 
                 Text="Learn more" 
+                TextColor="#eee" 
                 BackgroundColor="#27c0a1"
-                TextColor="White" 
                 Clicked="Button_Clicked" />
 
     </FlexLayout>

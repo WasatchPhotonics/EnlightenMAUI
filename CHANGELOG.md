@@ -3,6 +3,10 @@
 - 2024-04-30 0.3.1
     - saves to CSV
     - Add, Clear buttons work
+    - temporarily deprecated Clipboard Page
+    - fiddled with button colors
+    - made ProgressBars more teal
+    - added enabled logic for Scope Save, Add, Clear buttons
 - 2024-04-29 0.3.0
     - fixed appicon
     - fixed app name

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
+using Telerik.Windows.Documents.Spreadsheet.Model.Filtering;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -29,8 +30,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     Logger logger = Logger.getInstance();
 
-    // public delegate void UserNotification(string title, string message, string button);
-    // public event UserNotification notifyUser;
+    public delegate void UserNotification(string title, string message, string button);
+    public event UserNotification notifyUser;
 
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle
@@ -45,7 +46,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         settings.PropertyChanged += handleSettingsChange;
         spec.PropertyChanged += handleSpectrometerChange;
-        spec.showAcquisitionProgress += showAcquisitionProgress; // closure?
+        spec.showAcquisitionProgress += showAcquisitionProgress; 
+        spec.measurement.PropertyChanged += handleSpectrometerChange;
 
         // ScopePage Button events
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
@@ -219,12 +221,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string darkButtonForegroundColor
     {
-        get => spec.dark != null ? "#eee" : "#666";
+        get => spec.dark != null ? "#eee" : "#ccc";
     }
 
     public string darkButtonBackgroundColor
     {
-        get => spec.dark != null ? "#ba0a0a" : "#ccc";
+        get => spec.dark != null ? "#ba0a0a" : "#515151";
     }
 
     private void updateDarkButton()
@@ -281,18 +283,19 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string laserButtonForegroundColor
     {
-        get => spec.laserEnabled ? "#eee" : "#666";
+        get => spec.laserEnabled ? "#eee" : "#ccc";
     }
 
     public string laserButtonBackgroundColor
     {
-        get => spec.laserEnabled ? "#ba0a0a" : "#ccc";
+        get => spec.laserEnabled ? "#ba0a0a" : "#515151";
     }
 
     private void updateLaserButton()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonForegroundColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonText)));
     }
 
     bool doLaser()
@@ -501,12 +504,12 @@ public class ScopeViewModel : INotifyPropertyChanged
     public string acquireButtonBackgroundColor
     {
         // @todo move #ba0a0a to app-wide palette
-        get => spec.acquiring ? "#ba0a0a" : "#ccc";
+        get => spec.acquiring ? "#ba0a0a" : "#515151";
     }
 
     public string acquireButtonTextColor
     {
-        get => spec.acquiring ? "#fff" : "#333";
+        get => spec.acquiring ? "#eee" : "#ccc";
     }
 
     // invoked by ScopeView when the user clicks "Acquire" 
@@ -595,6 +598,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Chart
     ////////////////////////////////////////////////////////////////////////
 
+    public bool hasSpectrum { get => spec.lastSpectrum != null; }
+
     public Command addCmd { get; }
     public Command clearCmd { get; }
 
@@ -613,9 +618,21 @@ public class ScopeViewModel : INotifyPropertyChanged
     public ObservableCollection<ChartDataPoint> trace6 { get; set; } = new ObservableCollection<ChartDataPoint>();
     public ObservableCollection<ChartDataPoint> trace7 { get; set; } = new ObservableCollection<ChartDataPoint>();
 
+    const int MAX_TRACES = 8;
     double[] xAxis;
     int nextTrace = 0;
-    const int MAX_TRACES = 8;
+
+    public bool hasTraces 
+    {
+        get => _hasTraces;
+        set
+        {
+            _hasTraces = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasTraces)));
+        }
+    }
+    bool _hasTraces;
+
     void setTraceData(int trace, ObservableCollection<ChartDataPoint> data)
     {
         switch (trace)
@@ -668,6 +685,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         refreshChartData();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(chartData)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumMax)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasSpectrum)));
         logger.debug("updateChart: done");
     }
 
@@ -747,6 +765,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         setTraceData(nextTrace, newData);
         updateTrace(nextTrace);
         nextTrace = (nextTrace + 1) % MAX_TRACES;
+        hasTraces = true;
         return true; 
     }
 
@@ -759,6 +778,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             updateTrace(i);
         }
         nextTrace = 0;
+        hasTraces = false;
         return true;
     }
 
@@ -799,19 +819,4 @@ public class ScopeViewModel : INotifyPropertyChanged
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
     }
-
-    // testing kludge
-    // void refreshAll_NOT_USED()
-    // {
-    //     // there's probably a way to iterate over Properties via Reflection
-    //     string[] names = {
-    //         "title", "paired", "xAxisOptions", "xAxisOption", "xAxisMinimum", "xAxisMaximum",
-    //         "xAxisLabelFormat", "integrationTimeMS", "gainDb", "scansToAverage", "darkEnabled",
-    //         "note", "laserEnabled", "ramanModeEnabled", "laserIsAvailable", "isAuthenticated",
-    //         "isRefreshing", "spectrumMax", "batteryState", "batteryColor", "acquireButtonBackgroundColor",
-    //         "acquireButtonTextColor", "chartData", "trace0", "trace1", "trace2", "trace3", "trace4",
-    //         "trace5", "trace6", "trace7" };
-    //     foreach (var name in names)
-    //         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    // }
 }

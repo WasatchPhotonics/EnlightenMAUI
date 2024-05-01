@@ -1,8 +1,10 @@
-﻿namespace EnlightenMAUI.Models;
+﻿using System.ComponentModel;
+
+namespace EnlightenMAUI.Models;
 
 // Mostly corresponds to ENLIGHTEN and WasatchNET's Measurement classes, but
 // currently we're re-using a "singleton" Measurement for memory reasons.
-public class Measurement
+public class Measurement : INotifyPropertyChanged
 {
     public double[] raw = null;
     public double[] dark = null;
@@ -12,11 +14,13 @@ public class Measurement
     Spectrometer spec;
 
     public DateTime timestamp = DateTime.Now;
-    public string filename;
+    public string filename { get; set; }
     public string measurementID;
     public Location location;
 
     Logger logger = Logger.getInstance();
+
+    public event PropertyChangedEventHandler PropertyChanged;
 
     public void reset()
     {
@@ -107,6 +111,9 @@ public class Measurement
             sw.WriteLine();
             writeSpectra(sw);
         }
+
+        // This is handled already in SVM.doSave
+        // PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(filename)));
 
         return true;
     }

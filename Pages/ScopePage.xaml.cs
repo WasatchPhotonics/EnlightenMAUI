@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using EnlightenMAUI.ViewModels;
+using EnlightenMAUI.Common;
 // using ZXing.Net.Mobile.Forms; // for QR codes
 
 namespace EnlightenMAUI;
@@ -14,8 +15,8 @@ public partial class ScopePage : ContentPage
 
     // ZXingScannerPage scanPage; // for QR codes
     
-    const string rightArrow = ">>";
-    const string leftArrow = "<<";
+    // const string rightArrow = ">>";
+    // const string leftArrow = "<<";
 
     ScopeViewModel svm;
 
@@ -35,7 +36,7 @@ public partial class ScopePage : ContentPage
         // the View (such as "saved foo.csv") by having the View monitor for
         // notifications, and if one is received
         // https://stackoverflow.com/a/26038700/11615696
-        // svm.notifyToast += (string msg) => Util.toast(msg, scrollOptions); // MZ: fix
+        svm.notifyToast += (string msg) => Util.toast(msg); // , scrollOptions); // MZ: iOS needs View
 
         svm.theChart = chart; 
     }
