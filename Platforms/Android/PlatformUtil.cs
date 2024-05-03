@@ -8,6 +8,16 @@ internal class PlatformUtil
 
     static string savePath;
 
+    public static string getLibraryFilenames()
+    {
+        return null; // YOU ARE HERE
+    }
+    public static string getLibraryPath()
+    {
+        var docDir = Android.App.Application.Context.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments);
+        return Path.Join(docDir.Path, "MatchingLibrary");
+    }
+
     // logger:  /storage/emulated/0/Android/data/com.wasatchphotonics.enlightenmaui/files/Documents/2024-04-30/enlighten-20240430-154219-290237-WP-01647.csv
     // PC: \Internal shared storage\Android\data\com.wasatchphotonics.enlightenmaui\files\Documents\2024-04-30
     public static string getSavePath()

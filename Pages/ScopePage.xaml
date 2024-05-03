@@ -125,22 +125,26 @@
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Save -->
-                        <!-- @todo disable unless spectra visible -->
                         <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/>
 
                         <!-- Add -->
-                        <!-- @todo disable unless spectra visible -->
                         <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/>
 
                         <!-- Clear -->
-                        <!-- @todo disable if traces empty -->
                         <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" IsEnabled="{Binding hasTraces}"/>
+
+                        <!-- Match -->
+                        <Button Margin="2" Text="Match" Command="{Binding matchCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="{Binding hasMatchingLibrary}"/>
 
                         <!-- <Button Margin="2" Text="QR" Clicked="qrScan" /> -->
                         <!-- <Button Margin="2" Text="Photo" Clicked="photoCapture" /> -->
                     </FlexLayout>
                 </StackLayout>
 
+                <!-- Match Result -->
+                <Label Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+
+                <!-- Acquisition Parameters -->
                 <StackLayout Grid.Row="3" Grid.Column="0" HorizontalOptions="FillAndExpand" Padding="20, 10, 20, 10">
 
                     <!-- integration time -->
@@ -190,6 +194,7 @@
                         <Label Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
                     </Grid>
                 </StackLayout>
+                
             </Grid>
         </VerticalStackLayout>
     </ScrollView>

@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
-using Telerik.Windows.Documents.Spreadsheet.Model.Filtering;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -49,17 +48,17 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.showAcquisitionProgress += showAcquisitionProgress; 
         spec.measurement.PropertyChanged += handleSpectrometerChange;
 
-        // ScopePage Button events
+        // bind ScopePage Commands
+        laserCmd   = new Command(() => { _ = doLaser       (); }); 
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); }); 
-        laserCmd   = new Command(() => { _ = doLaser       (); }); 
-        saveCmd    = new Command(() => { _ = doSave        (); });
         darkCmd    = new Command(() => { _ = doDark        (); });
+
+        saveCmd    = new Command(() => { _ = doSave        (); });
         addCmd     = new Command(() => { _ = doAdd         (); });
         clearCmd   = new Command(() => { _ = doClear       (); });
+        matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
-
-        // ScopePage Slider.DragCompletedCommand events
         integCmd   = new Command(() => { _ = latchInteg    (); });
         gainCmd    = new Command(() => { _ = latchGain     (); });
         avgCmd     = new Command(() => { _ = latchAvg      (); });
@@ -786,7 +785,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Save Command
     ////////////////////////////////////////////////////////////////////////
 
-    // invoked by ScopeView when the user clicks "Save" 
     public Command saveCmd { get; }
 
     // the user clicked the "Save" button on the Scope View
@@ -818,5 +816,19 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Matching
+    ////////////////////////////////////////////////////////////////////////
+
+    public Command matchCmd { get; }
+    public bool hasMatchingLibrary {get; private set;}
+    public bool hasMatch {get; private set;}
+    public string matchResult {get; private set;}
+
+    async Task<bool> doMatchAsync()
+    {
+        return true;
     }
 }

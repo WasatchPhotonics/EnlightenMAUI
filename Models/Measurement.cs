@@ -6,6 +6,8 @@ namespace EnlightenMAUI.Models;
 // currently we're re-using a "singleton" Measurement for memory reasons.
 public class Measurement : INotifyPropertyChanged
 {
+    // @todo: give a Spectrum
+
     public double[] raw = null;
     public double[] dark = null;
     public double[] reference = null;
