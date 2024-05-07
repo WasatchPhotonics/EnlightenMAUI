@@ -172,12 +172,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             logger.debug($"gainSlider: {value}dB");
-            _gainSlider = value;
+            _gainSlider = (float)Math.Round(value, 1);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_gain)));
         }
     }
     private float _gainSlider = 8;
-    public string label_gain { get => $"Gain: {gainSlider}dB"; }
+    public string label_gain { get => $"Gain: {gainSlider:f1}dB"; }
     public Command gainCmd { get; }
     bool latchGain()
     {

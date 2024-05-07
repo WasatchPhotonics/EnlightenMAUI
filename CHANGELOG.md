@@ -1,5 +1,15 @@
 # Changelog
 
+- 2024-05-07 0.3.3
+    - fixed Hardware color
+    - added phone info to About
+    - got Log working
+    - rounded gain
+    - moved to single icon SVG
+    - started renaming to EnlightenMobile
+    - permissions logging bugfix
+- 2024-05-04 0.3.2
+    - tweaks for demo
 - 2024-04-30 0.3.1
     - saves to CSV
     - Add, Clear buttons work

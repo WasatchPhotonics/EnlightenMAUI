@@ -311,11 +311,11 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         status = await Permissions.RequestAsync<Permissions.StorageWrite>();
         if (status != PermissionStatus.Granted)
-            logger.error("ENLIGHTEN requires StorageWrite permission to save spectra.");
+            logger.debug("ENLIGHTEN requires StorageWrite permission to save spectra.");
 
         status = await Permissions.RequestAsync<Permissions.StorageRead>();
         if (status != PermissionStatus.Granted)
-            logger.error("ENLIGHTEN requires StorageWrite permission to load spectra.");
+            logger.debug("ENLIGHTEN requires StorageRead permission to load spectra.");
 
         return true;
     }
