@@ -27,12 +27,12 @@ public class Settings : INotifyPropertyChanged
     public string savePath;
 
     // todo: move to SaveOptions
-    public bool savePixel;
-    public bool saveWavelength;
-    public bool saveWavenumber;
-    public bool saveRaw;
-    public bool saveDark;
-    public bool saveReference;
+    public bool savePixel { get; set;} = true;
+    public bool saveWavelength { get; set;} = true;
+    public bool saveWavenumber { get; set;} = true;
+    public bool saveRaw { get; set;} = true;
+    public bool saveDark { get; set;} = true;
+    public bool saveReference { get; set;} = true;
 
     // todo: prompt to auto-connect this device if found on scan
     // public Guid lastConnectedGuid;

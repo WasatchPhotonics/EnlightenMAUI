@@ -1,7 +1,7 @@
 # Backlog
 
 - High
-    - save spectra
+    - push integration time at connection (test @ 400ms)
     - battery readout
     - HW scan averaging
     - Raman Mode

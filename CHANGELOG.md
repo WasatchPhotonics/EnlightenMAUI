@@ -1,5 +1,9 @@
 # Changelog
 
+- 2024-06-13 0.4.0
+    - fixed colors on Android Go phones
+    - fixed disconnect button
+    - default all SaveOptions on
 - 2024-05-07 0.3.3
     - fixed Hardware color
     - added phone info to About
