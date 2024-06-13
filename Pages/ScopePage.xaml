@@ -196,6 +196,17 @@
                 </StackLayout>
                 
             </Grid>
+
+            <!-- StatusBar -->
+            <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
+                <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
+                    <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
+                        <Label TextColor="#eee" Text="Battery"/>
+                        <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}"/>
+                    </StackLayout>
+                </Frame>
+            </Frame>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

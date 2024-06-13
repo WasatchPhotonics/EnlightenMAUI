@@ -1,5 +1,7 @@
 # Changelog
 
+- 2024-??-?? 0.4.1
+    - added StatusBar and battery to Scope
 - 2024-06-13 0.4.0
     - fixed colors on Android Go phones
     - fixed disconnect button
