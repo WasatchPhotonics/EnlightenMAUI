@@ -356,7 +356,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         else
         {
             logger.debug("BVM.doConnectOrDisconnect: connecting");
-            BLEDevice.paired = await doConnectAsync();
+            await doConnectAsync();
             if (BLEDevice.paired)
             {
                 logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
@@ -407,6 +407,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.doDisconnectAsync: done");
         BLEDevice.paired = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
         return true;
     }
 
@@ -590,13 +591,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // all done
         ////////////////////////////////////////////////////////////////////
 
-        logger.debug("BVM.doConnectAsync: done");
         spec.bleDevice = bleDevice;
+        BLEDevice.paired = true;
 
-        // allow disconnect
+        // switch button to "disconnect"
         buttonConnectEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
 
+        logger.debug("BVM.doConnectAsync: done");
         return true;
     }
 

@@ -22,6 +22,7 @@ public class BLEDevice : INotifyPropertyChanged
     /// <summary>
     /// This is where we master whether the app is paired with a Bluetooth device or not.
     /// </summary>
+    ///
     /// <remarks>
     /// This is not an ideal location, because most of this "BLEDevice" Model 
     /// relates to A SPECIFIC BLEDevice, and not the general application state of

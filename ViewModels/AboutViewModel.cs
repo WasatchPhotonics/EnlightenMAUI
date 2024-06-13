@@ -15,5 +15,5 @@ internal class AboutViewModel: INotifyPropertyChanged
     // AppInfo.Current.VersionString and VersionTracking.currentVersion seem interchangeable
     public string appVersion { get => $"EnlightenMobile {VersionTracking.CurrentVersion}"; }
 
-    public string hostDescription { get => settings.hostDescription; }
+    public string hostDescription { get => settings.hostDescriptionWrapped; }
 }

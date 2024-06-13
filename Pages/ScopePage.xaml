@@ -74,7 +74,7 @@
                 </telerik:RadCartesianChart.ChartBehaviors>
             </telerik:RadCartesianChart>
 
-            <Picker ItemsSource="{Binding xAxisNames}" SelectedItem="{Binding xAxisName}" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
+            <Picker TextColor="#eee" ItemsSource="{Binding xAxisNames}" SelectedItem="{Binding xAxisName}" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
 
             <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" IsEnabled="{Binding paired}">
 
@@ -149,7 +149,7 @@
 
                     <!-- integration time -->
                     <StackLayout>
-                        <Label Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Label TextColor="#eee" Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
                         <Slider Maximum="5000"  
                                 Minimum="1" 
                                 Value="{Binding integSlider}" 
@@ -159,7 +159,7 @@
 
                     <!-- gain -->
                     <StackLayout>
-                        <Label Text="{Binding label_gain}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Label TextColor="#eee" Text="{Binding label_gain}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
                         <Slider Maximum="72" 
                                 Minimum="0" 
                                 Value="{Binding gainSlider}" 
@@ -169,7 +169,7 @@
 
                     <!-- averaging -->
                     <StackLayout>
-                        <Label Text="{Binding label_avg}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+                        <Label TextColor="#eee" Text="{Binding label_avg}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
                         <Slider Maximum="32" 
                                 Minimum="1" 
                                 Value="{Binding avgSlider}" 
@@ -188,10 +188,10 @@
                         </Grid.ColumnDefinitions>
 
                         <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding useHorizontalROI}" />
-                        <Label Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
+                        <Label TextColor="#eee" Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
 
                         <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
+                        <Label TextColor="#eee" Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
                     </Grid>
                 </StackLayout>
                 

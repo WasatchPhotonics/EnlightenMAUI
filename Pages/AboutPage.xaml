@@ -26,7 +26,7 @@
                 Clicked="Button_Clicked" />
 
         <!-- debugging -->
-        <Label TextColor="#666" Text="{Binding hostDescription}" />
+        <Label TextColor="#666" HorizontalTextAlignment="Center" Text="{Binding hostDescription}"/>
 
     </FlexLayout>
 </ContentPage>
