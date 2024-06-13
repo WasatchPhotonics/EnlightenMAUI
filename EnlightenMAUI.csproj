@@ -36,25 +36,26 @@
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
 		<Title>EnlightenMobile</Title>
-		<Authors>mzieg, sbee</Authors>
+		<Authors>mzieg</Authors>
 		<Company>Wasatch Photonics</Company>
 		<Description>Smartphone client for BLE-capable Wasatch Photonics spectrometers</Description>
 		<Copyright>2024</Copyright>
 		<PackageProjectUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>
-		<PackageTags>wasatch;spectrometer</PackageTags>
+		<PackageTags>wasatch;photonics;raman;spectrometer;ble</PackageTags>
+		<RepositoryType>git</RepositoryType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.3.3</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.4.0</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.3.3</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.4.0</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	</PropertyGroup>
 
