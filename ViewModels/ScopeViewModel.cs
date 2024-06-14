@@ -55,6 +55,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         darkCmd    = new Command(() => { _ = doDark        (); });
 
         saveCmd    = new Command(() => { _ = doSave        (); });
+        uploadCmd  = new Command(() => { _ = doUpload      (); });
         addCmd     = new Command(() => { _ = doAdd         (); });
         clearCmd   = new Command(() => { _ = doClear       (); });
         matchCmd   = new Command(() => { _ = doMatchAsync  (); });
@@ -788,9 +789,9 @@ public class ScopeViewModel : INotifyPropertyChanged
     public Command saveCmd { get; }
 
     // the user clicked the "Save" button on the Scope View
-    bool doSave()
+    async Task<bool> doSave()
     {
-        var ok = spec.measurement.save();
+        var ok = await spec.measurement.saveAsync();
         if (ok)
             notifyToast?.Invoke($"saved {spec.measurement.filename}");
         return ok;
@@ -816,6 +817,23 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Upload Command
+    ////////////////////////////////////////////////////////////////////////
+
+    public Command uploadCmd { get; }
+
+    // the user clicked the "Upload" button on the Scope View
+    async Task<bool> doUpload()
+    {
+        var ok = await spec.measurement.uploadAsync();
+        if (ok)
+            notifyToast?.Invoke($"uploaded {spec.measurement.filename}");
+        else
+            notifyToast?.Invoke("upload failed");
+        return ok;
     }
 
     ////////////////////////////////////////////////////////////////////////

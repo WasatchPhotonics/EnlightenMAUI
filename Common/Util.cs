@@ -6,6 +6,7 @@ using static System.Net.Mime.MediaTypeNames;
 using System.Threading;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
+using Telerik.Maui;
 
 namespace EnlightenMAUI.Common;
 
@@ -86,7 +87,31 @@ public class Util
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // a lightweight wrapper so other classes don't need to do this
+    // File Utilities
+    ////////////////////////////////////////////////////////////////////////
+
+    public static async Task<string> readAllTextFromFile(string pathname)
+    {
+        logger.debug("readAllTextFromFile: start");
+        string text = "";
+
+        #if ANDROID
+        logger.debug($"readAllTextFromFile: opening {pathname}");
+        var infile = File.OpenRead(pathname);
+
+        logger.debug($"readAllTextFromFile: reading {pathname}");
+        using (StreamReader sr = new StreamReader(infile))
+        { 
+            text = await sr.ReadToEndAsync();
+        }
+        #endif
+
+        logger.debug("readAllTextFromFile: done");
+        return text;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Bluetooth Utilities
     ////////////////////////////////////////////////////////////////////////
 
     public static bool bluetoothEnabled()
@@ -120,6 +145,10 @@ public class Util
         logger.error($"Util.enableBluetooth({flag}): done");
         return true;
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    // GUI Utilities
+    ////////////////////////////////////////////////////////////////////////
 
     // View is there for iOS (Android doesn't need it)
     public static async void toast(string msg, View view = null)

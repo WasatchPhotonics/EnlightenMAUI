@@ -195,8 +195,11 @@ public class Spectrometer : INotifyPropertyChanged
 
         await updateBatteryAsync(); 
 
-        integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
-        gainDb = eeprom.detectorGain;
+        // for now, ignore EEPROM configuration and hardcode
+        // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
+        // gainDb = eeprom.detectorGain;
+        integrationTimeMS = 400;
+        gainDb = 8;
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
@@ -204,6 +207,8 @@ public class Spectrometer : INotifyPropertyChanged
         logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
         logger.info($"  pixels: {pixels}");
+        logger.info($"  integrationTimeMS: {integrationTimeMS}");
+        logger.info($"  gainDb: {gainDb}");
         logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
         logger.info($"  excitation: {laserExcitationNM:f3}nm");
         logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels-1]:f2})");

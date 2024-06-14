@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿// using Bumptech.Glide.Util;
+using System.ComponentModel;
+using System.Text;
 
 namespace EnlightenMAUI.Models;
 
@@ -17,6 +19,7 @@ public class Measurement : INotifyPropertyChanged
 
     public DateTime timestamp = DateTime.Now;
     public string filename { get; set; }
+    public string pathname { get; set; }
     public string measurementID;
     public Location location;
 
@@ -24,11 +27,15 @@ public class Measurement : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler PropertyChanged;
 
+    static HttpClient httpClient = new HttpClient();
+
+    const string UPLOAD_URL = "https://wasatchphotonics.com/save-spectra.php";
+
     public void reset()
     {
         logger.debug("Measurement.reset: nulling everything");
         raw = dark = reference = processed = null;
-        filename = measurementID = null;
+        filename = pathname = measurementID = null;
         spec = null;
     }
 
@@ -86,9 +93,15 @@ public class Measurement : INotifyPropertyChanged
     /// - support full ENLIGHTEN metadata
     /// - support SaveOptions (selectable output fields)
     /// </todo>
-    public bool save()
+    public async Task<bool> saveAsync()
     {
-        logger.debug("Measurement.save: starting");
+        logger.debug("Measurement.saveAsync: starting");
+
+        if (pathname != null)
+        {
+            logger.debug($"Measurement.saveAsync: already saved ({pathname})");
+            return true;
+        }
 
         if (processed is null || raw is null || spec is null)
         {
@@ -104,7 +117,7 @@ public class Measurement : INotifyPropertyChanged
             return false;
         }
 
-        var pathname = Path.Join(savePath, filename);
+        pathname = Path.Join(savePath, filename);
         logger.debug($"Measurement.saveAsync: creating {pathname}");
 
         using (StreamWriter sw = new StreamWriter(pathname))  
@@ -114,9 +127,39 @@ public class Measurement : INotifyPropertyChanged
             writeSpectra(sw);
         }
 
-        // This is handled already in SVM.doSave
-        // PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(filename)));
+        logger.debug($"Measurement.saveAsync: done");
+        return true;
+    }
 
+    public async Task<bool> uploadAsync()
+    {
+        if (!await saveAsync())
+        {
+            logger.error($"uploadAsync: can't upload (failed save, pathname {pathname}");
+            return false;
+        }
+
+        logger.debug($"uploadAsync: loading {pathname}");
+        string text = await Common.Util.readAllTextFromFile(pathname);
+
+        var encoded_content = new StringContent(text, Encoding.UTF8, "text/html");
+        MultipartFormDataContent form = new MultipartFormDataContent
+        {
+            { encoded_content, "file", filename }
+        };
+
+        logger.debug($"uploadAsync: posting to {UPLOAD_URL}");
+        HttpResponseMessage response = await httpClient.PostAsync(UPLOAD_URL, form);
+        response.EnsureSuccessStatusCode();
+        string result = response.Content.ReadAsStringAsync().Result;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.error($"upload failed somehow: response {response}");
+            return false;
+        }
+
+        logger.debug($"successfully uploaded {filename} to {UPLOAD_URL}");
         return true;
     }
 
