@@ -2,15 +2,14 @@
 using System.Text;
 using System.IO;
 using System.Globalization;
+using System.ComponentModel;
 
 namespace EnlightenMAUI
 {
     public enum LogLevel { DEBUG, INFO, ERROR };
 
-    public delegate void LogChangedDelegate();
-
     // copied from WasatchNET
-    public class Logger 
+    public class Logger : INotifyPropertyChanged
     {
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
@@ -18,7 +17,6 @@ namespace EnlightenMAUI
 
         static readonly Logger instance = new Logger();
 
-        public StringBuilder history = null;
         private StreamWriter outfile;
 
         const int AUTOSAVE_SIZE = 1 * 1024 * 1024; // 1MB
@@ -31,8 +29,9 @@ namespace EnlightenMAUI
         public LogLevel level { get; set; } = LogLevel.DEBUG;
         public bool loggingBLE;
 
-        public bool liveUpdates;
-        public LogChangedDelegate logChangedDelegate;
+        public bool liveUpdates = false;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         static public Logger getInstance()
         {
@@ -148,9 +147,9 @@ namespace EnlightenMAUI
             debug($"{label} [len {a.Length}]: {s}");
         }
 
-        // Provided both so that internal log events can flow-up a screen update,
-        // and also so that external tab switches can force an update.
-        public void update() => logChangedDelegate?.Invoke();
+        public void update() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(history)));
+
+        public StringBuilder history = new StringBuilder("Log data");
 
         ////////////////////////////////////////////////////////////////////////
         // Private methods

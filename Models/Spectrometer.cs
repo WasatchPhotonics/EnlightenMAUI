@@ -661,9 +661,6 @@ public class Spectrometer : INotifyPropertyChanged
     // seems to work better?
     async Task<bool> updateBatteryAsync()
     {
-        logger.debug("Spectrometer.updateBatteryAsync: skipping");
-        return false; // MZ: look at later
-
         logger.debug("Spectrometer.updateBatteryAsync: starting");
 
         if (!battery.isExpired)

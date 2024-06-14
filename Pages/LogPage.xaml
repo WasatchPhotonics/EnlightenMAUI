@@ -4,14 +4,15 @@
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:DataType="local:ViewModels.LogViewModel"
-             x:Class="EnlightenMAUI.LogPage">
+             x:Class="EnlightenMAUI.LogPage"
+             BackgroundColor="#333">
 
     <ContentPage.BindingContext>
         <local:ViewModels.LogViewModel/>
     </ContentPage.BindingContext>
 
     <ContentPage.Content>
-        <StackLayout Orientation="Vertical" BackgroundColor="#333">
+        <StackLayout Orientation="Vertical">
 
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>

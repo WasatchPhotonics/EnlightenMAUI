@@ -15,35 +15,25 @@ public class LogViewModel : INotifyPropertyChanged
 
     public LogViewModel()
     {
-        // pass the StringBuilder into the Logger to acrue messages
-        logger.history = history;
-
-        // give the Logger a callback to let the ViewModel know when the
-        // StringBuilder has been updated (probably easier way to do this)
-        logger.logChangedDelegate = RaisePropertyChanged;
+        logger.debug("LogViewModel.ctor: start");
 
         saveCmd = new Command(() => { doSave(); });
-    } 
+        logger.PropertyChanged += Logger_PropertyChanged;
+    }
+
+    private void Logger_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        var name = e.PropertyName;
+        if (name == "history")
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(logText)));
+    }
 
     public string title
     {
         get => "Event Log";
     }
 
-    // when the GUI receives a notification to redraw the LogView, it will
-    // call this to render the StringBuilder
-    public string logText
-    {
-        get => history.ToString();
-        set 
-        {
-            history.Append(value);
-        }
-    }
-
-    // this is where Logger text is actually acrued (whether notifications
-    // are sent to the GUI or not)
-    StringBuilder history = new StringBuilder("Log data");
+    public string logText { get => logger.history.ToString(); }
 
     public bool verbose 
     { 
@@ -62,11 +52,5 @@ public class LogViewModel : INotifyPropertyChanged
     void doSave()
     {
         logger.save();
-    }
-
-    // this gets called by the Logger via its logChangedDelegate handle
-    protected void RaisePropertyChanged()
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(logText)));
     }
 }

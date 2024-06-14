@@ -1,27 +1,18 @@
 # Backlog
 
-- visualize "EEPROM is corrupt" to user
-- Logo FG
-
-- 1.1
-    - turn laser on/off
-    - read EEPROM
-    - set integration time
-    - set gainDB
-    - perform dark subtraction
-- 1.2
-    - Add Pearson and simple library
-- 1.3 
-    - save spectra
-- 1.4
-    - HW scan averaging
+- High
+    - push integration time at connection (test @ 400ms)
     - battery readout
+    - HW scan averaging
     - Raman Mode
+    - fix re-connect
+    - Add Pearson and simple library
     - update Pearson to use external library
     - add save-to-library
     - add Tensorflow
 - Future
-    - use phone's Volume button for Acquire (doesn't require eyes-on-screen)
+    - add "acquisition delay" so user can schedule acquisition in 3 sec, then focus eyes on sample rather than screen during collection
+    - add optional audio feedback for laser change, measurement received etc
     - support iPhone
     - explore maccatalyst (iPad?)
     - explore iWatch

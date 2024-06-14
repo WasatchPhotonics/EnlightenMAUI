@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-// using Xamarin.Essentials;
+﻿using System.ComponentModel;
 
 namespace EnlightenMAUI.Models;
 
 // Mostly corresponds to ENLIGHTEN and WasatchNET's Measurement classes, but
 // currently we're re-using a "singleton" Measurement for memory reasons.
-public class Measurement
+public class Measurement : INotifyPropertyChanged
 {
+    // @todo: give a Spectrum
+
     public double[] raw = null;
     public double[] dark = null;
     public double[] reference = null;
@@ -18,11 +16,13 @@ public class Measurement
     Spectrometer spec;
 
     public DateTime timestamp = DateTime.Now;
-    public string filename;
+    public string filename { get; set; }
     public string measurementID;
     public Location location;
 
     Logger logger = Logger.getInstance();
+
+    public event PropertyChangedEventHandler PropertyChanged;
 
     public void reset()
     {
@@ -98,13 +98,13 @@ public class Measurement
 
         Settings settings = Settings.getInstance();
         string savePath = settings.getSavePath();
-        if (savePath is null)
+        if (savePath == null)
         {
             logger.error("saveAsync: can't get savePath");
             return false;
         }
 
-        string pathname = string.Format($"{savePath}/{filename}");
+        var pathname = Path.Join(savePath, filename);
         logger.debug($"Measurement.saveAsync: creating {pathname}");
 
         using (StreamWriter sw = new StreamWriter(pathname))  
@@ -113,6 +113,9 @@ public class Measurement
             sw.WriteLine();
             writeSpectra(sw);
         }
+
+        // This is handled already in SVM.doSave
+        // PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(filename)));
 
         return true;
     }

@@ -210,7 +210,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         get
         { 
             // string color = "#ff0000";
-            string color = ble.Adapter.IsScanning ? "#ba0a0a" : "#ccc";
+            string color = ble.Adapter.IsScanning ? "#ba0a0a" : "#515151";
             return color;
         }
     }
@@ -219,8 +219,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         get
         {
-            // string color = "#ffcc00";
-            string color = ble.Adapter.IsScanning ? "#fff" : "#333";
+            string color = ble.Adapter.IsScanning ? "#eee" : "#ccc";
             return color;
         }
     }
@@ -231,12 +230,12 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             if (BLEDevice.paired)
                 return "#ba0a0a";
-            else if (ble.Adapter.IsScanning)
-                return "#eee";
-            else if (!buttonConnectEnabled)
-                return "#999";
+            // else if (ble.Adapter.IsScanning)
+            //     return "#eee";
+            // else if (!buttonConnectEnabled)
+            //     return "#ccc";
             else
-                return "#ccc";
+                return "#515151";
         }
     }
 
@@ -312,11 +311,11 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         status = await Permissions.RequestAsync<Permissions.StorageWrite>();
         if (status != PermissionStatus.Granted)
-            logger.error("ENLIGHTEN requires StorageWrite permission to save spectra.");
+            logger.debug("ENLIGHTEN requires StorageWrite permission to save spectra.");
 
         status = await Permissions.RequestAsync<Permissions.StorageRead>();
         if (status != PermissionStatus.Granted)
-            logger.error("ENLIGHTEN requires StorageWrite permission to load spectra.");
+            logger.debug("ENLIGHTEN requires StorageRead permission to load spectra.");
 
         return true;
     }
@@ -357,7 +356,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         else
         {
             logger.debug("BVM.doConnectOrDisconnect: connecting");
-            BLEDevice.paired = await doConnectAsync();
+            await doConnectAsync();
             if (BLEDevice.paired)
             {
                 logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
@@ -408,6 +407,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.doDisconnectAsync: done");
         BLEDevice.paired = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
         return true;
     }
 
@@ -591,13 +591,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // all done
         ////////////////////////////////////////////////////////////////////
 
-        logger.debug("BVM.doConnectAsync: done");
         spec.bleDevice = bleDevice;
+        BLEDevice.paired = true;
 
-        // allow disconnect
+        // switch button to "disconnect"
         buttonConnectEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(buttonConnectText)));
 
+        logger.debug("BVM.doConnectAsync: done");
         return true;
     }
 

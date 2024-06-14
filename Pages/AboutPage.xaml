@@ -17,13 +17,16 @@
 
         <Image Source="enlighten_logo.png" HeightRequest="100" />
 
-        <Label FontSize="22" TextColor="#eee" Text="{Binding version}" />
+        <Label FontSize="22" TextColor="#eee" Text="{Binding appVersion}" />
 
         <Button Padding="40,10,40,10" 
                 Text="Learn more" 
+                TextColor="#eee" 
                 BackgroundColor="#27c0a1"
-                TextColor="White" 
                 Clicked="Button_Clicked" />
+
+        <!-- debugging -->
+        <Label TextColor="#666" HorizontalTextAlignment="Center" Text="{Binding hostDescription}"/>
 
     </FlexLayout>
 </ContentPage>

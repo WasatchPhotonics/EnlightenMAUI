@@ -29,8 +29,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     Logger logger = Logger.getInstance();
 
-    // public delegate void UserNotification(string title, string message, string button);
-    // public event UserNotification notifyUser;
+    public delegate void UserNotification(string title, string message, string button);
+    public event UserNotification notifyUser;
 
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle
@@ -45,23 +45,23 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         settings.PropertyChanged += handleSettingsChange;
         spec.PropertyChanged += handleSpectrometerChange;
-        spec.showAcquisitionProgress += showAcquisitionProgress; // closure?
+        spec.showAcquisitionProgress += showAcquisitionProgress; 
+        spec.measurement.PropertyChanged += handleSpectrometerChange;
 
-        // ScopePage Button events
+        // bind ScopePage Commands
+        laserCmd   = new Command(() => { _ = doLaser       (); }); 
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); }); 
-        laserCmd   = new Command(() => { _ = doLaser       (); }); 
-        saveCmd    = new Command(() => { _ = doSave        (); });
         darkCmd    = new Command(() => { _ = doDark        (); });
 
-        // ScopePage Slider.DragCompletedCommand events
+        saveCmd    = new Command(() => { _ = doSave        (); });
+        addCmd     = new Command(() => { _ = doAdd         (); });
+        clearCmd   = new Command(() => { _ = doClear       (); });
+        matchCmd   = new Command(() => { _ = doMatchAsync  (); });
+
         integCmd   = new Command(() => { _ = latchInteg    (); });
         gainCmd    = new Command(() => { _ = latchGain     (); });
         avgCmd     = new Command(() => { _ = latchAvg      (); });
-
-        // commented-out on GUI?
-        addCmd     = new Command(() => { _ = doAdd         (); });
-        clearCmd   = new Command(() => { _ = doClear       (); });
 
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
@@ -172,12 +172,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             logger.debug($"gainSlider: {value}dB");
-            _gainSlider = value;
+            _gainSlider = (float)Math.Round(value, 1);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_gain)));
         }
     }
     private float _gainSlider = 8;
-    public string label_gain { get => $"Gain: {gainSlider}dB"; }
+    public string label_gain { get => $"Gain: {gainSlider:f1}dB"; }
     public Command gainCmd { get; }
     bool latchGain()
     {
@@ -220,12 +220,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string darkButtonForegroundColor
     {
-        get => spec.dark != null ? "#eee" : "#666";
+        get => spec.dark != null ? "#eee" : "#ccc";
     }
 
     public string darkButtonBackgroundColor
     {
-        get => spec.dark != null ? "#ba0a0a" : "#ccc";
+        get => spec.dark != null ? "#ba0a0a" : "#515151";
     }
 
     private void updateDarkButton()
@@ -282,18 +282,19 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string laserButtonForegroundColor
     {
-        get => spec.laserEnabled ? "#eee" : "#666";
+        get => spec.laserEnabled ? "#eee" : "#ccc";
     }
 
     public string laserButtonBackgroundColor
     {
-        get => spec.laserEnabled ? "#ba0a0a" : "#ccc";
+        get => spec.laserEnabled ? "#ba0a0a" : "#515151";
     }
 
     private void updateLaserButton()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonForegroundColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserButtonText)));
     }
 
     bool doLaser()
@@ -502,12 +503,12 @@ public class ScopeViewModel : INotifyPropertyChanged
     public string acquireButtonBackgroundColor
     {
         // @todo move #ba0a0a to app-wide palette
-        get => spec.acquiring ? "#ba0a0a" : "#ccc";
+        get => spec.acquiring ? "#ba0a0a" : "#515151";
     }
 
     public string acquireButtonTextColor
     {
-        get => spec.acquiring ? "#fff" : "#333";
+        get => spec.acquiring ? "#eee" : "#ccc";
     }
 
     // invoked by ScopeView when the user clicks "Acquire" 
@@ -596,6 +597,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Chart
     ////////////////////////////////////////////////////////////////////////
 
+    public bool hasSpectrum { get => spec.lastSpectrum != null; }
+
     public Command addCmd { get; }
     public Command clearCmd { get; }
 
@@ -614,9 +617,21 @@ public class ScopeViewModel : INotifyPropertyChanged
     public ObservableCollection<ChartDataPoint> trace6 { get; set; } = new ObservableCollection<ChartDataPoint>();
     public ObservableCollection<ChartDataPoint> trace7 { get; set; } = new ObservableCollection<ChartDataPoint>();
 
+    const int MAX_TRACES = 8;
     double[] xAxis;
     int nextTrace = 0;
-    const int MAX_TRACES = 8;
+
+    public bool hasTraces 
+    {
+        get => _hasTraces;
+        set
+        {
+            _hasTraces = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasTraces)));
+        }
+    }
+    bool _hasTraces;
+
     void setTraceData(int trace, ObservableCollection<ChartDataPoint> data)
     {
         switch (trace)
@@ -669,6 +684,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         refreshChartData();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(chartData)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumMax)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasSpectrum)));
         logger.debug("updateChart: done");
     }
 
@@ -740,33 +756,28 @@ public class ScopeViewModel : INotifyPropertyChanged
     bool doAdd()
     {
         logger.debug("Add button pressed");
-
         var name = getTraceName(nextTrace);
         logger.debug($"Populating trace {name}");
         var newData = new ObservableCollection<ChartDataPoint>();
         foreach (var orig in chartData)
             newData.Add(new ChartDataPoint() { xValue = orig.xValue, intensity = orig.intensity });
         setTraceData(nextTrace, newData);
-
         updateTrace(nextTrace);
-
         nextTrace = (nextTrace + 1) % MAX_TRACES;
-
+        hasTraces = true;
         return true; 
     }
 
     bool doClear()
     {
         logger.debug("Clear button pressed");
-
         for (int i = 0; i < MAX_TRACES; i++)
         {
             getTraceData(i).Clear();
             updateTrace(i);
         }
-
         nextTrace = 0;
-
+        hasTraces = false;
         return true;
     }
 
@@ -774,7 +785,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Save Command
     ////////////////////////////////////////////////////////////////////////
 
-    // invoked by ScopeView when the user clicks "Save" 
     public Command saveCmd { get; }
 
     // the user clicked the "Save" button on the Scope View
@@ -808,18 +818,17 @@ public class ScopeViewModel : INotifyPropertyChanged
             updateLaserProperties();
     }
 
-    // testing kludge
-    // void refreshAll_NOT_USED()
-    // {
-    //     // there's probably a way to iterate over Properties via Reflection
-    //     string[] names = {
-    //         "title", "paired", "xAxisOptions", "xAxisOption", "xAxisMinimum", "xAxisMaximum",
-    //         "xAxisLabelFormat", "integrationTimeMS", "gainDb", "scansToAverage", "darkEnabled",
-    //         "note", "laserEnabled", "ramanModeEnabled", "laserIsAvailable", "isAuthenticated",
-    //         "isRefreshing", "spectrumMax", "batteryState", "batteryColor", "acquireButtonBackgroundColor",
-    //         "acquireButtonTextColor", "chartData", "trace0", "trace1", "trace2", "trace3", "trace4",
-    //         "trace5", "trace6", "trace7" };
-    //     foreach (var name in names)
-    //         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    // }
+    ////////////////////////////////////////////////////////////////////////
+    // Matching
+    ////////////////////////////////////////////////////////////////////////
+
+    public Command matchCmd { get; }
+    public bool hasMatchingLibrary {get; private set;}
+    public bool hasMatch {get; private set;}
+    public string matchResult {get; private set;}
+
+    async Task<bool> doMatchAsync()
+    {
+        return true;
+    }
 }

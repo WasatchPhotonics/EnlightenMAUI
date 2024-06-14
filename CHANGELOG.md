@@ -1,5 +1,28 @@
 # Changelog
 
+- 2024-??-?? 0.4.1
+    - added StatusBar and battery to Scope
+- 2024-06-13 0.4.0
+    - fixed colors on Android Go phones
+    - fixed disconnect button
+    - default all SaveOptions on
+- 2024-05-07 0.3.3
+    - fixed Hardware color
+    - added phone info to About
+    - got Log working
+    - rounded gain
+    - moved to single icon SVG
+    - started renaming to EnlightenMobile
+    - permissions logging bugfix
+- 2024-05-04 0.3.2
+    - tweaks for demo
+- 2024-04-30 0.3.1
+    - saves to CSV
+    - Add, Clear buttons work
+    - temporarily deprecated Clipboard Page
+    - fiddled with button colors
+    - made ProgressBars more teal
+    - added enabled logic for Scope Save, Add, Clear buttons
 - 2024-04-29 0.3.0
     - fixed appicon
     - fixed app name

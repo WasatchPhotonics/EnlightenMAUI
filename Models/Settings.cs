@@ -1,10 +1,7 @@
-﻿using System;
+﻿using EnlightenMAUI.Platforms;
+using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
-// using Xamarin.Forms;
-// using Xamarin.Essentials;
-
-// using EnlightenMobile.Services;
 
 namespace EnlightenMAUI.Models;
 
@@ -30,12 +27,12 @@ public class Settings : INotifyPropertyChanged
     public string savePath;
 
     // todo: move to SaveOptions
-    public bool savePixel;
-    public bool saveWavelength;
-    public bool saveWavenumber;
-    public bool saveRaw;
-    public bool saveDark;
-    public bool saveReference;
+    public bool savePixel { get; set;} = true;
+    public bool saveWavelength { get; set;} = true;
+    public bool saveWavenumber { get; set;} = true;
+    public bool saveRaw { get; set;} = true;
+    public bool saveDark { get; set;} = true;
+    public bool saveReference { get; set;} = true;
 
     // todo: prompt to auto-connect this device if found on scan
     // public Guid lastConnectedGuid;
@@ -78,16 +75,11 @@ public class Settings : INotifyPropertyChanged
 
     public string hostDescription
     {
-        get
-        {
-            var model   = DeviceInfo.Model;         // SMG-950U, iPhone10,6 etc
-            var manuf   = DeviceInfo.Manufacturer;  // Samsung, Apple etc
-            var name    = DeviceInfo.Name;          // "Mark's iPhone" etc
-            var version = DeviceInfo.VersionString; // 7.0 etc
-            var os      = DeviceInfo.Platform;      // Android, iOS etc
-
-            return $"{name} ({manuf} {model} running {os} {version})";
-        }
+        get => $"{DeviceInfo.Name} ({DeviceInfo.Manufacturer} {DeviceInfo.Model} running {DeviceInfo.Platform} {DeviceInfo.VersionString})";
+    }
+    public string hostDescriptionWrapped
+    {
+        get => $"{DeviceInfo.Name}\n{DeviceInfo.Manufacturer} {DeviceInfo.Model}\n{DeviceInfo.Platform} {DeviceInfo.VersionString}";
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -96,9 +88,13 @@ public class Settings : INotifyPropertyChanged
 
     public string getSavePath()
     {
-        // IPlatformUtil platformUtil = DependencyService.Get<IPlatformUtil>();
-        // return platformUtil.getSavePath();
-        return "NotImplemented";
+        return PlatformUtil.getSavePath();
+    }
+
+    // Write the file content to the app data directory
+    public void writeFile(string pathname, string text)
+    {
+        File.WriteAllText(pathname, text);
     }
 
     ////////////////////////////////////////////////////////////////////////

@@ -74,13 +74,14 @@
                 </telerik:RadCartesianChart.ChartBehaviors>
             </telerik:RadCartesianChart>
 
-            <Picker ItemsSource="{Binding xAxisNames}" SelectedItem="{Binding xAxisName}" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
+            <Picker TextColor="#eee" ItemsSource="{Binding xAxisNames}" SelectedItem="{Binding xAxisName}" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
 
             <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" IsEnabled="{Binding paired}">
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!--      ProgressBar       -->
-                    <RowDefinition Height="Auto"/> <!-- Acquire Save Add Clear -->
+                    <RowDefinition Height="Auto"/> <!--  Laser Acquire Dark    -->
+                    <RowDefinition Height="Auto"/> <!--    Save Add Clear      -->
                     <RowDefinition Height="Auto"/> <!-- Acquisition Parameters -->
                 </Grid.RowDefinitions>
 
@@ -89,11 +90,10 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Acquisition ProgressBar -->
-                <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#2994d3"/> 
+                <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/> <!-- ProgressColor="#2994d3"/> -->
 
                 <!-- Command buttons -->
                 <StackLayout Grid.Row="1" Grid.Column="0" Margin="2">
-
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Laser -->
@@ -118,24 +118,38 @@
                                 Command="{Binding darkCmd}"
                                 TextColor="{Binding darkButtonForegroundColor}"
                                 BackgroundColor="{Binding darkButtonBackgroundColor}" />
+                    </FlexLayout>
+                </StackLayout>
+
+                <StackLayout Grid.Row="2" Grid.Column="0" Margin="2">
+                    <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Save -->
-                        <Button Margin="2" 
-                                Text="Save"  
-                                Command="{Binding saveCmd}" />
+                        <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/>
 
-                        <!-- <Button Margin="2" Text="Add" Command="{Binding addCmd}" /> -->
-                        <!-- <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" /> -->
+                        <!-- Add -->
+                        <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/>
+
+                        <!-- Clear -->
+                        <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" IsEnabled="{Binding hasTraces}"/>
+
+                        <!-- Match -->
+                        <Button Margin="2" Text="Match" Command="{Binding matchCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="{Binding hasMatchingLibrary}"/>
+
                         <!-- <Button Margin="2" Text="QR" Clicked="qrScan" /> -->
                         <!-- <Button Margin="2" Text="Photo" Clicked="photoCapture" /> -->
                     </FlexLayout>
                 </StackLayout>
 
-                <StackLayout Grid.Row="2" Grid.Column="0" HorizontalOptions="FillAndExpand" Padding="20, 10, 20, 10">
+                <!-- Match Result -->
+                <Label Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+
+                <!-- Acquisition Parameters -->
+                <StackLayout Grid.Row="3" Grid.Column="0" HorizontalOptions="FillAndExpand" Padding="20, 10, 20, 10">
 
                     <!-- integration time -->
                     <StackLayout>
-                        <Label Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Label TextColor="#eee" Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
                         <Slider Maximum="5000"  
                                 Minimum="1" 
                                 Value="{Binding integSlider}" 
@@ -145,7 +159,7 @@
 
                     <!-- gain -->
                     <StackLayout>
-                        <Label Text="{Binding label_gain}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Label TextColor="#eee" Text="{Binding label_gain}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
                         <Slider Maximum="72" 
                                 Minimum="0" 
                                 Value="{Binding gainSlider}" 
@@ -155,7 +169,7 @@
 
                     <!-- averaging -->
                     <StackLayout>
-                        <Label Text="{Binding label_avg}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+                        <Label TextColor="#eee" Text="{Binding label_avg}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
                         <Slider Maximum="32" 
                                 Minimum="1" 
                                 Value="{Binding avgSlider}" 
@@ -174,13 +188,25 @@
                         </Grid.ColumnDefinitions>
 
                         <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding useHorizontalROI}" />
-                        <Label Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
+                        <Label TextColor="#eee" Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
 
                         <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
+                        <Label TextColor="#eee" Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
                     </Grid>
                 </StackLayout>
+                
             </Grid>
+
+            <!-- StatusBar -->
+            <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
+                <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
+                    <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
+                        <Label TextColor="#eee" Text="Battery"/>
+                        <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}"/>
+                    </StackLayout>
+                </Frame>
+            </Frame>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
