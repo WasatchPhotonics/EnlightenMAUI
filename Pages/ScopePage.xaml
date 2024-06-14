@@ -81,7 +81,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!--      ProgressBar       -->
                     <RowDefinition Height="Auto"/> <!--  Laser Acquire Dark    -->
-                    <RowDefinition Height="Auto"/> <!--    Save Add Clear      -->
+                    <RowDefinition Height="Auto"/> <!-- Save Upload Add Clear  -->
                     <RowDefinition Height="Auto"/> <!-- Acquisition Parameters -->
                 </Grid.RowDefinitions>
 
@@ -126,6 +126,9 @@
 
                         <!-- Save -->
                         <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/>
+
+                        <!-- Upload -->
+                        <Button Margin="2" Text="Upload" Command="{Binding uploadCmd}" IsEnabled="{Binding hasSpectrum}"/>
 
                         <!-- Add -->
                         <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/>
