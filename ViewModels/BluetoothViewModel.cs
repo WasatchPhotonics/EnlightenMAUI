@@ -78,7 +78,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         guidByName["eepromCmd"]         = _makeGuid("ff07");
         guidByName["eepromData"]        = _makeGuid("ff08");
         guidByName["batteryStatus"]     = _makeGuid("ff09");
-        guidByName["roi"]               = _makeGuid("ff0a");
+        guidByName["generic"]           = _makeGuid("ff0a"); // was ROI
 
         foreach (var pair in guidByName)
             nameByGuid[pair.Value] = pair.Key;

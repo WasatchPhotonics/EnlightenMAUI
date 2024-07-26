@@ -181,6 +181,9 @@ public class Spectrometer : INotifyPropertyChanged
         logger.debug("Spectrometer.initAsync: generating pixel axis");
         generatePixelAxis();
 
+        // disable laserWarningDelay (testing)
+        laserWarningDelaySec = 0;
+
         // set this early so battery and other BLE calls can progress
         paired = true;
 
@@ -201,15 +204,15 @@ public class Spectrometer : INotifyPropertyChanged
         integrationTimeMS = 400;
         gainDb = 8;
 
-        verticalROIStartLine = eeprom.ROIVertRegionStart[0];
-        verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
+        // verticalROIStartLine = eeprom.ROIVertRegionStart[0];
+        // verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
 
         logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
         logger.info($"  pixels: {pixels}");
         logger.info($"  integrationTimeMS: {integrationTimeMS}");
         logger.info($"  gainDb: {gainDb}");
-        logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
+        // logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
         logger.info($"  excitation: {laserExcitationNM:f3}nm");
         logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels-1]:f2})");
         if (wavenumbers != null)
@@ -451,7 +454,7 @@ public class Spectrometer : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
     // Vertical ROI Start/Stop
     ////////////////////////////////////////////////////////////////////////
-
+    /*
     public ushort verticalROIStartLine
     {
         get => _nextVerticalROIStartLine;
@@ -538,6 +541,51 @@ public class Spectrometer : INotifyPropertyChanged
 
         return ok;
     }
+    */
+    ////////////////////////////////////////////////////////////////////////
+    // laserWarningDelaySec
+    ////////////////////////////////////////////////////////////////////////
+
+    public byte laserWarningDelaySec
+    {
+        get => _laserWarningDelaySec;
+        set
+        {
+            byte[] data = { 0xff, 0x8a, value };
+            _ = writeGenericCharacteristic(data);
+            _laserWarningDelaySec = value;
+        }
+    }
+    byte _laserWarningDelaySec = 3;
+
+    ////////////////////////////////////////////////////////////////////////
+    // genericCharacteristic
+    ////////////////////////////////////////////////////////////////////////
+
+    private async Task<bool> writeGenericCharacteristic(byte[] data)
+    {
+        if (!paired || characteristicsByName is null)
+            return false;
+
+        var characteristic = characteristicsByName["generic"];
+        if (characteristic is null)
+        {
+            logger.error("Generic characteristic not found");
+            return false;
+        }
+
+        logger.hexdump(data, "generic data >>");
+
+        var ok = 0 == await characteristic.WriteAsync(data);
+        if (ok)
+            await pauseAsync("writeGenericCharacteristic");
+        else
+            logger.error($"Failed to write generic characteristic: {data}");
+
+        _genericSequence++; // allow to rollover
+        return ok;
+    }
+    byte _genericSequence = 0;
 
     ////////////////////////////////////////////////////////////////////////
     // laserState
