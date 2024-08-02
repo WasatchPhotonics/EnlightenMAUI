@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using Plugin.BLE.Abstractions.Contracts;
+using Plugin.BLE.Abstractions;
 using System.Linq;
 
 using EnlightenMAUI.Common;
@@ -233,6 +234,8 @@ public class Spectrometer : INotifyPropertyChanged
         logger.info("reading EEPROM");
         ICharacteristic eepromCmd;
         ICharacteristic eepromData;
+
+        //eepromCmd.WriteType = CharacteristicWriteType.
 
         if (characteristicsByName.ContainsKey("eepromCmd") && characteristicsByName.ContainsKey("eepromData"))
         {

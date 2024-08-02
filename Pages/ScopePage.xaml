@@ -152,7 +152,7 @@
 
                     <!-- integration time -->
                     <StackLayout>
-                        <Label TextColor="#eee" Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
+                        <Label TextColor="#eee" Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
                         <Slider Maximum="5000"  
                                 Minimum="1" 
                                 Value="{Binding integSlider}" 
@@ -180,21 +180,41 @@
                                 ThumbColor="Teal"/>
                     </StackLayout>
 
-                    <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
+                    <!-- just to test mobile loading -->
+                    <StackLayout Orientation="Horizontal" HorizontalOptions="FillAndExpand">
+                        <Label TextColor="#eee" Text="{Binding label_test}" VerticalOptions="CenterAndExpand"/>
+                        <Entry TextColor="#eee" Keyboard="Numeric" Text="{Binding testString}" VerticalOptions="CenterAndExpand"/>
+
+                        <Button Text="-" Command="{Binding testDownCmd}" VerticalOptions="CenterAndExpand" Margin="5" Padding="6" WidthRequest="30" HeightRequest="30" />
+                        <Slider Maximum="32" 
+                                HorizontalOptions="FillAndExpand"
+                                VerticalOptions="CenterAndExpand"
+                                Minimum="1" 
+                                Value="{Binding testSlider}" 
+                                DragCompletedCommand="{Binding testCmd}" 
+                                ValueChanged="Slider_ValueChanged"
+                                ThumbColor="Teal"/>
+
+                        <Button Text="+" Command="{Binding testUpCmd}" VerticalOptions="CenterAndExpand" Margin="5" Padding="6" WidthRequest="30" HeightRequest="30" />
+
+                    </StackLayout>
+
+                    <Grid HorizontalOptions="StartAndExpand"  VerticalOptions="EndAndExpand">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Horizontal ROI -->
                             <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
                         </Grid.RowDefinitions>
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding useHorizontalROI}" />
-                        <Label TextColor="#eee" Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
+                        <Switch Margin="5, 2, 2, 2" Grid.Row="0" Grid.Column="0" HorizontalOptions="StartAndExpand" VerticalOptions="Center" IsToggled="{Binding useHorizontalROI}" />
+                        <Label Margin="5, 2, 2, 2" TextColor="#eee" Grid.Row="0" Grid.Column="1" HorizontalOptions="StartAndExpand" VerticalOptions="Center" Text="Horizontal ROI" />
 
-                        <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label TextColor="#eee" Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
+                        <Switch Margin="5, 2, 2, 2" Grid.Row="1" Grid.Column="0" HorizontalOptions="StartAndExpand" VerticalOptions="Center" IsToggled="{Binding useRamanIntensityCorrection}" />
+                        <Label Margin="5, 2, 2, 2" TextColor="#eee" Grid.Row="1" Grid.Column="1" HorizontalOptions="StartAndExpand" VerticalOptions="Center" Text="Raman Intensity Correction" />
                     </Grid>
                 </StackLayout>
                 

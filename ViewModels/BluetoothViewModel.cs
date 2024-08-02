@@ -8,8 +8,121 @@ using Plugin.BLE;
 
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Common;
+using Plugin.BLE.Abstractions.Utils;
+using Plugin.BLE.Abstractions;
 
 namespace EnlightenMAUI.ViewModels;
+
+
+/// <summary>
+/// Various extensions for the <c>Adapter</c> classes.
+/// </summary>
+public static class AdapterExtension
+{
+    /// <summary>
+    /// Starts scanning for BLE devices.
+    /// </summary>
+    /// <param name="adapter">Target adapter.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous read operation. The Task will finish after the scan has ended.</returns>
+    public static Task StartScanningForDevicesAsync(this IAdapter adapter, CancellationToken cancellationToken)
+    {
+        return adapter.StartScanningForDevicesAsync(scanFilterOptions: null, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Starts scanning for BLE devices that advertise the services included in <paramref name="serviceUuids"/>.
+    /// </summary>
+    /// <param name="adapter">Target adapter.</param>
+    /// <param name="serviceUuids">Requested service Ids.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.</param>
+    /// <returns>A task that represents the asynchronous read operation. The Task will finish after the scan has ended.</returns>
+    public static Task StartScanningForDevicesAsync(this IAdapter adapter, Guid[] serviceUuids, CancellationToken cancellationToken = default)
+    {
+        return adapter.StartScanningForDevicesAsync(new ScanFilterOptions() { ServiceUuids = serviceUuids }, null, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Starts scanning for BLE devices that match the provided <paramref name="scanFilterOptions"/>.
+    /// </summary>
+    /// <param name="adapter">Target adapter.</param>
+    /// <param name="scanFilterOptions">Scan Filter Options for native level filtering. Some options are platform specific, see comments.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.</param>
+    /// <returns>A task that represents the asynchronous read operation. The Task will finish after the scan has ended.</returns>
+    public static Task StartScanningForDevicesAsync(this IAdapter adapter, ScanFilterOptions scanFilterOptions, CancellationToken cancellationToken = default)
+    {
+        return adapter.StartScanningForDevicesAsync(scanFilterOptions, null, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Starts scanning for BLE devices that fulfill the <paramref name="deviceFilter"/>.
+    /// DeviceDiscovered will only be called, if <paramref name="deviceFilter"/> returns <c>true</c> for the discovered device.
+    /// </summary>
+    /// <param name="adapter">Target adapter.</param>
+    /// <param name="deviceFilter">Function that filters the devices.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.</param>
+    /// <returns>A task that represents the asynchronous read operation. The Task will finish after the scan has ended.</returns>
+    public static Task StartScanningForDevicesAsync(this IAdapter adapter, Func<IDevice, bool> deviceFilter, CancellationToken cancellationToken = default)
+    {
+        return adapter.StartScanningForDevicesAsync(scanFilterOptions: null, deviceFilter: deviceFilter, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Try to discover a device with a specific device Id.
+    /// </summary>
+    public static Task<IDevice> DiscoverDeviceAsync(this IAdapter adapter, Guid deviceId, CancellationToken cancellationToken = default)
+    {
+        return DiscoverDeviceAsync(adapter, device => device.Id == deviceId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Try to discover a device that matches a filter function.
+    /// </summary>
+    public static async Task<IDevice> DiscoverDeviceAsync(this IAdapter adapter, Func<IDevice, bool> deviceFilter, CancellationToken cancellationToken = default)
+    {
+        var device = adapter.DiscoveredDevices.FirstOrDefault(deviceFilter);
+        if (device != null)
+        {
+            return device;
+        }
+
+        if (adapter.IsScanning)
+        {
+            await adapter.StopScanningForDevicesAsync();
+        }
+
+        return await TaskBuilder.FromEvent<IDevice, EventHandler<DeviceEventArgs>, EventHandler>(
+            execute: () => adapter.StartScanningForDevicesAsync(deviceFilter, cancellationToken),
+
+            getCompleteHandler: (complete, reject) => ((sender, args) =>
+            {
+                complete(args.Device);
+                adapter.StopScanningForDevicesAsync();
+            }),
+            subscribeComplete: handler => adapter.DeviceDiscovered += handler,
+            unsubscribeComplete: handler => adapter.DeviceDiscovered -= handler,
+
+            getRejectHandler: reject => ((sender, args) => { reject(new DeviceDiscoverException()); }),
+            subscribeReject: handler => adapter.ScanTimeoutElapsed += handler,
+            unsubscribeReject: handler => adapter.ScanTimeoutElapsed -= handler,
+
+            token: cancellationToken);
+    }
+
+    /// <summary>
+    /// Connects to the <paramref name="device"/>.
+    /// </summary>
+    /// <param name="adapter">Target adapter.</param>
+    /// <param name="device">Device to connect to.</param>
+    /// <param name="connectParameters">Connection parameters. Contains platform specific parameters needed to achieved connection. The default value is None.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.</param>
+    /// <returns>A task that represents the asynchronous read operation. The Task will finish after the device has been connected successfuly.</returns>
+    /// <exception cref="DeviceConnectionException">Thrown if the device connection fails.</exception>
+    public static Task ConnectToDeviceAsync(this IAdapter adapter, IDevice device, ConnectParameters connectParameters, CancellationToken cancellationToken)
+    {
+        return adapter.ConnectToDeviceAsync(device, connectParameters: connectParameters, cancellationToken: cancellationToken);
+    }
+}
 
 public class BluetoothViewModel : INotifyPropertyChanged
 {
@@ -56,6 +169,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
         ble = CrossBluetoothLE.Current;
         logger.debug("BVM.ctor: grabbing adapter handle");
         adapter = CrossBluetoothLE.Current.Adapter;
+
+        adapter.ScanMode = ScanMode.LowLatency;
+        adapter.ScanTimeout = 30000;
 
         logger.debug("BVM.ctor: adding DeviceDiscovered handler");
         adapter.DeviceDiscovered += _bleAdapterDeviceDiscovered;
@@ -256,11 +372,12 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.doScanAsync: clearing list"); 
         bleDeviceList.Clear();
         buttonConnectEnabled = false;
-        
+
         try
         {
             logger.debug("BVM.doScanAsync: requesting permissions");
             var success = await _requestPermissionsAsync();
+            success = await HasCorrectPermissions();
             if (!success)
             {
                 logger.error("BVM.doScanAsync: can't obtain Location permission");
@@ -271,7 +388,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
             if (!ble.Adapter.IsScanning)
             {
-                logger.debug("BVM.doScanAsync[Step 2]: starting scan");
+                logger.debug("BVM.doScanAsync[Step 2]: starting scan"); 
                 _ = adapter.StartScanningForDevicesAsync();
 
                 // Step 2: As each device is added to the list, the 
@@ -288,6 +405,26 @@ public class BluetoothViewModel : INotifyPropertyChanged
         updateScanButtonProperties();
 
         logger.debug("BVM.doScanAsync: scan change complete");
+        return true;
+    }
+
+    private async Task<bool> HasCorrectPermissions()
+    {
+        logger.debug("Verifying Bluetooth permissions..");
+        var permissionResult = await Permissions.CheckStatusAsync<Permissions.Bluetooth>();
+        if (permissionResult != PermissionStatus.Granted)
+        {
+            permissionResult = await Permissions.RequestAsync<Permissions.Bluetooth>();
+        }
+        logger.debug($"Result of requesting Bluetooth permissions: '{permissionResult}'");
+        if (permissionResult != PermissionStatus.Granted)
+        {
+            logger.debug("Permissions not available, direct user to settings screen.");
+            //ShowMessage("Permission denied. Not scanning.");
+            AppInfo.ShowSettingsUI();
+            return false;
+        }
+
         return true;
     }
 
@@ -476,7 +613,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         connectionProgress = 0.05;
 
         // Step 6: connect to primary service
-        await bleDevice.device.RequestMtuAsync(256);
+        await bleDevice.device.RequestMtuAsync(512);
         logger.debug($"BVM.doConnectAsync[Step 6]: connecting to primary service {primaryServiceId}");
         service = await bleDevice.device.GetServiceAsync(primaryServiceId);
         if (service is null)
@@ -492,6 +629,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         var list = await service.GetCharacteristicsAsync();
         foreach (var c in list)
         {
+            //(c as CharacteristicBase<BluetoothGattCharacteristic>).Properties
             // match it with an "expected" UUID
             string name = null;
             foreach (var pair in guidByName)
@@ -561,9 +699,13 @@ public class BluetoothViewModel : INotifyPropertyChanged
                         logger.hexdump(response.data, prefix: $"  {c.Uuid}: {c.Name} = ");
                         spec.bleDeviceInfo.add(c.Name, Util.toASCII(response.data));
                     }
+
+                    
                 }
             }
         }
+
+        //bleDevice.device.
 
         // populate Spectrometer
         logger.debug("BVM.doConnectAsync: initializing spectrometer");
@@ -576,7 +718,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             var c = pair.Value;
 
             // disabled until I can troubleshoot with Nic
-            if (false && c.CanUpdate && (name == "batteryStatus" || name == "laserState"))
+            if (c.CanUpdate && (name == "batteryStatus" || name == "laserState"))
             {
                 logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                 c.ValueUpdated -= _characteristicUpdated;

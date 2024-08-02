@@ -58,10 +58,17 @@ public partial class ScopePage : ContentPage
     async void notifyUserAsync(string title, string message, string button) =>
        await DisplayAlert(title, message, button);
 
+    private void Slider_ValueChanged(object sender, ValueChangedEventArgs e)
+    {
+        double value = e.NewValue;
+        ((Slider)sender).Value = value;
+    }
+
+
     ////////////////////////////////////////////////////////////////////////
     // Expand / hide control palette in Landscape mode
     ////////////////////////////////////////////////////////////////////////
-    
+
     /*
     private void buttonExpander_Clicked(object sender, EventArgs e)
     {

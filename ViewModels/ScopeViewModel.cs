@@ -49,20 +49,23 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.measurement.PropertyChanged += handleSpectrometerChange;
 
         // bind ScopePage Commands
-        laserCmd   = new Command(() => { _ = doLaser       (); }); 
-        acquireCmd = new Command(() => { _ = doAcquireAsync(); });
-        refreshCmd = new Command(() => { _ = doAcquireAsync(); }); 
-        darkCmd    = new Command(() => { _ = doDark        (); });
-
-        saveCmd    = new Command(() => { _ = doSave        (); });
-        uploadCmd  = new Command(() => { _ = doUpload      (); });
-        addCmd     = new Command(() => { _ = doAdd         (); });
-        clearCmd   = new Command(() => { _ = doClear       (); });
-        matchCmd   = new Command(() => { _ = doMatchAsync  (); });
-
-        integCmd   = new Command(() => { _ = latchInteg    (); });
-        gainCmd    = new Command(() => { _ = latchGain     (); });
-        avgCmd     = new Command(() => { _ = latchAvg      (); });
+        laserCmd    = new Command(() => { _ = doLaser       (); }); 
+        acquireCmd  = new Command(() => { _ = doAcquireAsync(); });
+        refreshCmd  = new Command(() => { _ = doAcquireAsync(); }); 
+        darkCmd     = new Command(() => { _ = doDark        (); });
+                    
+        saveCmd     = new Command(() => { _ = doSave        (); });
+        uploadCmd   = new Command(() => { _ = doUpload      (); });
+        addCmd      = new Command(() => { _ = doAdd         (); });
+        clearCmd    = new Command(() => { _ = doClear       (); });
+        matchCmd    = new Command(() => { _ = doMatchAsync  (); });
+                    
+        integCmd    = new Command(() => { _ = latchInteg    (); });
+        gainCmd     = new Command(() => { _ = latchGain     (); });
+        avgCmd      = new Command(() => { _ = latchAvg      (); });
+        testCmd     = new Command(() => { _ = latchTest     (); });
+        testUpCmd   = new Command(() => {     testUp        (); });
+        testDownCmd = new Command(() => {     testDown      (); });
 
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
@@ -213,6 +216,54 @@ public class ScopeViewModel : INotifyPropertyChanged
         return true;
     }
 
+    public string testString
+    {
+        get => testSlider.ToString();
+        set
+        {
+            byte outB;
+            bool ok = Byte.TryParse(value, out outB);
+            if (ok && outB != testSlider)
+            {
+                testSlider = outB;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(testSlider)));
+            }
+        }
+    }
+
+    public Byte testSlider
+    {
+        get => _testSlider;
+        set
+        {
+            logger.debug($"testSlider: {value}");
+            _testSlider = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_test)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(testString)));
+        }
+    }
+    private Byte _testSlider = 1;
+    public string label_test { get => "Just a Number: "; }
+    public Command testCmd { get; }
+    public Command testUpCmd { get; }
+    public Command testDownCmd { get; }
+    bool latchTest()
+    {
+        Byte value = testSlider;
+        logger.debug($"latchTest: sending current slider value {value} downstream");
+        //spec.scansToAverage = value;
+        return true;
+    }
+    void testUp()
+    {
+        testSlider += 1;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(testSlider)));
+    }
+    void testDown()
+    {
+        testSlider -= 1;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(testSlider)));
+    }
     ////////////////////////////////////////////////////////////////////////
     // dark subtraction
     ////////////////////////////////////////////////////////////////////////
@@ -814,7 +865,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         else if (name == "batteryStatus")
             updateBatteryProperties();
         else if (name == "paired")
+        {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
+            updateAcquireButtonProperties();
+            updateBatteryProperties();
+            updateLaserProperties();
+        }
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
     }
