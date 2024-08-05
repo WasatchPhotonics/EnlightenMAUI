@@ -51,6 +51,14 @@
                     <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
+                <!--
+                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                    <Label  Text="Laser Warning Delay (Sec)" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                    <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
+                    <telerik:RadNumericInput Value="{Binding laserWarningDelaySec, Mode=TwoWay}" Minimum="0" Maximum="10" Step="1" AutomationId="numericDefinedValue"/>
+                </StackLayout>
+                -->
+
                 <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
                     <Label Text="Laser Watchdog Timeout (sec)" />
                     <Entry Text="{Binding laserWatchdogTimeoutSec}" 
@@ -62,7 +70,7 @@
 
                 <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
                     <Label Text="Laser Warm-up Delay (ms)" />
-                    <Entry Text="{Binding laserDelayMS}" 
+                    <Entry Text="{Binding laserWarningDelaySec}" 
                            Placeholder="500"
                            HorizontalTextAlignment="Center"
                            WidthRequest="100"

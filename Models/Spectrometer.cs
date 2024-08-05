@@ -181,9 +181,6 @@ public class Spectrometer : INotifyPropertyChanged
         logger.debug("Spectrometer.initAsync: generating pixel axis");
         generatePixelAxis();
 
-        // disable laserWarningDelay (testing)
-        laserWarningDelaySec = 0;
-
         // set this early so battery and other BLE calls can progress
         paired = true;
 
@@ -224,6 +221,10 @@ public class Spectrometer : INotifyPropertyChanged
         // at this point we know the user has already granted location privs.
         //
         // whereAmI = WhereAmI.getInstance();
+
+        // disable laserWarningDelay (testing)
+        logger.debug($"Spectrometer.initAsync: changing laserWarningDelaySec from {laserWarningDelaySec} to zero");
+        laserWarningDelaySec = 0;
 
         logger.debug("Spectrometer.initAsync: done");
         return true;
@@ -551,9 +552,11 @@ public class Spectrometer : INotifyPropertyChanged
         get => _laserWarningDelaySec;
         set
         {
+            logger.debug("laserWarningDelaySec.set: start");
             byte[] data = { 0xff, 0x8a, value };
             _ = writeGenericCharacteristic(data);
             _laserWarningDelaySec = value;
+            logger.debug("laserWarningDelaySec.set: done");
         }
     }
     byte _laserWarningDelaySec = 3;
@@ -562,10 +565,16 @@ public class Spectrometer : INotifyPropertyChanged
     // genericCharacteristic
     ////////////////////////////////////////////////////////////////////////
 
+    byte genericSequence = 0;
+
     private async Task<bool> writeGenericCharacteristic(byte[] data)
     {
+        logger.debug($"writeGenericCharacteristic: start (genericSequence {genericSequence})");
         if (!paired || characteristicsByName is null)
+        {
+            logger.error("writeGenericCharacteristic: not paired or no characteristics");
             return false;
+        }
 
         var characteristic = characteristicsByName["generic"];
         if (characteristic is null)
@@ -574,18 +583,39 @@ public class Spectrometer : INotifyPropertyChanged
             return false;
         }
 
-        logger.hexdump(data, "generic data >>");
+        logger.debug("setting characteristic to write-with-response");
+        characteristic.WriteType = Plugin.BLE.Abstractions.CharacteristicWriteType.WithResponse;
+        logger.debug("characteristic now " + characteristic.Properties.ToString());
 
-        var ok = 0 == await characteristic.WriteAsync(data);
-        if (ok)
-            await pauseAsync("writeGenericCharacteristic");
-        else
-            logger.error($"Failed to write generic characteristic: {data}");
+        byte[] dataToSend = new byte[8]; // data.Length + 1]; 
+        dataToSend[0] = genericSequence++;
+        for (int i = 1; i < 8; i++)
+            if ((i-1) < data.Length)
+                dataToSend[i] = data[i-1];
+            else
+                dataToSend[i] = 0;
 
-        _genericSequence++; // allow to rollover
+        logger.hexdump(dataToSend, "generic data >>");
+
+        logger.debug("writing generic characteristic");
+        bool ok = false;
+        try 
+        {
+            var result = await characteristic.WriteAsync(dataToSend);
+            ok = 0 == result;
+            if (ok)
+                await pauseAsync("writeGenericCharacteristic");
+            else
+                logger.error($"Failed to write generic characteristic (result {result}): {dataToSend}");
+        }
+        catch (Exception ex) 
+        {
+            logger.error($"Caught exception during characteristic.WriteAsync: {ex}");
+        }
+
+        logger.debug($"writeGenericCharacteristic: done (genericSequence now {genericSequence})");
         return ok;
     }
-    byte _genericSequence = 0;
 
     ////////////////////////////////////////////////////////////////////////
     // laserState

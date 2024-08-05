@@ -17,7 +17,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     public SettingsViewModel()
     {
         laserWatchdogTimeoutSec = spec.laserWatchdogSec;
-        laserDelayMS = spec.laserDelayMS;
+        laserWarningDelaySec = spec.laserWarningDelaySec;
     }
 
     public void loadSettings()
@@ -156,13 +156,13 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    public ushort laserDelayMS
+    public byte laserWarningDelaySec
     {
-        get => spec.laserDelayMS;
+        get => spec.laserWarningDelaySec;
         set
         {
-            spec.laserDelayMS = value;
-            Preferences.Set("laserDelay", value);
+            spec.laserWarningDelaySec = value;
+            Preferences.Set("laserWarningDelaySec", value);
         }
     }
 
