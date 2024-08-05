@@ -811,7 +811,7 @@ public class Spectrometer : INotifyPropertyChanged
         await updateBatteryAsync();
 
         // for progress bar
-        totalPixelsToRead = pixels * scansToAverage;
+        totalPixelsToRead = pixels; // * scansToAverage;
         totalPixelsRead = 0;
         acquiring = true;
 
@@ -821,7 +821,7 @@ public class Spectrometer : INotifyPropertyChanged
         if (swRamanMode)
         {
             const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
-            var watchdogMS = (scansToAverage + 1) * (integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS);
+            var watchdogMS = (scansToAverage + 1) * integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS;
             var watchdogSec = (byte)((Math.Max(MAX_SPECTRUM_READOUT_TIME_MS, watchdogMS) / 1000.0) * 2);
             logger.debug($"Spectrometer.takeOneAveragedAsync: setting laserWatchdogSec -> {watchdogSec}");
 
@@ -840,46 +840,29 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.debug($"Spectrometer.takeOneAveragedAsync: integrationTimeMS {integrationTimeMS}, gainDb {gainDb}, scansToAverage {scansToAverage}, laserWatchdogSec {laserWatchdogSec}");
 
-        double[] spectrum = null;
-        for (int spectrumCount = 0; spectrumCount < scansToAverage; spectrumCount++)
-        { 
-            bool disableLaserAfterFirstPacket = swRamanMode && spectrumCount + 1 == scansToAverage;
+        bool disableLaserAfterFirstPacket = swRamanMode;
 
-            if (!await sem.WaitAsync(100))
-            {
-                logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
-                return false;                        
-            }
-
-            double[] tmp = await takeOneAsync(disableLaserAfterFirstPacket);
-            logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
-
-            sem.Release();
-
-            if (tmp is null || (spectrum != null && tmp.Length != spectrum.Length))
-            {
-                if (tmp is null)
-                    logger.error("Spectrometer.takeOneAveragedAsync: tmp is null");
-                else if (spectrum != null && tmp.Length != spectrum.Length)
-                    logger.error($"Spectrometer.takeOneAveragedAsync: length changed ({tmp.Length} != {spectrum.Length})");
-
-                if (swRamanMode)
-                    laserEnabled = false;
-
-                logger.error("Spectrometer.takeOneAveragedAsync: giving up");
-                return acquiring = false;
-            }
-
-            if (spectrum is null)
-                spectrum = tmp;
-            else
-                for (int i = 0; i < spectrum.Length; i++)
-                    spectrum[i] += tmp[i];    
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            return false;                        
         }
 
-        if (scansToAverage > 1)
-            for (int i = 0; i < spectrum.Length; i++)
-                spectrum[i] /= scansToAverage;
+        double[] spectrum = await takeOneAsync(disableLaserAfterFirstPacket);
+        logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
+
+        sem.Release();
+
+        if (spectrum is null)
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: spectrum is null");
+
+            if (swRamanMode)
+                laserEnabled = false;
+
+            logger.error("Spectrometer.takeOneAveragedAsync: giving up");
+            return acquiring = false;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Post-Processing

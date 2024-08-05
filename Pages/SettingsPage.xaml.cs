@@ -37,12 +37,12 @@ public partial class SettingsPage : ContentPage
     void entryVerticalROIStartLine_Completed(Object sender, EventArgs e)
     {
         var entry = sender as Entry;
-        svm?.setVerticalROIStartLine(entry.Text);
+        // svm?.setVerticalROIStartLine(entry.Text);
     }
 
     void entryVerticalROIStopLine_Completed(Object sender, EventArgs e)
     {
         var entry = sender as Entry;
-        svm?.setVerticalROIStopLine(entry.Text);
+        // svm?.setVerticalROIStopLine(entry.Text);
     }
 }
