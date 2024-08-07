@@ -26,8 +26,8 @@
                                        VerticalOptions="FillAndExpand"
                                        MinimumHeightRequest="100"
                                        HeightRequest="400"
-                                       Margin="0"
-                                       BackgroundColor="#000">
+                                       BackgroundColor="#000"
+                                       Margin="0">
 
                 <!-- axes -->
                 <telerik:RadCartesianChart.HorizontalAxis>

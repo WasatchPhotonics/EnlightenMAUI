@@ -33,6 +33,14 @@ public partial class SettingsPage : ContentPage
         var entry = sender as Entry;
         entry.Text = "";
     }
+
+    /*
+    void entryLaserWarningDelaySec_Completed(Object sender, EventArgs e)
+    {
+        var entry = sender as Entry;
+        svm?.setLaserWarningDelaySec(entry.Text);
+    }
+    */
     
     void entryVerticalROIStartLine_Completed(Object sender, EventArgs e)
     {

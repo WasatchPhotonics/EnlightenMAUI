@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:DataType="local:ViewModels.SettingsViewModel"
-             x:Class="EnlightenMAUI.SettingsPage">
+             x:Class="EnlightenMAUI.SettingsPage"
+             BackgroundColor="#333">
 
     <ContentPage.BindingContext>
         <local:ViewModels.SettingsViewModel/>
@@ -51,54 +52,40 @@
                     <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
-                <!--
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Laser Warning Delay (Sec)" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
-                    <telerik:RadNumericInput Value="{Binding laserWarningDelaySec, Mode=TwoWay}" Minimum="0" Maximum="10" Step="1" AutomationId="numericDefinedValue"/>
+                <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="10">
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Laser Warning Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
+                                                 Value="{Binding laserWarningDelaySec}" 
+                                                 Minimum="0" Maximum="10"
+                                                 HorizontalOptions="EndAndExpand"/>
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Laser Watchdog Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
+                                                 Value="{Binding laserWatchdogTimeoutSec}" 
+                                                 Minimum="0" Maximum="600"
+                                                 HorizontalOptions="EndAndExpand"/>
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Vertical ROI Start Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="VerticalROIStartLine" 
+                                                 Value="{Binding verticalROIStartLine}" 
+                                                 Minimum="0" Maximum="1080"
+                                                 HorizontalOptions="EndAndExpand"/>
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Vertical ROI Stop Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="verticalROIStopLine" 
+                                                 Value="{Binding verticalROIStopLine}" 
+                                                 Minimum="0" Maximum="1080"
+                                                 HorizontalOptions="EndAndExpand"/>
+                    </StackLayout>
+
                 </StackLayout>
-                -->
-
-                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
-                    <Label Text="Laser Watchdog Timeout (sec)" />
-                    <Entry Text="{Binding laserWatchdogTimeoutSec}" 
-                           Placeholder="10"
-                           HorizontalTextAlignment="Center"
-                           WidthRequest="100"
-                           Keyboard="Numeric" />
-                </FlexLayout>
-
-                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
-                    <Label Text="Laser Warm-up Delay (ms)" />
-                    <Entry Text="{Binding laserWarningDelaySec}" 
-                           Placeholder="500"
-                           HorizontalTextAlignment="Center"
-                           WidthRequest="100"
-                           Keyboard="Numeric" />
-                </FlexLayout>
-
-                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
-                    <Label Text="Vertical ROI Start Line" />
-                    <Entry x:Name="entryVerticalROIStartLine"
-                           Text="{Binding verticalROIStartLine}" 
-                           Placeholder="200"
-                           HorizontalTextAlignment="Center"
-                           WidthRequest="100"
-                           Focused="entry_Focused"
-                           Completed="entryVerticalROIStartLine_Completed"
-                           Keyboard="Numeric" />
-                </FlexLayout>
-                <FlexLayout JustifyContent="SpaceBetween" IsVisible="{Binding isAuthenticated}">
-                    <Label Text="Vertical ROI Stop Line" />
-                    <Entry x:Name="entryVerticalROIStopLine"
-                           Text="{Binding verticalROIStopLine}" 
-                           Placeholder="800"
-                           HorizontalTextAlignment="Center"
-                           WidthRequest="100"
-                           Focused="entry_Focused"
-                           Completed="entryVerticalROIStopLine_Completed"
-                           Keyboard="Numeric" />
-                </FlexLayout>
             </StackLayout>
         </ScrollView>
     </StackLayout>

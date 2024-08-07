@@ -222,10 +222,6 @@ public class Spectrometer : INotifyPropertyChanged
         //
         // whereAmI = WhereAmI.getInstance();
 
-        // disable laserWarningDelay (testing)
-        logger.debug($"Spectrometer.initAsync: changing laserWarningDelaySec from {laserWarningDelaySec} to zero");
-        laserWarningDelaySec = 0;
-
         logger.debug("Spectrometer.initAsync: done");
         return true;
     }
