@@ -83,6 +83,7 @@
                     <RowDefinition Height="Auto"/> <!--  Laser Acquire Dark    -->
                     <RowDefinition Height="Auto"/> <!-- Save Upload Add Clear  -->
                     <RowDefinition Height="Auto"/> <!-- Acquisition Parameters -->
+                    <RowDefinition Height="Auto"/> <!--         Flags          -->
                 </Grid.RowDefinitions>
 
                 <Grid.ColumnDefinitions>
@@ -148,41 +149,42 @@
                 <Label Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
 
                 <!-- Acquisition Parameters -->
-                <StackLayout Grid.Row="3" Grid.Column="0" HorizontalOptions="FillAndExpand" Padding="20, 10, 20, 10">
+                <StackLayout Grid.Row="3" Grid.Column="0" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
                     <!-- integration time -->
-                    <StackLayout>
-                        <Label TextColor="#eee" Text="{Binding label_integ}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
-                        <Slider Maximum="5000"  
-                                Minimum="1" 
-                                Value="{Binding integSlider}" 
-                                DragCompletedCommand="{Binding integCmd}" 
-                                ThumbColor="Teal"/>
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Integration Time (ms)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
+                                                 Value="{Binding integrationTimeMS}" 
+                                                 Minimum="1" Maximum="5000"
+                                                 HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
                     <!-- gain -->
-                    <StackLayout>
-                        <Label TextColor="#eee" Text="{Binding label_gain}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" /> 
-                        <Slider Maximum="72" 
-                                Minimum="0" 
-                                Value="{Binding gainSlider}" 
-                                DragCompletedCommand="{Binding gainCmd}" 
-                                ThumbColor="Teal" />
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Gain (dB)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="gainDb" 
+                                                 Value="{Binding gainDb}" 
+                                                 StringFormat="{}{0:f1}"
+                                                 Minimum="0" Maximum="32" Step="0.1"
+                                                 HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
-                    <!-- averaging -->
-                    <StackLayout>
-                        <Label TextColor="#eee" Text="{Binding label_avg}" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
-                        <Slider Maximum="32" 
-                                Minimum="1" 
-                                Value="{Binding avgSlider}" 
-                                DragCompletedCommand="{Binding avgCmd}" 
-                                ThumbColor="Teal"/>
+                    <!-- scansToAverage -->
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="Scan Averaging" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="scansToAverage" 
+                                                 Value="{Binding scansToAverage}" 
+                                                 Minimum="1" Maximum="100"
+                                                 HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
+                </StackLayout>
+
+                <StackLayout Grid.Row="4" Grid.Column="0" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
                     <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/> <!-- Horizontal ROI -->
+                            <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
                             <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
                         </Grid.RowDefinitions>
 
@@ -197,7 +199,6 @@
                         <Label TextColor="#eee" Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
                     </Grid>
                 </StackLayout>
-                
             </Grid>
 
             <!-- StatusBar -->

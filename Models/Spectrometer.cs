@@ -304,22 +304,17 @@ public class Spectrometer : INotifyPropertyChanged
     // scansToAverage
     ////////////////////////////////////////////////////////////////////////
 
-    // @todo: move to on-board scan averaging
-    public uint scansToAverage 
+    public byte scansToAverage 
     { 
         get => _scansToAverage;
         set
         {
-            if (value > 0)
-            {
-                logger.debug($"Spectrometer.scansToAverage -> {value}");
-                _scansToAverage = value;
-            }
-            else
-                _scansToAverage = 1;
+            byte[] data = { 0xff, 0x62, 0x00, value }; // send as little-endian ushort
+            _ = writeGenericCharacteristic(data);
+            _scansToAverage = value;
         }
     }
-    uint _scansToAverage = 1;
+    byte _scansToAverage = 1;
 
     ////////////////////////////////////////////////////////////////////////
     // integrationTimeMS
