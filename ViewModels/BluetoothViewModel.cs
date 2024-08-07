@@ -78,7 +78,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         guidByName["eepromCmd"]         = _makeGuid("ff07");
         guidByName["eepromData"]        = _makeGuid("ff08");
         guidByName["batteryStatus"]     = _makeGuid("ff09");
-        guidByName["roi"]               = _makeGuid("ff0a");
+        guidByName["generic"]           = _makeGuid("ff0a"); // was ROI
 
         foreach (var pair in guidByName)
             nameByGuid[pair.Value] = pair.Key;
@@ -576,7 +576,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             var c = pair.Value;
 
             // disabled until I can troubleshoot with Nic
-            if (false && c.CanUpdate && (name == "batteryStatus" || name == "laserState"))
+            if (c.CanUpdate && (name == "batteryStatus" || name == "laserState" || name == "generic"))
             {
                 logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                 c.ValueUpdated -= _characteristicUpdated;

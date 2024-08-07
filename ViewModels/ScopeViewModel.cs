@@ -60,10 +60,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         clearCmd   = new Command(() => { _ = doClear       (); });
         matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
-        integCmd   = new Command(() => { _ = latchInteg    (); });
-        gainCmd    = new Command(() => { _ = latchGain     (); });
-        avgCmd     = new Command(() => { _ = latchAvg      (); });
-
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
         xAxisNames.Add("Wavelength");
@@ -132,85 +128,34 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // integrationTimeMS
+    // Acquisition Parameters
     ////////////////////////////////////////////////////////////////////////
 
-    // This is the value backing the Scope View Slider. When the user drags
-    // the slider, it sets the value here. This property is not automatically
-    // sync'd to the Spectrometer and does not automatically get written out
-    // to the device over BLE. After the user RELEASES the Slider at its final
-    // position, THEN it will call integTimeCmd, which will READ the last-set
-    // value in this property, and flow that downstream.
-
-    public UInt32 integSlider 
+    public UInt32 integrationTimeMS
     {
-        get => _integSlider;
+        get => spec.integrationTimeMS;
         set
         {
-            logger.debug($"integSlider: {value}ms");
-            _integSlider = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_integ)));
+            spec.integrationTimeMS = value;
         }
     }
-    private UInt32 _integSlider = 400;
-    public string label_integ { get => $"Integration Time: {integSlider}ms"; }
-    public Command integCmd { get; }
-    bool latchInteg()
-    {
-        UInt32 value = integSlider;
-        logger.debug($"latchInteg: sending current slider value {value} downstream");
-        spec.integrationTimeMS = value;
-        return true;
-    }
 
-    ////////////////////////////////////////////////////////////////////////
-    // gainDb
-    ////////////////////////////////////////////////////////////////////////
-
-    public float gainSlider
+    public float gainDb
     {
-        get => _gainSlider;
+        get => spec.gainDb;
         set
         {
-            logger.debug($"gainSlider: {value}dB");
-            _gainSlider = (float)Math.Round(value, 1);
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_gain)));
+            spec.gainDb = value;
         }
     }
-    private float _gainSlider = 8;
-    public string label_gain { get => $"Gain: {gainSlider:f1}dB"; }
-    public Command gainCmd { get; }
-    bool latchGain()
-    {
-        float value = gainSlider;
-        logger.debug($"latchGain: sending current slider value {value} downstream");
-        spec.gainDb = value;
-        return true;
-    }
 
-    ////////////////////////////////////////////////////////////////////////
-    // scansToAverage
-    ////////////////////////////////////////////////////////////////////////
-
-    public Byte avgSlider
+    public byte scansToAverage
     {
-        get => _avgSlider;
+        get => spec.scansToAverage;
         set
         {
-            logger.debug($"avgSlider: {value}");
-            _avgSlider = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(label_avg)));
+            spec.scansToAverage = value;
         }
-    }
-    private Byte _avgSlider = 1;
-    public string label_avg { get => $"Scan Averaging: {avgSlider}"; }
-    public Command avgCmd { get; }
-    bool latchAvg()
-    {
-        Byte value = avgSlider;
-        logger.debug($"latchAvg: sending current slider value {value} downstream");
-        spec.scansToAverage = value;
-        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////

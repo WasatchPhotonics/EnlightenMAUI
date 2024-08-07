@@ -17,7 +17,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     public SettingsViewModel()
     {
         laserWatchdogTimeoutSec = spec.laserWatchdogSec;
-        laserDelayMS = spec.laserDelayMS;
+        laserWarningDelaySec = spec.laserWarningDelaySec;
     }
 
     public void loadSettings()
@@ -156,19 +156,19 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    public ushort laserDelayMS
+    public byte laserWarningDelaySec
     {
-        get => spec.laserDelayMS;
+        get => spec.laserWarningDelaySec;
         set
         {
-            spec.laserDelayMS = value;
-            Preferences.Set("laserDelay", value);
+            spec.laserWarningDelaySec = value;
+            Preferences.Set("laserWarningDelaySec", value);
         }
     }
 
     public string verticalROIStartLine
     {
-        get => spec.verticalROIStartLine.ToString();
+        get => "0"; // spec.verticalROIStartLine.ToString();
         set { ; }
     }
 
@@ -177,14 +177,16 @@ public class SettingsViewModel : INotifyPropertyChanged
     public void setVerticalROIStartLine(string s)
     {
         if (ushort.TryParse(s, out ushort value))
-            spec.verticalROIStartLine = value;
-            Preferences.Set("ROIStart", value);
+        {
+            // spec.verticalROIStartLine = value;
+        }
+        Preferences.Set("ROIStart", value);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
     }
 
     public string verticalROIStopLine
     {
-        get => spec.verticalROIStopLine.ToString();
+        get => "1080"; // spec.verticalROIStopLine.ToString();
         set { ; }
     }
 
@@ -193,8 +195,10 @@ public class SettingsViewModel : INotifyPropertyChanged
     public void setVerticalROIStopLine(string s)
     {
         if (ushort.TryParse(s, out ushort value))
-            spec.verticalROIStopLine = value;
-            Preferences.Set("ROIStop", value);
+        {
+            // spec.verticalROIStopLine = value;
+        }
+        Preferences.Set("ROIStop", value);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
     }
 }

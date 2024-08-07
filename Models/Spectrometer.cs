@@ -201,15 +201,15 @@ public class Spectrometer : INotifyPropertyChanged
         integrationTimeMS = 400;
         gainDb = 8;
 
-        verticalROIStartLine = eeprom.ROIVertRegionStart[0];
-        verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
+        // verticalROIStartLine = eeprom.ROIVertRegionStart[0];
+        // verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
 
         logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
         logger.info($"  pixels: {pixels}");
         logger.info($"  integrationTimeMS: {integrationTimeMS}");
         logger.info($"  gainDb: {gainDb}");
-        logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
+        // logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
         logger.info($"  excitation: {laserExcitationNM:f3}nm");
         logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels-1]:f2})");
         if (wavenumbers != null)
@@ -304,22 +304,17 @@ public class Spectrometer : INotifyPropertyChanged
     // scansToAverage
     ////////////////////////////////////////////////////////////////////////
 
-    // @todo: move to on-board scan averaging
-    public uint scansToAverage 
+    public byte scansToAverage 
     { 
         get => _scansToAverage;
         set
         {
-            if (value > 0)
-            {
-                logger.debug($"Spectrometer.scansToAverage -> {value}");
-                _scansToAverage = value;
-            }
-            else
-                _scansToAverage = 1;
+            byte[] data = { 0xff, 0x62, 0x00, value }; // send as little-endian ushort
+            _ = writeGenericCharacteristic(data);
+            _scansToAverage = value;
         }
     }
-    uint _scansToAverage = 1;
+    byte _scansToAverage = 1;
 
     ////////////////////////////////////////////////////////////////////////
     // integrationTimeMS
@@ -451,7 +446,7 @@ public class Spectrometer : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
     // Vertical ROI Start/Stop
     ////////////////////////////////////////////////////////////////////////
-
+    /*
     public ushort verticalROIStartLine
     {
         get => _nextVerticalROIStartLine;
@@ -535,6 +530,57 @@ public class Spectrometer : INotifyPropertyChanged
         }
         else
             logger.error($"Failed to set ROI ({verticalROIStartLine}, {verticalROIStopLine})");
+
+        return ok;
+    }
+    */
+    ////////////////////////////////////////////////////////////////////////
+    // laserWarningDelaySec
+    ////////////////////////////////////////////////////////////////////////
+
+    public byte laserWarningDelaySec
+    {
+        get => _laserWarningDelaySec;
+        set
+        {
+            byte[] data = { 0x8a, value };
+            _ = writeGenericCharacteristic(data);
+            _laserWarningDelaySec = value;
+        }
+    }
+    byte _laserWarningDelaySec = 3;
+
+    ////////////////////////////////////////////////////////////////////////
+    // genericCharacteristic
+    ////////////////////////////////////////////////////////////////////////
+
+    byte genericSequence = 0;
+
+    private async Task<bool> writeGenericCharacteristic(byte[] data)
+    {
+        if (!paired || characteristicsByName is null)
+        {
+            logger.error("writeGenericCharacteristic: not paired or no characteristics");
+            return false;
+        }
+
+        var characteristic = characteristicsByName["generic"];
+        if (characteristic is null)
+        {
+            logger.error("Generic characteristic not found");
+            return false;
+        }
+
+        // prepend sequence byte
+        byte[] dataToSend = new byte[data.Length + 1]; 
+        dataToSend[0] = genericSequence++;
+        Array.Copy(data, 0, dataToSend, 1, data.Length);
+
+        var ok = 0 == await characteristic.WriteAsync(dataToSend);
+        if (ok)
+            await pauseAsync("writeGenericCharacteristic");
+        else
+            logger.error($"Failed to write generic characteristic {dataToSend}");
 
         return ok;
     }
@@ -763,7 +809,7 @@ public class Spectrometer : INotifyPropertyChanged
         await updateBatteryAsync();
 
         // for progress bar
-        totalPixelsToRead = pixels * scansToAverage;
+        totalPixelsToRead = pixels; // * scansToAverage;
         totalPixelsRead = 0;
         acquiring = true;
 
@@ -773,7 +819,7 @@ public class Spectrometer : INotifyPropertyChanged
         if (swRamanMode)
         {
             const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
-            var watchdogMS = (scansToAverage + 1) * (integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS);
+            var watchdogMS = (scansToAverage + 1) * integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS;
             var watchdogSec = (byte)((Math.Max(MAX_SPECTRUM_READOUT_TIME_MS, watchdogMS) / 1000.0) * 2);
             logger.debug($"Spectrometer.takeOneAveragedAsync: setting laserWatchdogSec -> {watchdogSec}");
 
@@ -792,46 +838,29 @@ public class Spectrometer : INotifyPropertyChanged
 
         logger.debug($"Spectrometer.takeOneAveragedAsync: integrationTimeMS {integrationTimeMS}, gainDb {gainDb}, scansToAverage {scansToAverage}, laserWatchdogSec {laserWatchdogSec}");
 
-        double[] spectrum = null;
-        for (int spectrumCount = 0; spectrumCount < scansToAverage; spectrumCount++)
-        { 
-            bool disableLaserAfterFirstPacket = swRamanMode && spectrumCount + 1 == scansToAverage;
+        bool disableLaserAfterFirstPacket = swRamanMode;
 
-            if (!await sem.WaitAsync(100))
-            {
-                logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
-                return false;                        
-            }
-
-            double[] tmp = await takeOneAsync(disableLaserAfterFirstPacket);
-            logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
-
-            sem.Release();
-
-            if (tmp is null || (spectrum != null && tmp.Length != spectrum.Length))
-            {
-                if (tmp is null)
-                    logger.error("Spectrometer.takeOneAveragedAsync: tmp is null");
-                else if (spectrum != null && tmp.Length != spectrum.Length)
-                    logger.error($"Spectrometer.takeOneAveragedAsync: length changed ({tmp.Length} != {spectrum.Length})");
-
-                if (swRamanMode)
-                    laserEnabled = false;
-
-                logger.error("Spectrometer.takeOneAveragedAsync: giving up");
-                return acquiring = false;
-            }
-
-            if (spectrum is null)
-                spectrum = tmp;
-            else
-                for (int i = 0; i < spectrum.Length; i++)
-                    spectrum[i] += tmp[i];    
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            return false;                        
         }
 
-        if (scansToAverage > 1)
-            for (int i = 0; i < spectrum.Length; i++)
-                spectrum[i] /= scansToAverage;
+        double[] spectrum = await takeOneAsync(disableLaserAfterFirstPacket);
+        logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
+
+        sem.Release();
+
+        if (spectrum is null)
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: spectrum is null");
+
+            if (swRamanMode)
+                laserEnabled = false;
+
+            logger.error("Spectrometer.takeOneAveragedAsync: giving up");
+            return acquiring = false;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Post-Processing

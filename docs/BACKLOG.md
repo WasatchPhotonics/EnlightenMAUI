@@ -1,8 +1,12 @@
 # Backlog
 
 - High
-    - push integration time at connection (test @ 400ms)
+    - test SET_LASER_WARNING_DELAY
+    - test onboard scan averaging
     - battery readout
+    - restore VERTICAL_ROI_START/STOP_LINE
+- Medium
+    - push integration time at connection (test @ 400ms)
     - HW scan averaging
     - Raman Mode
     - fix re-connect
