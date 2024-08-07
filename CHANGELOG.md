@@ -1,5 +1,10 @@
 # Changelog
 
+- 2024-08-07 0.5.0
+    - can set LaserWarningDelay
+    - on-board scan averaging works
+    - on-board Raman Mode sort of works
+    - moved Sliders to RadNumericInputs
 - 2024-06-14 0.4.2
     - added Upload button
     - hardcode initial integration time (400ms) and gain (8dB)

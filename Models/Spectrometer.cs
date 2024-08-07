@@ -1,11 +1,7 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Plugin.BLE.Abstractions.Contracts;
-using System.Linq;
 
 using EnlightenMAUI.Common;
-using static Android.Widget.GridLayout;
-using Android.Renderscripts;
 
 namespace EnlightenMAUI.Models;
 
@@ -931,7 +927,7 @@ public class Spectrometer : INotifyPropertyChanged
 
         // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
-        byte[] request = ToBLEData.convert(true);
+        byte[] request = ToBLEData.convert(ramanModeEnabled);
         if (0 != await acquireChar.WriteAsync(request))
         {
             logger.error("failed to send acquire");

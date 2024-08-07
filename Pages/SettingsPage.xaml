@@ -22,37 +22,45 @@
                 <!-- Category header -->
                 <Label Text="Save Options" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
 
+                <!-- Save Pixel -->
                 <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                     <Label  Text="Save Pixel" TextColor="#ccc" VerticalTextAlignment="Center"/>
                     <Switch IsToggled="{Binding savePixel}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
+                <!-- Save Wavelength -->
                 <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                     <Label  Text="Save Wavelength" TextColor="#ccc" VerticalTextAlignment="Center"/>
                     <Switch IsToggled="{Binding saveWavelength}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
+                <!-- Save Wavenumber -->
                 <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                     <Label  Text="Save Wavenumber" TextColor="#ccc" VerticalTextAlignment="Center"/>
                     <Switch IsToggled="{Binding saveWavenumber}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
+                <!-- Save Raw -->
                 <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                     <Label  Text="Save Raw" TextColor="#ccc" VerticalTextAlignment="Center"/>
                     <Switch IsToggled="{Binding saveRaw}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
+                <!-- Save Dark -->
                 <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                     <Label  Text="Save Dark" TextColor="#ccc" VerticalTextAlignment="Center"/>
                     <Switch IsToggled="{Binding saveDark}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
+                <!-- Save Reference -->
                 <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                     <Label  Text="Save Reference" TextColor="#ccc" VerticalTextAlignment="Center"/>
                     <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
                 </StackLayout>
 
                 <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="10">
+
+                    <!-- Laser Warning Delay -->
                     <StackLayout Orientation="Horizontal">
                         <Label Text="Laser Warning Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
@@ -61,6 +69,7 @@
                                                  HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
+                    <!-- Laser Watchdog Timeout -->
                     <StackLayout Orientation="Horizontal">
                         <Label Text="Laser Watchdog Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
@@ -69,6 +78,7 @@
                                                  HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
+                    <!-- Vertical ROI Start Line -->
                     <StackLayout Orientation="Horizontal">
                         <Label Text="Vertical ROI Start Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="VerticalROIStartLine" 
@@ -77,6 +87,7 @@
                                                  HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
+                    <!-- Vertical ROI Stop Line -->
                     <StackLayout Orientation="Horizontal">
                         <Label Text="Vertical ROI Stop Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="verticalROIStopLine" 

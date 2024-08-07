@@ -186,6 +186,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
                             <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
+                            <RowDefinition Height="Auto"/> <!-- Raman Mode                 -->
                         </Grid.RowDefinitions>
 
                         <Grid.ColumnDefinitions>
@@ -193,10 +194,13 @@
                         </Grid.ColumnDefinitions>
 
                         <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding useHorizontalROI}" />
-                        <Label TextColor="#eee" Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" />
+                        <Label Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" TextColor="#eee" />
 
                         <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label TextColor="#eee" Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" />
+                        <Label Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" TextColor="#eee" />
+
+                        <Switch Grid.Row="2" Grid.Column="0" IsToggled="{Binding ramanModeEnabled}" />
+                        <Label Grid.Row="2" Grid.Column="1" Text="Auto-Raman Mode" TextColor="#eee" />
                     </Grid>
                 </StackLayout>
             </Grid>
