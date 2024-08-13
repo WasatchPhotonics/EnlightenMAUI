@@ -8,7 +8,7 @@ namespace EnlightenMAUI.ViewModels;
 
 public class HardwareViewModel : INotifyPropertyChanged
 {
-    Spectrometer spec = Spectrometer.getInstance();
+    BluetoothSpectrometer spec = BluetoothSpectrometer.getInstance();
     EEPROM eeprom = EEPROM.getInstance();
 
     // HardwarePage binds to data through its ViewModel (this file).

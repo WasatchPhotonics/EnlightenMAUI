@@ -11,7 +11,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     Settings settings = Settings.getInstance();
 
-    Spectrometer spec = Spectrometer.getInstance();
+    BluetoothSpectrometer spec = BluetoothSpectrometer.getInstance();
     Logger logger = Logger.getInstance();
 
     public SettingsViewModel()
