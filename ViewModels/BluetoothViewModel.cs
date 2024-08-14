@@ -9,21 +9,67 @@ using Plugin.BLE;
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Common;
 
+//using Android.Hardware.Usb;
+//using Android.Content;
+using LibUsbDotNet.Main;
+using Android.Content;
+using Android.Hardware.Usb;
+using Android.App;
+using Android.Nfc;
+using Microsoft.Maui.Controls.PlatformConfiguration;
+
 namespace EnlightenMAUI.ViewModels;
 
 public class BluetoothViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler PropertyChanged;
 
+    public const byte HOST_TO_DEVICE = 0x40;
+    public const byte DEVICE_TO_HOST = 0xc0;
+
     List<BLEDevice> source = new List<BLEDevice>();
     public ObservableCollection<BLEDevice> bleDeviceList { get; private set; }
-    BLEDevice bleDevice; 
+    public ObservableCollection<USBViewDevice> usbDeviceList { get; private set; }
+    BLEDevice bleDevice;
+    Android.Hardware.Usb.UsbDevice acc;
 
     public Command scanCmd { get; }
+    public Command scanUSBCmd { get; }
     public Command connectCmd { get; }
+    public Command connectUSBCmd { get; }
 
     IBluetoothLE ble;
     IAdapter adapter;
+    private static string ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
+    
+    /*private BroadcastReceiver mUsbReceiver = new BroadcastReceiver()
+    {
+
+    public void onReceive(Context context, Intent intent)
+    {
+        string action = intent.Action;
+        if (ACTION_USB_PERMISSION == action)
+        {
+            UsbDevice device = (UsbDevice)intent.GetParcelableExtra(UsbManager.ExtraDevice);
+
+            if (intent.GetBooleanExtra(UsbManager.ExtraPermissionGranted, false))
+            {
+                if (device != null)
+                {
+                    //call method to set up device communication
+                }
+            }
+            else
+            {
+                Log.d(TAG, "permission denied for device " + device);
+            }
+        }
+    }
+};*/
+        
+    
+
+    PendingIntent usbIntent;
 
     IService service;
 
@@ -49,6 +95,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         logger.debug("BVM.ctor: instantiating bleDeviceList");
         bleDeviceList = new ObservableCollection<BLEDevice>(source);
+        usbDeviceList = new ObservableCollection<USBViewDevice>();
 
         // this crashed Xamarin on iOS if you don't follow add plist entries per
         // https://stackoverflow.com/a/59998233/11615696
@@ -84,7 +131,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
             nameByGuid[pair.Value] = pair.Key;
 
         scanCmd = new Command(() => { _ = doScanAsync(); });
+        scanUSBCmd = new Command(() => { _ = doUSBScanAsync(); });
         connectCmd = new Command(() => { _ = doConnectOrDisconnectAsync(); });
+        connectUSBCmd = new Command(() => { _ = doConnectOrDisconnectUSBAsync(); });
 
         logger.debug("BVM.ctor: initial disconnection");
         Task<bool> task = doDisconnectAsync();
@@ -150,6 +199,18 @@ public class BluetoothViewModel : INotifyPropertyChanged
         }
     }
     bool _bluetoothEnabled = Util.bluetoothEnabled(); // initialize from phone state at launch
+    
+    public bool usbEnabled 
+    { 
+        get => _usbEnabled;
+        private set 
+        {
+            logger.info($"BVM.bluetoothEnabled: setting {value}");
+            _usbEnabled = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(usbEnabled)));
+        }
+    }
+    bool _usbEnabled = true; //Util.bluetoothEnabled(); // initialize from phone state at launch
 
     ////////////////////////////////////////////////////////////////////////
     // Reset (no longer a Command)
@@ -290,6 +351,108 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.doScanAsync: scan change complete");
         return true;
     }
+    
+    private async Task<bool> doUSBScanAsync()
+    {
+        /*
+        //UsbManager manager = ContextWrapper.
+        Context con = Android.App.Application.Context;
+        UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
+
+        foreach (UsbDevice acc in manager.DeviceList.Values)
+        {
+            //acc.
+            acc.
+
+        }
+        */
+        logger.info("Looking for usb devices via Android services");
+        try
+        {
+            Context con = Android.App.Application.Context;
+            UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
+
+            var features = con.PackageManager.GetSystemAvailableFeatures();
+            foreach ( var feature in features ) 
+            {
+                logger.info("{0} feature available", feature.Name);
+            }
+
+            if (manager.DeviceList.Count == 0)
+            {
+                logger.info("No USB devices found");
+            }
+
+            foreach (Android.Hardware.Usb.UsbDevice acc in manager.DeviceList.Values)
+            {
+                this.acc = acc;
+
+                String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
+                    acc.VendorId,
+                    acc.ProductId,
+                    acc.Version,
+                    acc.DeviceName);
+
+                logger.info("found usb device {0}", desc);
+
+                if (acc.VendorId == 0x24aa)
+                {
+                    USBViewDevice uvd = new USBViewDevice(acc.DeviceName, acc.VendorId.ToString("x4"), acc.ProductId.ToString("x4"));
+                    usbDeviceList.Add(uvd);
+
+                    usbIntent = PendingIntent.GetBroadcast(con, 0, new Intent(ACTION_USB_PERMISSION), PendingIntentFlags.Immutable);
+                     
+                    //LibUsbDotNet.UsbDevice usbDevice = LibUsbDotNet.UsbDevice.OpenUsbDevice(d => d.Pid == acc.ProductId);
+                    manager.RequestPermission(acc, usbIntent);
+                    
+                }
+
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.info("USB grab failed with error {0}", ex.Message);
+        }
+
+        /*
+        try
+        {
+            UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
+            if (deviceRegistries == null)
+            {
+                logger.info("No USB devices found");
+            }
+            else if (deviceRegistries.Count == 0)
+            {
+                logger.info("No USB devices found");
+            }
+
+            else
+            {
+                foreach (UsbRegistry usbRegistry in deviceRegistries)
+                {
+                    String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
+                        usbRegistry.Vid,
+                        usbRegistry.Pid,
+                        (ushort)usbRegistry.Rev,
+                        usbRegistry[SPDRP.DeviceDesc]);
+
+                    logger.info("attempting to open {0}", desc);
+
+                    USBViewDevice uvd = new USBViewDevice("Test", usbRegistry.Vid.ToString("x4"), usbRegistry.Pid.ToString("x4"));
+                    usbDeviceList.Add(uvd);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.info("USB grab failed with error {0}", ex.Message);
+        }
+        */
+
+        return true;
+        
+    }
 
     async Task<bool> _requestPermissionsAsync()
     {
@@ -367,6 +530,63 @@ public class BluetoothViewModel : INotifyPropertyChanged
         connectionProgress = 0;
         return true;
     }
+    
+    private async Task<bool> doConnectOrDisconnectUSBAsync()
+    {
+
+        Context con = Android.App.Application.Context;
+        UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
+        int interfaces = acc.InterfaceCount;
+
+        logger.info("usb device has {0} interfaces", interfaces);
+        for (int i = 0; i < interfaces; i++)
+        {
+            logger.info("interface {0} has {1} endpoints", i, acc.GetInterface(i).EndpointCount);
+        }
+
+        UsbDeviceConnection udc = manager.OpenDevice(acc);
+        logger.info("device has {0} configurations", acc.ConfigurationCount);
+        if (udc != null)
+            logger.info("successfully opened device");
+        else
+        {
+            logger.info("failed to open device");
+        }
+
+        bool ok = udc.SetConfiguration(acc.GetConfiguration(0));
+        if (ok)
+            logger.info("successfully set configuration");
+
+        ok = udc.ClaimInterface(acc.GetInterface(0), false);
+        if (ok)
+            logger.info("successfully claimed interface");
+
+        //logger.info("grabbing spectral read endpoints");
+
+        //UsbEndpoint reader82 = acc.GetInterface(0).GetEndpoint(2);
+        //UsbEndpoint reader86 = acc.GetInterface(0).GetEndpoint(6);
+
+        //logger.info("grabbed spectral read endpoints");
+        logger.info("sending tester control transfer for integration time");
+
+        byte[] readBuff = new byte[6];
+        int okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, 0xbf, 0, 0, readBuff, 6, 100);
+
+        if (okI >= 0)
+        {
+            logger.info("successfully read {0} bytes: [ {1} ]", okI, String.Join(' ', readBuff));
+        }
+        else
+        {
+            logger.info("failed to read from USB with code {0}", okI);
+        }
+
+        udc.ReleaseInterface(acc.GetInterface(0));
+        udc.Close();
+        logger.info("closed usb device");
+
+        return true;
+    }
 
     async Task<bool> doDisconnectAsync()
     {
@@ -411,6 +631,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
         return true;
     }
 
+    /*
+     *  I personally think this should probably live in a model class since nothing going on here needs to be displayed
+     */
     async Task<bool> doConnectAsync()
     {
         logger.debug("BVM.doConnectAsync: start");
@@ -720,6 +943,19 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // appropriate row color
         foreach (var dev in bleDeviceList)
             dev.selected = dev.device.Id == bleDevice.device.Id;
+
+        buttonConnectEnabled = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+
+        logger.debug($"BVM.selectBLEDevice: done");
+    }
+
+    public void selectUSBDevice(object obj)
+    {
+        logger.debug($"BVM.selectUSBDevice: start");
+
+        foreach (var dev in bleDeviceList)
+            dev.selected = true;
 
         buttonConnectEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));

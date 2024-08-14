@@ -29,7 +29,7 @@ namespace EnlightenMAUI
         public LogLevel level { get; set; } = LogLevel.DEBUG;
         public bool loggingBLE;
 
-        public bool liveUpdates = false;
+        public bool liveUpdates { get; set; } = true;
 
         public event PropertyChangedEventHandler PropertyChanged;
 

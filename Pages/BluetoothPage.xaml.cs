@@ -25,6 +25,11 @@ public partial class BluetoothPage : ContentPage
         logger.debug("BluetoothPage.listView_ItemSelected[Step 3a]: passing selected item to BluetoothViewModel");
         bvm.selectBLEDevice(listView.SelectedItem);
     }
+    void listViewUSB_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    {
+        logger.debug("BluetoothPage.listView_ItemSelected[Step 3a]: passing selected item to BluetoothViewModel");
+        bvm.selectUSBDevice(listView.SelectedItem);
+    }
 
     // the BluetoothViewModel has raised a "notifyUser" event, so display it
     async void notifyUserAsync(string title, string message, string button) =>

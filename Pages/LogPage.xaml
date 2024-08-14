@@ -31,6 +31,7 @@
 
             <!-- Log lines -->
             <Editor Text="{Binding logText}" 
+                    IsReadOnly="True"
                     TextColor="#ccc"
                     BackgroundColor="#666"
                     Margin="10,0,10,0"
