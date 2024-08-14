@@ -24,7 +24,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Private attributes
     ////////////////////////////////////////////////////////////////////////
 
-    public Spectrometer spec;
+    public BluetoothSpectrometer spec;
     Settings settings;
 
     Logger logger = Logger.getInstance();
@@ -40,7 +40,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         logger.debug("SVM.ctor: start");
 
-        spec = Spectrometer.getInstance();
+        spec = BluetoothSpectrometer.getInstance();
         settings = Settings.getInstance();
 
         settings.PropertyChanged += handleSettingsChange;

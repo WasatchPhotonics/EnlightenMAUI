@@ -33,7 +33,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     Guid primaryServiceId;
 
-    Spectrometer spec = Spectrometer.getInstance();
+    BluetoothSpectrometer spec = BluetoothSpectrometer.getInstance();
     Logger logger = Logger.getInstance();
 
     // so the ViewModel can float-up messages to the View for display
