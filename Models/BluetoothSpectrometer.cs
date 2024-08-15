@@ -158,8 +158,8 @@ public class BluetoothSpectrometer : Spectrometer
         integrationTimeMS = 400;
         gainDb = 8;
 
-        // verticalROIStartLine = eeprom.ROIVertRegionStart[0];
-        // verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
+        verticalROIStartLine = eeprom.ROIVertRegionStart[0];
+        verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
 
         logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
@@ -401,10 +401,9 @@ public class BluetoothSpectrometer : Spectrometer
                 byte[] dataToSend = { 0xff, 0x21, 0, 0 };
                 Array.Copy(data, 0, dataToSend, 2, data.Length);
 
-                byte[] data = { 0x8a, value };
-                _ = writeGenericCharacteristic(data);
+                _ = writeGenericCharacteristic(dataToSend);
 
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
+                NotifyPropertyChanged(nameof(verticalROIStartLine));
             }
             else
             {
@@ -412,8 +411,6 @@ public class BluetoothSpectrometer : Spectrometer
             }
         }
     }
-    ushort _nextVerticalROIStartLine = 200;
-    ushort _lastVerticalROIStartLine = 0;
 
     public override ushort verticalROIStopLine
     {
@@ -429,10 +426,9 @@ public class BluetoothSpectrometer : Spectrometer
                 byte[] dataToSend = { 0xff, 0x23, 0, 0 };
                 Array.Copy(data, 0, dataToSend, 2, data.Length);
 
-                byte[] data = { 0x8a, value };
-                _ = writeGenericCharacteristic(data);
+                _ = writeGenericCharacteristic(dataToSend);
 
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
+                NotifyPropertyChanged(nameof(verticalROIStopLine));
             }
             else
             {
@@ -440,8 +436,6 @@ public class BluetoothSpectrometer : Spectrometer
             }
         }
     }
-    ushort _nextVerticalROIStopLine = 800;
-    ushort _lastVerticalROIStopLine = 0;
 
     ////////////////////////////////////////////////////////////////////////
     // laserWarningDelaySec
@@ -485,6 +479,7 @@ public class BluetoothSpectrometer : Spectrometer
         dataToSend[0] = genericSequence++;
         Array.Copy(data, 0, dataToSend, 1, data.Length);
 
+        logger.hexdump(dataToSend, "writeGenericCharacteristic: ");
         var ok = 0 == await characteristic.WriteAsync(dataToSend);
         if (ok)
             await pauseAsync("writeGenericCharacteristic");
@@ -566,8 +561,6 @@ public class BluetoothSpectrometer : Spectrometer
                 logger.debug($"Spectrometer.laserDelayMS: already {value}");
         }
     }
-
-    bool laserSyncEnabled = true;
 
     async Task<bool> syncLaserStateAsync()
     {

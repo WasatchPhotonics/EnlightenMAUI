@@ -166,39 +166,23 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    public string verticalROIStartLine
+    public ushort verticalROIStartLine
     {
-        get => "0"; // spec.verticalROIStartLine.ToString();
-        set { ; }
-    }
-
-    // the View's code-behind has registered that a final value has
-    // been entered into the Entry (hit return), so latch it
-    public void setVerticalROIStartLine(string s)
-    {
-        if (ushort.TryParse(s, out ushort value))
-        {
-            // spec.verticalROIStartLine = value;
+        get => spec.verticalROIStartLine;
+        set 
+        { 
+            spec.verticalROIStartLine = value; 
+            Preferences.Set("verticalROIStartLine", value);
         }
-        Preferences.Set("ROIStart", value);
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
     }
 
-    public string verticalROIStopLine
+    public ushort verticalROIStopLine
     {
-        get => "1080"; // spec.verticalROIStopLine.ToString();
-        set { ; }
-    }
-
-    // the View's code-behind has registered that a final value has
-    // been entered into the Entry (hit return), so latch it
-    public void setVerticalROIStopLine(string s)
-    {
-        if (ushort.TryParse(s, out ushort value))
+        get => spec.verticalROIStopLine;
+        set 
         {
-            // spec.verticalROIStopLine = value;
+            spec.verticalROIStopLine = value;
+            Preferences.Set("verticalROIStopLine", value);
         }
-        Preferences.Set("ROIStop", value);
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
     }
 }

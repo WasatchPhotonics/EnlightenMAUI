@@ -140,7 +140,7 @@ namespace EnlightenMAUI.Models
         // Vertical ROI Start/Stop
         ////////////////////////////////////////////////////////////////////////
 
-        public ushort verticalROIStartLine
+        public virtual ushort verticalROIStartLine
         {
             get => _nextVerticalROIStartLine;
             set 
@@ -157,10 +157,10 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        ushort _nextVerticalROIStartLine = 200;
-        ushort _lastVerticalROIStartLine = 0;
+        protected ushort _nextVerticalROIStartLine = 200;
+        protected ushort _lastVerticalROIStartLine = 0;
 
-        public ushort verticalROIStopLine
+        public virtual ushort verticalROIStopLine
         {
             get => _nextVerticalROIStopLine;
             set 
@@ -177,8 +177,8 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        ushort _nextVerticalROIStopLine = 800;
-        ushort _lastVerticalROIStopLine = 0;
+        protected ushort _nextVerticalROIStopLine = 800;
+        protected ushort _lastVerticalROIStopLine = 0;
 
         ////////////////////////////////////////////////////////////////////////
         // laserWarningDelaySec
@@ -431,8 +431,5 @@ namespace EnlightenMAUI.Models
                 spectrum[i] *= factor;
             }
         }
-
-
-
     }
 }
