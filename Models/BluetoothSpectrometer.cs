@@ -386,8 +386,8 @@ public class BluetoothSpectrometer : Spectrometer
     ////////////////////////////////////////////////////////////////////////
     // Vertical ROI Start/Stop
     ////////////////////////////////////////////////////////////////////////
-    /*
-    public ushort verticalROIStartLine
+
+    public override ushort verticalROIStartLine
     {
         get => _nextVerticalROIStartLine;
         set 
@@ -396,7 +396,14 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _nextVerticalROIStartLine = value;
                 logger.debug($"Spectrometer.verticalROIStartLine -> {value}");
-                _ = syncROIAsync();
+
+                byte[] data = ToBLEData.convert(value, len: 2);
+                byte[] dataToSend = { 0xff, 0x21, 0, 0 };
+                Array.Copy(data, 0, dataToSend, 2, data.Length);
+
+                byte[] data = { 0x8a, value };
+                _ = writeGenericCharacteristic(data);
+
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
             }
             else
@@ -408,7 +415,7 @@ public class BluetoothSpectrometer : Spectrometer
     ushort _nextVerticalROIStartLine = 200;
     ushort _lastVerticalROIStartLine = 0;
 
-    public ushort verticalROIStopLine
+    public override ushort verticalROIStopLine
     {
         get => _nextVerticalROIStopLine;
         set 
@@ -417,7 +424,14 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _nextVerticalROIStopLine = value;
                 logger.debug($"Spectrometer.verticalROIStopLine -> {value}");
-                _ = syncROIAsync();
+                
+                byte[] data = ToBLEData.convert(value, len: 2);
+                byte[] dataToSend = { 0xff, 0x23, 0, 0 };
+                Array.Copy(data, 0, dataToSend, 2, data.Length);
+
+                byte[] data = { 0x8a, value };
+                _ = writeGenericCharacteristic(data);
+
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
             }
             else
@@ -429,51 +443,6 @@ public class BluetoothSpectrometer : Spectrometer
     ushort _nextVerticalROIStopLine = 800;
     ushort _lastVerticalROIStopLine = 0;
 
-    async Task<bool> syncROIAsync()
-    {
-        if (!paired || characteristicsByName is null)
-            return false;
-
-        var characteristic = characteristicsByName["roi"];
-        if (characteristic is null)
-        {
-            logger.error("ROI characteristic not found");
-            return false;
-        }
-
-        // noop
-        if (_nextVerticalROIStartLine == _lastVerticalROIStartLine &&
-            _nextVerticalROIStopLine == _lastVerticalROIStopLine)
-            return false;
-
-        // force ordering
-        var start = verticalROIStartLine;
-        var stop = verticalROIStopLine;
-        if (stop < start)
-            Util.swap(ref start, ref stop);
-
-        byte[] startData = ToBLEData.convert(start, len: 2);
-        byte[] stopData = ToBLEData.convert(stop, len: 2);
-        byte[] request = new byte[4];
-        Array.Copy(startData, request, 2);
-        Array.Copy(stopData, 0, request, 2, 2);
-
-        logger.info($"Spectrometer.syncROIAsync({verticalROIStartLine}, {verticalROIStopLine})"); 
-        logger.hexdump(request, "data: ");
-
-        var ok = 0 == await characteristic.WriteAsync(request);
-        if (ok)
-        {
-            _lastVerticalROIStartLine = _nextVerticalROIStartLine;
-            _lastVerticalROIStopLine = _nextVerticalROIStopLine;
-            await pauseAsync("syncROIAsync");
-        }
-        else
-            logger.error($"Failed to set ROI ({verticalROIStartLine}, {verticalROIStopLine})");
-
-        return ok;
-    }
-    */
     ////////////////////////////////////////////////////////////////////////
     // laserWarningDelaySec
     ////////////////////////////////////////////////////////////////////////
