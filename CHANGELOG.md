@@ -1,5 +1,8 @@
 # Changelog
 
+- 2024-??-?? 0.5.1
+    - added BluetoothSpectrometer
+    - changed vertical ROI to use generic characteristic
 - 2024-08-07 0.5.0
     - can set LaserWarningDelay
     - on-board scan averaging works
