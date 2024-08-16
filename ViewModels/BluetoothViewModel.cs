@@ -470,6 +470,20 @@ public class BluetoothViewModel : INotifyPropertyChanged
             return false;
         }
 
+        logger.debug("Verifying Bluetooth permissions..");
+        var permissionResult = await Permissions.CheckStatusAsync<Permissions.Bluetooth>();
+        if (permissionResult != PermissionStatus.Granted)
+        {
+            permissionResult = await Permissions.RequestAsync<Permissions.Bluetooth>();
+        }
+        logger.debug($"Result of requesting Bluetooth permissions: '{permissionResult}'");
+        if (permissionResult != PermissionStatus.Granted)
+        {
+            logger.debug("Permissions not available, direct user to settings screen.");
+            AppInfo.ShowSettingsUI();
+            return false;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Optional Permissions
         ////////////////////////////////////////////////////////////////////////

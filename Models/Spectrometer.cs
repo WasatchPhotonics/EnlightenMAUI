@@ -139,8 +139,8 @@ namespace EnlightenMAUI.Models
         ////////////////////////////////////////////////////////////////////////
         // Vertical ROI Start/Stop
         ////////////////////////////////////////////////////////////////////////
-        /*
-        public ushort verticalROIStartLine
+
+        public virtual ushort verticalROIStartLine
         {
             get => _nextVerticalROIStartLine;
             set 
@@ -149,7 +149,6 @@ namespace EnlightenMAUI.Models
                 {
                     _nextVerticalROIStartLine = value;
                     logger.debug($"Spectrometer.verticalROIStartLine -> {value}");
-                    _ = syncROIAsync();
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
                 }
                 else
@@ -158,10 +157,10 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        ushort _nextVerticalROIStartLine = 200;
-        ushort _lastVerticalROIStartLine = 0;
+        protected ushort _nextVerticalROIStartLine = 200;
+        protected ushort _lastVerticalROIStartLine = 0;
 
-        public ushort verticalROIStopLine
+        public virtual ushort verticalROIStopLine
         {
             get => _nextVerticalROIStopLine;
             set 
@@ -170,7 +169,6 @@ namespace EnlightenMAUI.Models
                 {
                     _nextVerticalROIStopLine = value;
                     logger.debug($"Spectrometer.verticalROIStopLine -> {value}");
-                    _ = syncROIAsync();
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
                 }
                 else
@@ -179,54 +177,9 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        ushort _nextVerticalROIStopLine = 800;
-        ushort _lastVerticalROIStopLine = 0;
+        protected ushort _nextVerticalROIStopLine = 800;
+        protected ushort _lastVerticalROIStopLine = 0;
 
-        async Task<bool> syncROIAsync()
-        {
-            if (!paired || characteristicsByName is null)
-                return false;
-
-            var characteristic = characteristicsByName["roi"];
-            if (characteristic is null)
-            {
-                logger.error("ROI characteristic not found");
-                return false;
-            }
-
-            // noop
-            if (_nextVerticalROIStartLine == _lastVerticalROIStartLine &&
-                _nextVerticalROIStopLine == _lastVerticalROIStopLine)
-                return false;
-
-            // force ordering
-            var start = verticalROIStartLine;
-            var stop = verticalROIStopLine;
-            if (stop < start)
-                Util.swap(ref start, ref stop);
-
-            byte[] startData = ToBLEData.convert(start, len: 2);
-            byte[] stopData = ToBLEData.convert(stop, len: 2);
-            byte[] request = new byte[4];
-            Array.Copy(startData, request, 2);
-            Array.Copy(stopData, 0, request, 2, 2);
-
-            logger.info($"Spectrometer.syncROIAsync({verticalROIStartLine}, {verticalROIStopLine})"); 
-            logger.hexdump(request, "data: ");
-
-            var ok = 0 == await characteristic.WriteAsync(request);
-            if (ok)
-            {
-                _lastVerticalROIStartLine = _nextVerticalROIStartLine;
-                _lastVerticalROIStopLine = _nextVerticalROIStopLine;
-                await pauseAsync("syncROIAsync");
-            }
-            else
-                logger.error($"Failed to set ROI ({verticalROIStartLine}, {verticalROIStopLine})");
-
-            return ok;
-        }
-        */
         ////////////////////////////////////////////////////////////////////////
         // laserWarningDelaySec
         ////////////////////////////////////////////////////////////////////////
@@ -478,8 +431,5 @@ namespace EnlightenMAUI.Models
                 spectrum[i] *= factor;
             }
         }
-
-
-
     }
 }
