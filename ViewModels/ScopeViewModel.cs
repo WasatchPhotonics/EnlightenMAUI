@@ -686,7 +686,15 @@ public class ScopeViewModel : INotifyPropertyChanged
                 return;
             }
 
-            chartData = updateChartData;
+            //var oldChartData = chartData;
+            //chartData = updateChartData;
+            chartData.Clear();
+            foreach (ChartDataPoint chartDataPoint in updateChartData)
+            {
+                chartData.Add(chartDataPoint);
+            }
+            
+            //oldChartData.Clear();
 
             xAxisMinimum = xAxis[pxLo];
             xAxisMaximum = xAxis[pxHi];

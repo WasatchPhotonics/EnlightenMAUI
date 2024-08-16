@@ -17,6 +17,8 @@ using Android.Hardware.Usb;
 using Android.App;
 using Android.Nfc;
 using Microsoft.Maui.Controls.PlatformConfiguration;
+using Microsoft.Maui;
+using Xamarin.Google.Crypto.Tink.Subtle;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -569,8 +571,28 @@ public class BluetoothViewModel : INotifyPropertyChanged
         //logger.info("grabbed spectral read endpoints");
         logger.info("sending tester control transfer for integration time");
 
+
+        uint ms = 400;
+        ushort lsw = (ushort)(ms & 0xffff);
+        ushort msw = (ushort)((ms >> 16) & 0x00ff);
+
+        byte[] buf = new byte[8];
+
+        logger.info("setting int time to 400");
+
+        int okI = await udc.ControlTransferAsync((UsbAddressing)HOST_TO_DEVICE, 0xb2, lsw, msw, null, 0, 100);
+        if (okI >= 0)
+        {
+            logger.info("successfully read {0} bytes: [ {1} ]", okI, String.Join(' ', buf));
+        }
+        else
+        {
+            logger.info("failed to read from USB with code {0}", okI);
+        }
+        //sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
+
         byte[] readBuff = new byte[6];
-        int okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, 0xbf, 0, 0, readBuff, 6, 100);
+        okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, 0xbf, 0, 0, readBuff, 6, 100);
 
         if (okI >= 0)
         {
@@ -580,6 +602,65 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             logger.info("failed to read from USB with code {0}", okI);
         }
+
+        int endpointNum = acc.GetInterface(0).GetEndpoint(0).EndpointNumber;
+        logger.info("reading available endpoint number as {0}", endpointNum);
+
+        
+        logger.info("sending spectrum trigger");
+
+        buf = new byte[8];
+        var wValue = 0; //(ushort)(untetheredAcquisitionEnabled ? 1 : 0);
+        //sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
+        okI = await udc.ControlTransferAsync((UsbAddressing)HOST_TO_DEVICE, 0xad, wValue, 0, null, 0, 100);
+        
+       
+        if (okI >= 0)
+        {
+            logger.info("successfully read {0} bytes", okI);
+        }
+        else
+        {
+            logger.info("failed to read from USB with code {0}", okI);
+        }
+
+        byte[] spectrumBuff = new byte[3904];
+        okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, 3904, 4000);
+
+        if (okI >= 0)
+        {
+            logger.info("successfully read {0} bytes: [ {1} ]", okI, String.Join(' ', spectrumBuff));
+        }
+        else
+        {
+            logger.info("failed to read from USB with code {0}", okI);
+        }
+
+        /*
+        try
+        {
+            logger.info("trying to set to configuration 1");
+            ok = udc.SetConfiguration(acc.GetConfiguration(1));
+            if (ok)
+                logger.info("successfully set configuration");
+
+            ok = udc.ClaimInterface(acc.GetInterface(0), false);
+            if (ok)
+                logger.info("successfully claimed interface");
+        }
+        catch (Exception ex)
+        {
+            logger.info("config 1 set failed with error {0}", ex.Message);
+
+        }
+        finally
+        {
+            udc.ReleaseInterface(acc.GetInterface(0));
+            udc.Close();
+            logger.info("closed usb device");
+        }
+        */
+
 
         udc.ReleaseInterface(acc.GetInterface(0));
         udc.Close();
