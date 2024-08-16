@@ -23,6 +23,11 @@ namespace EnlightenMAUI.Models
         public EEPROM eeprom = EEPROM.getInstance();
         public Battery battery;
 
+        ////////////////////////////////////////////////////////////////////////
+        // laserState
+        ////////////////////////////////////////////////////////////////////////
+        protected LaserState laserState = new LaserState();
+
         // software state
         public double[] wavelengths;
         public double[] wavenumbers;
@@ -35,10 +40,24 @@ namespace EnlightenMAUI.Models
 
         public Spectrometer() { }
 
+        public delegate void ConnectionProgressNotification(double perc);
+        public event ConnectionProgressNotification showConnectionProgress;
+
+        public delegate void AcquisitionProgressNotification(double perc);
+        public event AcquisitionProgressNotification showAcquisitionProgress;
 
         public abstract void disconnect();
 
         public abstract void reset();
+
+        public void raiseConnectionProgress(double arg)
+        {
+            showConnectionProgress(arg);
+        }
+        public void raiseAcquisitionProgress(double arg)
+        {
+            showAcquisitionProgress(arg);
+        }
 
         protected void generatePixelAxis()
         {
@@ -106,8 +125,8 @@ namespace EnlightenMAUI.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
             }
         }
-        uint _nextIntegrationTimeMS = 3;
-        uint _lastIntegrationTimeMS = 9999;
+        protected uint _nextIntegrationTimeMS = 3;
+        protected uint _lastIntegrationTimeMS = 9999;
 
         ////////////////////////////////////////////////////////////////////////
         // gainDb
@@ -133,8 +152,8 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        float _nextGainDb = 24;
-        float _lastGainDb = -1;
+        protected float _nextGainDb = 24;
+        protected float _lastGainDb = -1;
 
         ////////////////////////////////////////////////////////////////////////
         // Vertical ROI Start/Stop
@@ -192,13 +211,7 @@ namespace EnlightenMAUI.Models
                 _laserWarningDelaySec = value;
             }
         }
-        byte _laserWarningDelaySec = 3;
-
-        ////////////////////////////////////////////////////////////////////////
-        // laserState
-        ////////////////////////////////////////////////////////////////////////
-
-        LaserState laserState = new LaserState();
+        protected byte _laserWarningDelaySec = 3;
 
         public virtual bool ramanModeEnabled
         {
@@ -271,6 +284,9 @@ namespace EnlightenMAUI.Models
         }
 
         protected bool laserSyncEnabled = true;
+
+        public string note { get; set; }
+        public string qrValue { get; set; } // parsed QR code
 
         ////////////////////////////////////////////////////////////////////////
         // battery

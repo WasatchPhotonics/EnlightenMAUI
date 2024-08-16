@@ -61,6 +61,22 @@ public class Battery
         logger.debug($"Battery.parse: {this}");
     }
 
+    public void parse(uint response)
+    {
+        uint lsb = (byte)(response & 0xff);
+        uint msb = (byte)((response >> 8) & 0xff);
+        uint chg = (byte)((response >> 16) & 0xff);
+        uint raw = (lsb << 16) | (msb << 8) | chg;
+
+        byte lsbyte = (byte)((raw >> 16) & 0xff);
+        byte msbyte = (byte)((raw >> 8) & 0xff);
+        level = ((float)(1.0 * msb)) + ((float)(1.0 * lsb / 256.0));
+        charging = 0 != (raw & 0xff);
+
+        lastChecked = DateTime.Now;
+        initialized = true;
+    }
+
     override public string ToString()
     {
         if (!initialized)
