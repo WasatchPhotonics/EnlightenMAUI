@@ -40,7 +40,10 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         logger.debug("SVM.ctor: start");
 
-        spec = USBSpectrometer.getInstance();
+        spec = BluetoothSpectrometer.getInstance();
+        if (spec == null || !spec.paired)
+            spec = USBSpectrometer.getInstance();
+
         settings = Settings.getInstance();
 
         settings.PropertyChanged += handleSettingsChange;

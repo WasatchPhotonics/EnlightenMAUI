@@ -77,6 +77,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="libraries\SiG-785\2mmHDPE.csv" />
+	  <None Remove="libraries\SiG-785\4mmHDPE.csv" />
+	  <None Remove="libraries\SiG-785\acetone.csv" />
+	  <None Remove="libraries\SiG-785\alkanes.csv" />
+	  <None Remove="libraries\SiG-785\cyclohexane.csv" />
+	  <None Remove="libraries\SiG-785\ethanol.csv" />
+	  <None Remove="libraries\SiG-785\HDPE-20190904-111854-213955-WP-00438.csv" />
+	  <None Remove="libraries\SiG-785\ibuprofen-20190904-111716-276404-WP-00438.csv" />
+	  <None Remove="libraries\SiG-785\ibuprofen.csv" />
+	  <None Remove="libraries\SiG-785\isopropanol.csv" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\enlighten_logo.png" />
 	  <None Remove="Resources\Images\ico_bluetooth.png" />
@@ -87,6 +97,39 @@
 	  <None Remove="Resources\Images\ico_spectra.png" />
 	  <None Remove="Resources\Images\ico_xs.png" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiAsset Include="libraries\SiG-785\2mmHDPE.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\4mmHDPE.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\acetone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\alkanes.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\cyclohexane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\ethanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\HDPE-20190904-111854-213955-WP-00438.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\ibuprofen-20190904-111716-276404-WP-00438.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\ibuprofen.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785\isopropanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -102,7 +145,7 @@
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.21" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
-		<PackageReference Include="Telerik.UI.for.Maui.Trial" Version="7.0.0" />
+		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>

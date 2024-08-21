@@ -302,7 +302,56 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// <summary>
     /// Step 1: user clicked "Scan"
     /// </summary> 
+    /// 
+
+    public bool usingBluetooth
+    {
+        get { return _useBluetooth; }
+        set
+        {
+            if (value == _useBluetooth)
+                return;
+            _useBluetooth = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBluetooth)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(usingBluetooth)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(usingUSB)));
+        }
+    }
+    public bool usingUSB
+    {
+        get { return !_useBluetooth; }
+        set
+        {
+            if (value != _useBluetooth)
+                return;
+            _useBluetooth = !value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBluetooth)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(usingBluetooth)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(usingUSB)));
+        }
+    }
+
+    public bool useBluetooth
+    {
+        get { return _useBluetooth; }
+        set 
+        { 
+            _useBluetooth = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBluetooth)));
+        }
+
+    }
+    bool _useBluetooth = true;
+
     private async Task<bool> doScanAsync()
+    {
+        if (useBluetooth)
+            return await doBluetoothScanAsync();
+        else
+            return await doUSBScanAsync();
+    }
+
+    private async Task<bool> doBluetoothScanAsync()
     {
         logger.debug("BVM.doScanAsync[Step 1]: start");
 
@@ -521,7 +570,16 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// <summary>
     /// Step 4: the user clicked the "Connect" / "Disconnect" button 
     /// </summary>
+    /// 
     private async Task<bool> doConnectOrDisconnectAsync()
+    {
+        if (useBluetooth)
+            return await doConnectOrDisconnectBluetoothAsync();
+        else
+            return await doConnectOrDisconnectUSBAsync();
+    }
+
+    private async Task<bool> doConnectOrDisconnectBluetoothAsync()
     {
         logger.debug("BVM.doConnectOrDisconnect[Step 4]: start");
         if (BLEDevice.paired)
