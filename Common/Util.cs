@@ -24,6 +24,13 @@ public class Util
         a = b;
         b = tmp;
     }
+    public static double interpolate(double y0, double y1, double pct0)
+    {
+        return pct0 * y0 + (1 - pct0) * y1;
+    }
+
+    const double NM_TO_CM = 1.0 / 10000000.0;
+    const int DIGITS_TO_ROUND = 6;
 
     public static double[] generateWavelengths(uint pixels, float[] coeffs)
     {            
@@ -55,6 +62,29 @@ public class Util
                 wavenumbers[i] = wavenumber;
         }
         return wavenumbers;
+    }
+
+    public static double wavelengthToWavenumber(double laserWavelengthNM, double wavelength, bool trim = false)
+    {
+        double laserWavenumber = 1.0 / (laserWavelengthNM * NM_TO_CM);
+        if (wavelength > 0)
+        {
+            if (!trim)
+                return laserWavenumber - (1.0 / (wavelength * NM_TO_CM));
+            else
+                return Math.Round(laserWavenumber - (1.0 / (wavelength * NM_TO_CM)), DIGITS_TO_ROUND);
+
+        }
+        else
+            return 0;
+    }
+
+    public static double wavenumberToWavelength(double laserWavelengthNM, double wavenumber, bool trim = false)
+    {
+        if (!trim)
+            return (1.0 / ((1.0 / laserWavelengthNM) - (wavenumber * NM_TO_CM)));
+        else
+            return Math.Round((1.0 / ((1.0 / laserWavelengthNM) - (wavenumber * NM_TO_CM))), DIGITS_TO_ROUND);
     }
 
     // Format a 16-byte array into a standard UUID string
