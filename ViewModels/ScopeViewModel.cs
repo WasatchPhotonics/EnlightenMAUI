@@ -28,6 +28,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     Settings settings;
 
     Logger logger = Logger.getInstance();
+    Library library;
 
     public delegate void UserNotification(string title, string message, string button);
     public event UserNotification notifyUser;
@@ -43,6 +44,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
+
+        if (spec != null && spec.paired)
+            library = new Library("libraries/SiG-785-OEM", spec);
 
         settings = Settings.getInstance();
 
@@ -61,7 +65,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         uploadCmd  = new Command(() => { _ = doUpload      (); });
         addCmd     = new Command(() => { _ = doAdd         (); });
         clearCmd   = new Command(() => { _ = doClear       (); });
-        matchCmd   = new Command(() => { _ = doMatchAsync  (); });
+        //matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
@@ -499,6 +503,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
+        doMatchAsync();
+
         return ok;
     }
 
@@ -773,6 +779,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
+
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -803,6 +810,18 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     async Task<bool> doMatchAsync()
     {
+        logger.info("calling library match function");
+
+        string result = await library.findMatch(spec.measurement);
+
+        logger.info("returned from library match function with result {0}", result);
+
+        matchResult = result;
+        hasMatch = true;
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+
         return true;
     }
 }
