@@ -27,11 +27,9 @@ namespace EnlightenMAUI.Models
         internal Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
 
-        public bool isConnected = false;
-
         public bool isStroker { get; protected set; } = false;
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
-        public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
+        public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx") || eeprom.model.ToLower().Contains("xs");
         public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase));
 
         static UsbDeviceConnection udc;
@@ -72,7 +70,7 @@ namespace EnlightenMAUI.Models
         {
             udc.ReleaseInterface(acc.GetInterface(0));
             udc.Close();
-            isConnected = false;
+            paired = false;
             logger.info("closed usb device");
         }
 
@@ -161,7 +159,7 @@ namespace EnlightenMAUI.Models
             if (measurement is null)
                 measurement = new Measurement();
 
-            if (!isConnected)
+            if (!paired)
             {
                 bool ok = udc.SetConfiguration(acc.GetConfiguration(0));
                 if (ok)
@@ -171,7 +169,7 @@ namespace EnlightenMAUI.Models
                     if (ok)
                     {
                         logger.info("successfully claimed interface");
-                        isConnected = true;
+                        paired = true;
                     }
                 }
             }
@@ -371,7 +369,7 @@ namespace EnlightenMAUI.Models
         {
             await updateBatteryAsync();
 
-            double[] spectrum = new double[1952];
+            double[] spectrum = new double[pixels];
             if (scansToAverage > 1)
             {
                 // logger.debug("getSpectrum: getting additional spectra for averaging");
@@ -451,8 +449,8 @@ namespace EnlightenMAUI.Models
             logger.debug("sending SW trigger");
             await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM, 0, buf: buf);
 
-            byte[] spectrumBuff = new byte[3904];
-            int okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, 3904, (int)(integrationTimeMS * 8 + 500));
+            byte[] spectrumBuff = new byte[pixels * 2];
+            int okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
 
             if (okI >= 0)
             {
@@ -463,13 +461,13 @@ namespace EnlightenMAUI.Models
                 logger.info("failed to read from USB with code {0}", okI);
             }
 
-            uint[] subspectrum = new uint[1952];
-            for (int i = 0; i < 1952; i++)
+            uint[] subspectrum = new uint[pixels];
+            for (int i = 0; i < pixels; i++)
                 subspectrum[i] = (uint)(spectrumBuff[i * 2] | (spectrumBuff[i * 2 + 1] << 8));  // LSB-MSB
 
-            double[] spec = new double[1952];
+            double[] spec = new double[pixels];
 
-            for (int i = 0; i < 1952; i++)
+            for (int i = 0; i < pixels; i++)
                 spec[i] = subspectrum[i];
 
             return spec;

@@ -86,16 +86,12 @@ namespace EnlightenMAUI.Common
             else if (pid == 0x4000)
             {
                 boardType = BOARD_TYPES.ARM;
-                firmwarePartNum = "170019";
+                firmwarePartNum = "170112";
                 firmwareDesc = "ARM USB Board";
             }
             else if (vid == 0x2457)
             {
 
-            }
-            else if (pid == 0x0000)
-            {
-                boardType = BOARD_TYPES.STROKER;
             }
             else
             {

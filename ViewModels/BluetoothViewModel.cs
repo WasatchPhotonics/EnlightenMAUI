@@ -649,7 +649,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
             try
             {
-                if ((spec as USBSpectrometer).isConnected)
+                if ((spec as USBSpectrometer).paired)
                     spec.disconnect();
                 else
                 {
