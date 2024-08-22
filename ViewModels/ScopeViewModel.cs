@@ -24,7 +24,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Private attributes
     ////////////////////////////////////////////////////////////////////////
 
-    public BluetoothSpectrometer spec;
+    public Spectrometer spec;
     Settings settings;
 
     Logger logger = Logger.getInstance();
@@ -41,6 +41,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: start");
 
         spec = BluetoothSpectrometer.getInstance();
+        if (spec == null || !spec.paired)
+            spec = USBSpectrometer.getInstance();
+
         settings = Settings.getInstance();
 
         settings.PropertyChanged += handleSettingsChange;
@@ -93,7 +96,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     // allows the ScopePage to dis/enable things based on paired status
     public bool paired
     {
-        get => BLEDevice.paired;
+        get => BLEDevice.paired || USBViewDevice.paired;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -686,7 +689,15 @@ public class ScopeViewModel : INotifyPropertyChanged
                 return;
             }
 
-            chartData = updateChartData;
+            //var oldChartData = chartData;
+            //chartData = updateChartData;
+            chartData.Clear();
+            foreach (ChartDataPoint chartDataPoint in updateChartData)
+            {
+                chartData.Add(chartDataPoint);
+            }
+            
+            //oldChartData.Clear();
 
             xAxisMinimum = xAxis[pxLo];
             xAxisMaximum = xAxis[pxHi];

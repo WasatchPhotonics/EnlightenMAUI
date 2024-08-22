@@ -15,7 +15,7 @@ public class Measurement : INotifyPropertyChanged
     public double[] reference = null;
     public double[] processed = null;
 
-    BluetoothSpectrometer spec;
+    Spectrometer spec;
 
     public DateTime timestamp = DateTime.Now;
     public string filename { get; set; }
@@ -44,7 +44,7 @@ public class Measurement : INotifyPropertyChanged
         reset();
     }
 
-    public void reload(BluetoothSpectrometer spec)
+    public void reload(Spectrometer spec)
     {
         this.spec = spec;
 

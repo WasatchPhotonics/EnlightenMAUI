@@ -159,4 +159,17 @@ public class Util
         var toast = CommunityToolkit.Maui.Alerts.Toast.Make(msg, duration, fontSize);
         await toast.Show(cancellationTokenSource.Token);
     }
+
+    public static byte[] truncateArray(byte[] src, int len)
+    {
+        if (src == null)
+            return null;
+
+        if (src.Length <= len)
+            return src;
+
+        byte[] tmp = new byte[len];
+        Array.Copy(src, tmp, len);
+        return tmp;
+    }
 }

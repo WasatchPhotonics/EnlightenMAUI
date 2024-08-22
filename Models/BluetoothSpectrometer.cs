@@ -22,9 +22,6 @@ public class BluetoothSpectrometer : Spectrometer
     public BLEDeviceInfo bleDeviceInfo = new BLEDeviceInfo();
     public BLEDevice bleDevice = null;
 
-    public string note { get; set; }
-    public string qrValue { get; set; } // parsed QR code
-
     ushort lastCRC;
 
     const int MAX_RETRIES = 4;
@@ -32,12 +29,6 @@ public class BluetoothSpectrometer : Spectrometer
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
-
-    public delegate void ConnectionProgressNotification(double perc);
-    public event ConnectionProgressNotification showConnectionProgress;
-
-    public delegate void AcquisitionProgressNotification(double perc);
-    public event AcquisitionProgressNotification showAcquisitionProgress;
 
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle 
@@ -145,7 +136,7 @@ public class BluetoothSpectrometer : Spectrometer
         // finish initializing Spectrometer 
         ////////////////////////////////////////////////////////////////////
 
-        showConnectionProgress(1);
+        raiseConnectionProgress(1);
         
         logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
@@ -234,7 +225,7 @@ public class BluetoothSpectrometer : Spectrometer
             }
             logger.hexdump(buf, $"adding page {page}: ");
             pages.Add(buf);
-            showConnectionProgress(.15 + .85 * page / EEPROM.MAX_PAGES);
+            raiseConnectionProgress(.15 + .85 * page / EEPROM.MAX_PAGES);
         }
         logger.debug($"Spectrometer.readEEPROMAsync: done");
         return pages;
@@ -271,8 +262,6 @@ public class BluetoothSpectrometer : Spectrometer
             NotifyPropertyChanged();
         }
     }
-    uint _nextIntegrationTimeMS = 3;
-    uint _lastIntegrationTimeMS = 9999;
 
     async Task<bool> syncIntegrationTimeMSAsync()
     {
@@ -332,8 +321,6 @@ public class BluetoothSpectrometer : Spectrometer
             }
         }
     }
-    float _nextGainDb = 24;
-    float _lastGainDb = -1;
 
     async Task<bool> syncGainDbAsync()
     {
@@ -451,8 +438,7 @@ public class BluetoothSpectrometer : Spectrometer
             _laserWarningDelaySec = value;
         }
     }
-    byte _laserWarningDelaySec = 3;
-
+   
     ////////////////////////////////////////////////////////////////////////
     // genericCharacteristic
     ////////////////////////////////////////////////////////////////////////
@@ -488,12 +474,6 @@ public class BluetoothSpectrometer : Spectrometer
 
         return ok;
     }
-
-    ////////////////////////////////////////////////////////////////////////
-    // laserState
-    ////////////////////////////////////////////////////////////////////////
-
-    LaserState laserState = new LaserState();
 
     public override bool ramanModeEnabled
     {
@@ -911,7 +891,7 @@ public class BluetoothSpectrometer : Spectrometer
             }
             // response = null;
 
-            showAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
         }
 
         // YOU ARE HERE: kludge at end

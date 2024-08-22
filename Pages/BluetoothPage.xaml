@@ -8,19 +8,28 @@
     <ContentPage.BindingContext>
         <local:ViewModels.BluetoothViewModel/>
     </ContentPage.BindingContext>
-
+    
     <ContentPage.Content>
+
         <StackLayout BackgroundColor="#333" Orientation="Vertical">
 
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <!-- Button Bar -->
-            <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
-                <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
-                    <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand" x:DataType="local:ViewModels.BluetoothViewModel">
+            <StackLayout BackgroundColor="#333" HorizontalOptions="Center" Orientation="Horizontal">
+                <Label Text="Bluetooth" VerticalOptions="Center" TextColor="#cccccc"/>
+                <RadioButton IsChecked="{Binding usingBluetooth}" BorderColor="#cccccc"/>
+                <Label Text="USB" VerticalOptions="Center" TextColor="#cccccc"/>
+                <RadioButton IsChecked="{Binding usingUSB}" BorderColor="#cccccc"/>
+            </StackLayout> 
+            <StackLayout BackgroundColor="#333" Orientation="Vertical">
 
-                        <!-- Scan Button -->
-                        <Button Text="Scan" 
+                <!-- Button Bar -->
+                <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
+                    <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
+                        <StackLayout Orientation="Horizontal" Padding="2" HorizontalOptions="FillAndExpand" x:DataType="local:ViewModels.BluetoothViewModel">
+
+                            <!-- Scan Button -->
+                            <Button Text="Scan" 
                                 Margin="0,0,20,0"
                                 Padding="20,0,20,0"
                                 HorizontalOptions="Center"
@@ -30,45 +39,74 @@
                                 TextColor="{Binding scanButtonTextColor}" 
                                 BackgroundColor="{Binding scanButtonBackgroundColor}" />
 
-                        <!-- Connect/Disconnect Button -->
-                        <Button Text="{Binding buttonConnectText}" 
+                            <!-- Connect/Disconnect Button -->
+                            <Button Text="{Binding buttonConnectText}" 
                                 HorizontalOptions="Center"
                                 VerticalOptions="Center"
                                 Padding="20,0,20,0"
                                 Command="{Binding connectCmd}" 
                                 BackgroundColor="{Binding connectButtonBackgroundColor}"
-                                IsEnabled="{Binding buttonConnectEnabled}" /> 
+                                IsEnabled="{Binding buttonConnectEnabled}" />
 
-                    </StackLayout>
+                        </StackLayout>
+                    </Frame>
                 </Frame>
-            </Frame>
 
-            <!-- Connection ProgressBar -->
-            <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#27c0a1" x:DataType="local:ViewModels.BluetoothViewModel"/>
+                <!-- Connection ProgressBar -->
+                <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#27c0a1" x:DataType="local:ViewModels.BluetoothViewModel"/>
 
-            <!-- List of discovered BLE devices -->
-            <ListView x:Name="listView" 
+                <!-- List of discovered BLE devices -->
+                <ListView x:Name="listView" 
                       ItemsSource="{Binding bleDeviceList}"
+                      IsVisible="{Binding usingBluetooth}"
                       ItemSelected="listView_ItemSelected"
+                      SeparatorColor="#555" 
+                      BackgroundColor="#333" 
+                      VerticalOptions="StartAndExpand"
+                      Margin="20, 0, 20, 0" 
+                      x:DataType="local:ViewModels.BluetoothViewModel"
+                      HasUnevenRows="True">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ViewCell x:DataType="local:Models.BLEDevice">
+                                <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
+                                    <StackLayout Orientation="Horizontal">
+                                        <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large" Padding="0, 0, 20, 0"/>
+                                        <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
+                                    </StackLayout>
+                                    <Label TextColor="#cccccc" Text="{Binding id}"/>
+                                </StackLayout>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <!-- List of discovered USB devices -->
+                <ListView x:Name="listViewUSB" 
+                      ItemsSource="{Binding usbDeviceList}"
+                      IsVisible="{Binding usingUSB}"
+                      ItemSelected="listViewUSB_ItemSelected"
                       SeparatorColor="#555" 
                       BackgroundColor="#333" 
                       Margin="20, 0, 20, 0" 
                       x:DataType="local:ViewModels.BluetoothViewModel"
                       HasUnevenRows="True">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <ViewCell x:DataType="local:Models.BLEDevice">
-                            <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
-                                <StackLayout Orientation="Horizontal">
-                                    <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large" Padding="0, 0, 20, 0"/>
-                                    <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ViewCell x:DataType="local:Models.USBViewDevice">
+                                <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
+                                    <StackLayout Orientation="Horizontal">
+                                        <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
+                                    </StackLayout>
+                                    <Label TextColor="#cccccc" Text="{Binding pid}"/>
                                 </StackLayout>
-                                <Label TextColor="#cccccc" Text="{Binding id}"/>
-                            </StackLayout>
-                        </ViewCell>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+
+            </StackLayout>
         </StackLayout>
     </ContentPage.Content>
 </ContentPage>
