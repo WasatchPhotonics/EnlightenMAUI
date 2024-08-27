@@ -300,12 +300,15 @@ public class EEPROM
                     intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
             }
             else
-                intensityCorrectionOrder = 0;
+                intensityCorrectionOrder = 0; 
 
             if (format >= 7)
                 avgResolution = ParseData.toFloat(pages[3], 48);
             else
                 avgResolution = 0.0f;
+
+            if (format >= 8)
+                wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
 
             if (format >= 9)
                 featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
