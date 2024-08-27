@@ -80,7 +80,7 @@ namespace EnlightenMAUI.Models
             logger.info("finish loading library file from {0}", path);
         }
 
-        public async Task<string> findMatch(Measurement spectrum)
+        public async Task<Tuple<string,double>> findMatch(Measurement spectrum)
         {
             logger.debug("Library.findMatch: trying to match spectrum");
 
@@ -122,7 +122,7 @@ namespace EnlightenMAUI.Models
 
             logger.info($"best match {finalSample} with score {maxScore}");
 
-            return finalSample;
+            return new Tuple<string, double>(finalSample, maxScore);
         }
     }
 }

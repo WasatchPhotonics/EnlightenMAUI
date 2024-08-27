@@ -806,17 +806,22 @@ public class ScopeViewModel : INotifyPropertyChanged
     public Command matchCmd { get; }
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
+    public bool waitingForMatch {get; private set;}
     public string matchResult {get; private set;}
 
     async Task<bool> doMatchAsync()
     {
         logger.info("calling library match function");
 
-        string result = await library.findMatch(spec.measurement);
+        waitingForMatch = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        var result = await library.findMatch(spec.measurement);
+        waitingForMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
 
         logger.info("returned from library match function with result {0}", result);
 
-        matchResult = result;
+        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
         hasMatch = true;
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
