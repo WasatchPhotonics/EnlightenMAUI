@@ -287,7 +287,7 @@ public class AirPLS
         for (int i = 0; i < maxIterations; ++i)
         {
             Logger.getInstance().info("trying smooth iteration {0}", i);
-            baseline = smoother.smooth(weights);
+            baseline = smoother.newSmooth(weights);
             double[] baselineError = new double[clipped.Length];
             bool[] mask = new bool[clipped.Length];
             double totalError = 0;
@@ -343,13 +343,14 @@ public class AirPLS
 public class WhittakerSmoother
 {
     Vector<double> spectrumVec;
-    SparseMatrix storedSmooth;
+    CSparseMatrix storedSmooth;
+    CSparseMatrix newStoredSmooth;
 
     public WhittakerSmoother(double[] signal, double smoothnessParam, int derivativeOrder = 1)
     {
         Logger.getInstance().info("creating initial stored smooth");
         spectrumVec = CreateVector.DenseOfArray(signal);
-        SparseMatrix smoothingMatrix = new SparseMatrix(signal.Length - derivativeOrder, signal.Length);
+        CSparseMatrix smoothingMatrix = new CSparseMatrix(signal.Length - derivativeOrder, signal.Length);
         double[] diffArray = new double[derivativeOrder * 2 + 1];
         double[] diffXs = new double[derivativeOrder * 2 + 1];
         for (int i = 0; i < diffXs.Length; ++i)
@@ -362,32 +363,26 @@ public class WhittakerSmoother
         {
             for (int j = 0; j < derivativeOrder + 1; j++)
             {
-                smoothingMatrix[i, i + j] = diffArray[j];
+                //smoothingMatrix[i, i + j] = diffArray[j];
+                smoothingMatrix.Row(i)[i + j] = diffArray[j];
             }
         }
 
-        storedSmooth = smoothnessParam * (SparseMatrix)smoothingMatrix.Transpose() * smoothingMatrix;
+        newStoredSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
+        //newStoredSmooth = (CSparseMatrix)CSparseMatrix.OfArray(storedSmooth.ToArray());
         Logger.getInstance().info("finalized initial stored smooth");
     }
 
-    public double[] smooth(double[] weights)
+    public double[] newSmooth(double[] weights)
     {
-        Logger.getInstance().info("setting up matrix");
-        SparseMatrix weightID = new SparseMatrix(weights.Length, weights.Length);
-
-        Logger.getInstance().info("copying in {0} weights", weights.Length);
-        for (int i = 0; i < weights.Length; i++)
-        {
-            weightID[i, i] = weights[i];
-        }
-
+        Logger.getInstance().info("setting up weight matrix");
+        CSparseMatrix weightID =  (CSparseMatrix)CSparseMatrix.OfDiagonalArray(weights);
 
         Logger.getInstance().info("creating dense vector");
         Vector<double> weightVec = CreateVector.DenseOfArray(weights);
 
-
         Logger.getInstance().info("creating sparse matrix");
-        SparseMatrix A = weightID + storedSmooth;
+        CSparseMatrix A = (CSparseMatrix)weightID.Add(newStoredSmooth);
         Logger.getInstance().info("multiplying vector");
         Vector<double> B = weightVec.PointwiseMultiply(spectrumVec);
         Logger.getInstance().info("converting sparse matrix");
@@ -441,6 +436,20 @@ public class SparseLU : ISolver<double>
         A.Values = storage.Values;
 
         return new SparseLU(CSparseLU.Create(A, ordering, tol), n);
+    }
+    
+    public static SparseLU Create(CSparseMatrix matrix, CSparse.ColumnOrdering ordering,
+        double tol = 1.0)
+    {
+        int n = matrix.RowCount;
+
+        // Check for proper dimensions.
+        if (n != matrix.ColumnCount)
+        {
+            //throw new ArgumentException(Resources.MatrixMustBeSquare);
+        }
+
+        return new SparseLU(CSparseLU.Create(matrix, ordering, tol), n);
     }
 
     /// <summary>
