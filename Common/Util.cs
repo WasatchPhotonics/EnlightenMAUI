@@ -18,6 +18,7 @@ using CSparse;
 using MathNet.Numerics.LinearAlgebra.Storage;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using SkiaSharp;
 
 namespace EnlightenMAUI.Common;
 
@@ -343,14 +344,17 @@ public class AirPLS
 public class WhittakerSmoother
 {
     Vector<double> spectrumVec;
-    SparseMatrix storedSmooth;
+    CSparseMatrix storedSmooth;
     CSparseMatrix newStoredSmooth;
 
     public WhittakerSmoother(double[] signal, double smoothnessParam, int derivativeOrder = 1)
     {
         Logger.getInstance().info("creating initial stored smooth");
         spectrumVec = CreateVector.DenseOfArray(signal);
-        SparseMatrix smoothingMatrix = new SparseMatrix(signal.Length - derivativeOrder, signal.Length);
+
+        SparseMatrix smoothingMatrix2 = new SparseMatrix(signal.Length - derivativeOrder, signal.Length);
+        double[,] smoothingMatrix3 = new double[signal.Length - derivativeOrder, signal.Length];
+        
         double[] diffArray = new double[derivativeOrder * 2 + 1];
         double[] diffXs = new double[derivativeOrder * 2 + 1];
         for (int i = 0; i < diffXs.Length; ++i)
@@ -363,42 +367,24 @@ public class WhittakerSmoother
         {
             for (int j = 0; j < derivativeOrder + 1; j++)
             {
-                smoothingMatrix[i, i + j] = diffArray[j];
+                //smoothingMatrix.s
+                smoothingMatrix3[i, i + j] = diffArray[j];
             }
         }
 
-        storedSmooth = smoothnessParam * (SparseMatrix)smoothingMatrix.Transpose() * smoothingMatrix;
-        newStoredSmooth = (CSparseMatrix)CSparseMatrix.OfArray(storedSmooth.ToArray());
+        CSparseMatrix smoothingMatrix = (CSparseMatrix)CSparseMatrix.OfArray(smoothingMatrix3);
+
+        newStoredSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
+
+        CSparseMatrix scaleMatrix = (CSparseMatrix)CSparseMatrix.CreateDiagonal(newStoredSmooth.ColumnCount, smoothnessParam);
+
+        newStoredSmooth = (CSparseMatrix)scaleMatrix.Multiply(newStoredSmooth);
+
+        //newStoredSmooth = (CSparseMatrix)CSparseMatrix.OfArray(storedSmooth.ToArray());
         Logger.getInstance().info("finalized initial stored smooth");
-    }
 
-    public double[] smooth(double[] weights)
-    {
-        Logger.getInstance().info("setting up matrix");
-        SparseMatrix weightID = new SparseMatrix(weights.Length, weights.Length);
-
-        Logger.getInstance().info("copying in {0} weights", weights.Length);
-        for (int i = 0; i < weights.Length; i++)
-        {
-            weightID[i, i] = weights[i];
-        }
-
-
-        Logger.getInstance().info("creating dense vector");
-        Vector<double> weightVec = CreateVector.DenseOfArray(weights);
-
-
-        Logger.getInstance().info("creating sparse matrix");
-        SparseMatrix A = weightID + storedSmooth;
-        Logger.getInstance().info("multiplying vector");
-        Vector<double> B = weightVec.PointwiseMultiply(spectrumVec);
-        Logger.getInstance().info("converting sparse matrix");
-        SparseLU solver = SparseLU.Create(A, ColumnOrdering.MinimumDegreeAtPlusA);
-
-        Logger.getInstance().info("solving final sparse matrix");
-        Vector<double> background = solver.Solve(B);
-        Logger.getInstance().info("returning solved matrix");
-        return background.ToArray();
+        double[] sanityRow = newStoredSmooth.Row(0);
+        Logger.getInstance().info("Sanity check value {0}", sanityRow[0]);
     }
 
     public double[] newSmooth(double[] weights)
