@@ -49,6 +49,7 @@ public class spectrumJSON
     public double? declaredScore;
     public string technique;
     public string baselineCorrection;
+    public string tag;
     public bool cropped;
     public bool interpolated;
     public bool deconvoluted;
@@ -99,6 +100,7 @@ public class Measurement : INotifyPropertyChanged
     public double? declaredScore { get; set; }
     public string technique { get; set; }
     public string baselineCorrection { get; set; }
+    public string tag { get; set; }
     public bool cropped { get; set; }
     public bool interpolated { get; set; }
     public double? wavenumberCorrection { get; set; }
@@ -113,6 +115,7 @@ public class Measurement : INotifyPropertyChanged
     Logger logger = Logger.getInstance();
     public string filename { get; set; }
     public string pathname { get; set; }
+    
     public Location location;
 
     static HttpClient httpClient = new HttpClient();
@@ -257,6 +260,7 @@ public class Measurement : INotifyPropertyChanged
         this.declaredScore = json.declaredScore;
         this.technique = json.technique;
         this.baselineCorrection = json.baselineCorrection;
+        this.tag = json.tag;
         this.cropped = json.cropped;
         this.interpolated = json.interpolated;
         this.wavenumberCorrection = json.wavenumberCorrection;
@@ -403,6 +407,7 @@ public class Measurement : INotifyPropertyChanged
         temp.declaredScore = declaredScore;
         temp.technique = technique;
         temp.baselineCorrection = baselineCorrection;
+        temp.tag = tag;
         temp.cropped = cropped;
         temp.interpolated = interpolated;
         temp.wavenumberCorrection = wavenumberCorrection;
@@ -446,6 +451,9 @@ public class Measurement : INotifyPropertyChanged
 
         dark = spec.dark;
         postProcess();
+
+        roiStart = spec is null ? 0 : (uint)spec.eeprom.ROIHorizStart;
+        roiEnd = spec is null ? pixels - 1 : (uint)spec.eeprom.ROIHorizEnd;
 
         var serialNumber = spec is null ? "sim" : spec.eeprom.serialNumber;
         measurementID = string.Format("enlighten-{0}-{1}",

@@ -7,6 +7,17 @@ using System.Threading;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using Telerik.Maui;
+using EnlightenMAUI.Models;
+using MathNet.Numerics.LinearAlgebra.Factorization;
+// Create an alias for CSparse's SparseLU class.
+using CSparseLU = CSparse.Double.Factorization.SparseLU;
+
+// Create an alias for CSparse's SparseMatrix class.
+using CSparseMatrix = CSparse.Double.SparseMatrix;
+using CSparse;
+using MathNet.Numerics.LinearAlgebra.Storage;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace EnlightenMAUI.Common;
 
@@ -85,6 +96,43 @@ public class Util
             return (1.0 / ((1.0 / laserWavelengthNM) - (wavenumber * NM_TO_CM)));
         else
             return Math.Round((1.0 / ((1.0 / laserWavelengthNM) - (wavenumber * NM_TO_CM))), DIGITS_TO_ROUND);
+    }
+
+    //
+    // Pearson library match, assumes provided measurements are already corrected to be on the same axis
+    //
+    public static double pearsonLibraryMatch(Measurement sampleM, Measurement library, double airPLSLambda = 10000, int airPLSMaxIter = 100, bool smooth = true)
+    {
+        if (smooth)
+        {
+            logger.info("smoothing sample and library");
+            double[] yIn = AirPLS.smooth(sampleM.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
+            double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
+            logger.info("smooth complete");
+
+            double score = 0;
+
+            try
+            {
+                logger.info("calculating match score");
+                score = MathNet.Numerics.Statistics.Correlation.Pearson(yIn, array);
+                logger.info("returning match score {0}", score);
+            }
+            catch (Exception e)
+            {
+                logger.error("Pearson score failed with error {0}", e.Message);
+                score = 0;
+            }
+
+            return score;
+        }
+        else
+        {
+            double[] yIn = sampleM.processed;
+            double[] array = library.processed;
+
+            return MathNet.Numerics.Statistics.Correlation.Pearson(yIn, array);
+        }
     }
 
     // Format a 16-byte array into a standard UUID string
@@ -201,5 +249,257 @@ public class Util
         byte[] tmp = new byte[len];
         Array.Copy(src, tmp, len);
         return tmp;
+    }
+}
+
+public class AirPLS
+{
+    public static double[] smooth(double[] spectrum, double smoothnessParam = 100, int maxIterations = 10, double convergenceThreshold = 0.001, bool verbose = false, int startIndex = 0, int endIndex = 0)
+    {
+
+        Logger.getInstance().info("smoothing sample and library");
+        double[] clipped = new double[spectrum.Length];
+
+        if (startIndex != endIndex)
+        {
+            Logger.getInstance().info("creating clipped array");
+
+            clipped = new double[endIndex - startIndex + 1];
+            for (int i = startIndex; i <= endIndex; ++i)
+                clipped[i - startIndex] = spectrum[i];
+        }
+        else
+        {
+            Array.Copy(spectrum, clipped, spectrum.Length);
+        }
+
+        WhittakerSmoother smoother = new WhittakerSmoother(clipped, smoothnessParam, 2);
+        double[] weights = new double[clipped.Length];
+        double[] baseline = new double[clipped.Length];
+        double[] corrected = new double[clipped.Length];
+        double totalIntensity = 0;
+        for (int i = 0; i < clipped.Length; i++)
+        {
+            weights[i] = 1;
+            totalIntensity += Math.Abs(clipped[i]);
+        }
+
+        for (int i = 0; i < maxIterations; ++i)
+        {
+            Logger.getInstance().info("trying smooth iteration {0}", i);
+            baseline = smoother.smooth(weights);
+            double[] baselineError = new double[clipped.Length];
+            bool[] mask = new bool[clipped.Length];
+            double totalError = 0;
+            for (int j = 0; j < clipped.Length; ++j)
+            {
+                corrected[j] = clipped[j] - baseline[j];
+
+                if (corrected[j] < 0)
+                {
+                    baselineError[j] = -1 * corrected[j];
+                    mask[j] = true;
+                    totalError += baselineError[j];
+                }
+                else
+                {
+                    baselineError[j] = corrected[j];
+                    mask[j] = false;
+                }
+            }
+
+
+            double convergence = totalError / totalIntensity;
+            if (convergence < convergenceThreshold)
+                break;
+
+            for (int j = 0; j < baselineError.Length; ++j)
+            {
+                baselineError[j] = baselineError[j] / totalError;
+
+                if (!mask[j])
+                    weights[j] = 0;
+                else
+                {
+                    weights[j] = Math.Exp((i + 1) * baselineError[j]);
+                }
+            }
+
+            weights[0] = weights[weights.Length - 1] = Math.Exp((i + 1) * baselineError.Min());
+        }
+
+        double[] final = new double[clipped.Length];
+
+        Array.Copy(clipped, final, final.Length);
+        for (int j = 0; j < final.Length; ++j)
+            final[j] -= baseline[j];
+
+        return final;
+    }
+
+
+}
+
+public class WhittakerSmoother
+{
+    Vector<double> spectrumVec;
+    SparseMatrix storedSmooth;
+
+    public WhittakerSmoother(double[] signal, double smoothnessParam, int derivativeOrder = 1)
+    {
+        Logger.getInstance().info("creating initial stored smooth");
+        spectrumVec = CreateVector.DenseOfArray(signal);
+        SparseMatrix smoothingMatrix = new SparseMatrix(signal.Length - derivativeOrder, signal.Length);
+        double[] diffArray = new double[derivativeOrder * 2 + 1];
+        double[] diffXs = new double[derivativeOrder * 2 + 1];
+        for (int i = 0; i < diffXs.Length; ++i)
+            diffXs[i] = i;
+
+        diffArray[derivativeOrder] = 1;
+        diffArray = NumericalMethods.derivative(diffXs, diffArray, derivativeOrder);
+
+        for (int i = 0; i < signal.Length - derivativeOrder; i++)
+        {
+            for (int j = 0; j < derivativeOrder + 1; j++)
+            {
+                smoothingMatrix[i, i + j] = diffArray[j];
+            }
+        }
+
+        storedSmooth = smoothnessParam * (SparseMatrix)smoothingMatrix.Transpose() * smoothingMatrix;
+        Logger.getInstance().info("finalized initial stored smooth");
+    }
+
+    public double[] smooth(double[] weights)
+    {
+        Logger.getInstance().info("setting up matrix");
+        SparseMatrix weightID = new SparseMatrix(weights.Length, weights.Length);
+
+        Logger.getInstance().info("copying in {0} weights", weights.Length);
+        for (int i = 0; i < weights.Length; i++)
+        {
+            weightID[i, i] = weights[i];
+        }
+
+
+        Logger.getInstance().info("creating dense vector");
+        Vector<double> weightVec = CreateVector.DenseOfArray(weights);
+
+
+        Logger.getInstance().info("creating sparse matrix");
+        SparseMatrix A = weightID + storedSmooth;
+        Logger.getInstance().info("multiplying vector");
+        Vector<double> B = weightVec.PointwiseMultiply(spectrumVec);
+        Logger.getInstance().info("converting sparse matrix");
+        SparseLU solver = SparseLU.Create(A, ColumnOrdering.MinimumDegreeAtPlusA);
+
+        Logger.getInstance().info("solving final sparse matrix");
+        Vector<double> background = solver.Solve(B);
+        Logger.getInstance().info("returning solved matrix");
+        return background.ToArray();
+    }
+}
+
+public class SparseLU : ISolver<double>
+{
+    int n;
+    CSparseLU lu;
+
+    private SparseLU(CSparseLU lu, int n)
+    {
+        this.n = n;
+        this.lu = lu;
+    }
+
+    /// <summary>
+    /// Compute the sparse LU factorization for given matrix.
+    /// </summary>
+    /// <param name="matrix">The matrix to factorize.</param>
+    /// <param name="ordering">The column ordering method to use.</param>
+    /// <param name="tol">Partial pivoting tolerance (form 0.0 to 1.0).</param>
+    /// <returns>Sparse LU factorization.</returns>
+    public static SparseLU Create(SparseMatrix matrix, CSparse.ColumnOrdering ordering,
+        double tol = 1.0)
+    {
+        int n = matrix.RowCount;
+
+        // Check for proper dimensions.
+        if (n != matrix.ColumnCount)
+        {
+            //throw new ArgumentException(Resources.MatrixMustBeSquare);
+        }
+
+        // Get CSR storage.
+        var storage = (SparseCompressedRowMatrixStorage<double>)matrix.Storage;
+
+        // Create CSparse matrix.
+        var A = new CSparseMatrix(n, n);
+
+        // Assign storage arrays.
+        A.ColumnPointers = storage.RowPointers;
+        A.RowIndices = storage.ColumnIndices;
+        A.Values = storage.Values;
+
+        return new SparseLU(CSparseLU.Create(A, ordering, tol), n);
+    }
+
+    /// <summary>
+    /// Solves a system of linear equations, <c>Ax = b</c>, with A LU factorized.
+    /// </summary>
+    /// <param name="input">The right hand side vector, <c>b</c>.</param>
+    /// <param name="result">The left hand side vector, <c>x</c>.</param>
+    public void Solve(Vector<double> input, Vector<double> result)
+    {
+        // Check for proper arguments.
+        if (input == null)
+        {
+            throw new ArgumentNullException("input");
+        }
+
+        if (result == null)
+        {
+            throw new ArgumentNullException("result");
+        }
+
+        // Check for proper dimensions.
+        if (input.Count != result.Count)
+        {
+            //throw new ArgumentException(Resources.ArgumentVectorsSameLength);
+        }
+
+        if (input.Count != n)
+        {
+            throw new ArgumentException("Dimensions don't match", "input");
+        }
+
+        var b = input.Storage as DenseVectorStorage<double>;
+        var x = result.Storage as DenseVectorStorage<double>;
+
+        if (b == null || x == null)
+        {
+            throw new NotSupportedException("Expected dense vector storage.");
+        }
+
+        lu.SolveTranspose(b.Data, x.Data);
+    }
+
+
+    public Vector<double> Solve(Vector<double> input)
+    {
+        var result = Vector<double>.Build.Dense(input.Count);
+
+        Solve(input, result);
+
+        return result;
+    }
+
+    public void Solve(MathNet.Numerics.LinearAlgebra.Matrix<double> input, MathNet.Numerics.LinearAlgebra.Matrix<double> result)
+    {
+        throw new NotImplementedException();
+    }
+
+    public MathNet.Numerics.LinearAlgebra.Matrix<double> Solve(MathNet.Numerics.LinearAlgebra.Matrix<double> input)
+    {
+        throw new NotImplementedException();
     }
 }
