@@ -351,8 +351,6 @@ public class WhittakerSmoother
     {
         Logger.getInstance().info("creating initial stored smooth");
         spectrumVec = CreateVector.DenseOfArray(signal);
-
-        SparseMatrix smoothingMatrix2 = new SparseMatrix(signal.Length - derivativeOrder, signal.Length);
         double[,] smoothingMatrix3 = new double[signal.Length - derivativeOrder, signal.Length];
         
         double[] diffArray = new double[derivativeOrder * 2 + 1];
@@ -363,6 +361,8 @@ public class WhittakerSmoother
         diffArray[derivativeOrder] = 1;
         diffArray = NumericalMethods.derivative(diffXs, diffArray, derivativeOrder);
 
+
+        Logger.getInstance().info("copying derivs");
         for (int i = 0; i < signal.Length - derivativeOrder; i++)
         {
             for (int j = 0; j < derivativeOrder + 1; j++)
@@ -372,10 +372,14 @@ public class WhittakerSmoother
             }
         }
 
+
+        Logger.getInstance().info("creating sparse matrix");
         CSparseMatrix smoothingMatrix = (CSparseMatrix)CSparseMatrix.OfArray(smoothingMatrix3);
 
+        Logger.getInstance().info("transpose and multiply matrix");
         newStoredSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
 
+        Logger.getInstance().info("diagonal multiply matrix");
         CSparseMatrix scaleMatrix = (CSparseMatrix)CSparseMatrix.CreateDiagonal(newStoredSmooth.ColumnCount, smoothnessParam);
 
         newStoredSmooth = (CSparseMatrix)scaleMatrix.Multiply(newStoredSmooth);
@@ -503,7 +507,7 @@ public class SparseLU : ISolver<double>
             throw new NotSupportedException("Expected dense vector storage.");
         }
 
-        lu.SolveTranspose(b.Data, x.Data);
+        lu.Solve(b.Data, x.Data);
     }
 
 
