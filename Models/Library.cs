@@ -28,8 +28,7 @@ namespace EnlightenMAUI.Models
             logger.debug($"instantiating Library from {root}");
             AssetManager assets = Platform.AppContext.Assets;
 
-            string[] assetP = assets.List("libraries/SiG-785");
-            assetP = assets.List(root);
+            string[] assetP = assets.List(root);
 
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");

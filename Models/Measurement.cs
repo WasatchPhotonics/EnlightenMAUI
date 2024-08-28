@@ -453,7 +453,7 @@ public class Measurement : INotifyPropertyChanged
         postProcess();
 
         roiStart = spec is null ? 0 : (uint)spec.eeprom.ROIHorizStart;
-        roiEnd = spec is null ? 1024 : (uint)spec.eeprom.ROIHorizEnd;
+        roiEnd = spec is null ? pixels - 1 : (uint)spec.eeprom.ROIHorizEnd;
 
         var serialNumber = spec is null ? "sim" : spec.eeprom.serialNumber;
         measurementID = string.Format("enlighten-{0}-{1}",
