@@ -927,7 +927,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     async Task subscribeToUpdates()
     {
-        await Task.Delay(1000);
+        await Task.Delay(5000);
 
         // start notifications
         foreach (var pair in characteristicsByName)
