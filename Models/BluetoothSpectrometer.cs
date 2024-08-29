@@ -141,7 +141,7 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
-        await updateBatteryAsync(); 
+        //await updateBatteryAsync(); 
 
         // for now, ignore EEPROM configuration and hardcode
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
@@ -660,7 +660,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         // update battery FIRST
         logger.debug("Spectrometer.takeOneAveragedAsync: updating battery");
-        await updateBatteryAsync();
+        //await updateBatteryAsync();
 
         // for progress bar
         totalPixelsToRead = pixels; // * scansToAverage;
