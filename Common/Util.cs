@@ -288,7 +288,7 @@ public class AirPLS
         for (int i = 0; i < maxIterations; ++i)
         {
             Logger.getInstance().info("trying smooth iteration {0}", i);
-            baseline = smoother.newSmooth(weights);
+            baseline = smoother.smooth(weights);
             double[] baselineError = new double[clipped.Length];
             bool[] mask = new bool[clipped.Length];
             double totalError = 0;
@@ -345,11 +345,10 @@ public class WhittakerSmoother
 {
     Vector<double> spectrumVec;
     CSparseMatrix storedSmooth;
-    CSparseMatrix newStoredSmooth;
 
     public WhittakerSmoother(double[] signal, double smoothnessParam, int derivativeOrder = 1)
     {
-        Logger.getInstance().info("creating initial stored smooth");
+        Logger.getInstance().debug("creating initial stored smooth");
         spectrumVec = CreateVector.DenseOfArray(signal);
         double[,] smoothingMatrix3 = new double[signal.Length - derivativeOrder, signal.Length];
         
@@ -362,7 +361,7 @@ public class WhittakerSmoother
         diffArray = NumericalMethods.derivative(diffXs, diffArray, derivativeOrder);
 
 
-        Logger.getInstance().info("copying derivs");
+        Logger.getInstance().debug("copying derivs");
         for (int i = 0; i < signal.Length - derivativeOrder; i++)
         {
             for (int j = 0; j < derivativeOrder + 1; j++)
@@ -373,42 +372,42 @@ public class WhittakerSmoother
         }
 
 
-        Logger.getInstance().info("creating sparse matrix");
+        Logger.getInstance().debug("creating sparse matrix");
         CSparseMatrix smoothingMatrix = (CSparseMatrix)CSparseMatrix.OfArray(smoothingMatrix3);
 
-        Logger.getInstance().info("transpose and multiply matrix");
-        newStoredSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
+        Logger.getInstance().debug("transpose and multiply matrix");
+        storedSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
 
-        Logger.getInstance().info("diagonal multiply matrix");
-        CSparseMatrix scaleMatrix = (CSparseMatrix)CSparseMatrix.CreateDiagonal(newStoredSmooth.ColumnCount, smoothnessParam);
+        Logger.getInstance().debug("diagonal multiply matrix");
+        CSparseMatrix scaleMatrix = (CSparseMatrix)CSparseMatrix.CreateDiagonal(storedSmooth.ColumnCount, smoothnessParam);
 
-        newStoredSmooth = (CSparseMatrix)scaleMatrix.Multiply(newStoredSmooth);
+        storedSmooth = (CSparseMatrix)scaleMatrix.Multiply(storedSmooth);
 
         //newStoredSmooth = (CSparseMatrix)CSparseMatrix.OfArray(storedSmooth.ToArray());
-        Logger.getInstance().info("finalized initial stored smooth");
+        Logger.getInstance().debug("finalized initial stored smooth");
 
-        double[] sanityRow = newStoredSmooth.Row(0);
-        Logger.getInstance().info("Sanity check value {0}", sanityRow[0]);
+        double[] sanityRow = storedSmooth.Row(0);
+        Logger.getInstance().debug("Sanity check value {0}", sanityRow[0]);
     }
 
-    public double[] newSmooth(double[] weights)
+    public double[] smooth(double[] weights)
     {
-        Logger.getInstance().info("setting up weight matrix");
+        Logger.getInstance().debug("setting up weight matrix");
         CSparseMatrix weightID =  (CSparseMatrix)CSparseMatrix.OfDiagonalArray(weights);
 
-        Logger.getInstance().info("creating dense vector");
+        Logger.getInstance().debug("creating dense vector");
         Vector<double> weightVec = CreateVector.DenseOfArray(weights);
 
-        Logger.getInstance().info("creating sparse matrix");
-        CSparseMatrix A = (CSparseMatrix)weightID.Add(newStoredSmooth);
-        Logger.getInstance().info("multiplying vector");
+        Logger.getInstance().debug("creating sparse matrix");
+        CSparseMatrix A = (CSparseMatrix)weightID.Add(storedSmooth);
+        Logger.getInstance().debug("multiplying vector");
         Vector<double> B = weightVec.PointwiseMultiply(spectrumVec);
-        Logger.getInstance().info("converting sparse matrix");
+        Logger.getInstance().debug("converting sparse matrix");
         SparseLU solver = SparseLU.Create(A, ColumnOrdering.MinimumDegreeAtPlusA);
 
-        Logger.getInstance().info("solving final sparse matrix");
+        Logger.getInstance().debug("solving final sparse matrix");
         Vector<double> background = solver.Solve(B);
-        Logger.getInstance().info("returning solved matrix");
+        Logger.getInstance().debug("returning solved matrix");
         return background.ToArray();
     }
 }
