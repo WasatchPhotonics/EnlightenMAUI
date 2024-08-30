@@ -1,5 +1,6 @@
 ﻿using System;
 using EnlightenMAUI.Common;
+using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 
 namespace EnlightenMAUI.Models
 {
@@ -363,5 +364,49 @@ namespace EnlightenMAUI.Models
 
             return m;
         }
+
+        public Measurement crossMapWavenumberData(double[] otherWavenumbers, double[] intensities)
+        {
+            Measurement m = new Measurement();
+            m.raw = new double[wavenumbers.Length];
+
+            for (int i = 0; i < pixels; ++i)
+            {
+                while (wavenumbers[i] < otherWavenumbers[0])
+                {
+                    m.raw[i] = intensities[0];
+                    ++i;
+                }
+
+                int index = Array.BinarySearch(otherWavenumbers, wavenumbers[i]);
+                if (index < 0)
+                    index = ~index;
+
+                //Logger.getInstance().info("mapping new pixel {0} at new wavenumber {1:f2} to pixel {2}", i, wavenumbers[i], index);
+
+                if (index < intensities.Length)
+                {
+                    int first = index - 1;
+                    int second = index;
+
+                    double pixelSize = otherWavenumbers[second] - otherWavenumbers[first];
+                    double pctFirst = (pixelSize - (otherWavenumbers[second] - wavenumbers[i])) / pixelSize;
+
+                    //Logger.getInstance().info("interpolating at {0:f3} pct {1:f2} vs. {2:f2}", pctFirst, otherWavenumbers[first], otherWavenumbers[second]);
+                    m.raw[i] = Util.interpolate(intensities[first], intensities[second], pctFirst);
+                }
+                else
+                {
+                    //Logger.getInstance().info("interpolating beyond end as last pixel");
+
+                    m.raw[i] = intensities.Last();
+                }
+            }
+
+            m.postProcess();
+            Logger.getInstance().info("returning interpolated sample with pixel 1000 = {0}", m.processed[1000]);
+            return m;
+        }
+
     }
 }

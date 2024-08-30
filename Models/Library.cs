@@ -6,13 +6,170 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Reflection;
+using System.IO;
 using System.Xml.XPath;
 using Newtonsoft.Json;
 using EnlightenMAUI.Common;
+using static Java.Util.Jar.Attributes;
 
 namespace EnlightenMAUI.Models
 {
-    internal class Library
+    public class SimpleCSVParser
+    {
+        int colWavenumber = 0;
+        int colIntensity = 1;
+        int VIGNETTE_START = 3; // drop the first 3 pixels
+        int VIGNETTE_COUNT = int.MaxValue; // For now don't vignette the end
+        string state;
+
+        public List<double> wavenumbers = new List<double>();
+        public List<double> intensities = new List<double>();
+        public string name = null;
+        public ErrorTypes errorType = ErrorTypes.SUCCESS;
+        int linecount = 0;
+        Logger logger = Logger.getInstance();
+
+        public SimpleCSVParser()
+        {
+        }
+
+        private bool isNum(string line)
+        {
+            if (line.Length == 0)
+            {
+                return false;
+            }
+            char c = line[0];
+            return ('0' <= c && c <= '9') || c == '-';
+        }
+
+        private void readHeader(List<string> tok)
+        {
+            for (int i = 0; i < tok.Count; i++)
+            {
+                string s = tok[i].ToLower();
+                if (s == "wavenumber")
+                {
+                    colWavenumber = i;
+                }
+                else if (Regex.Match(s, "processed|spectrum|spectra|intensity").Success)
+                {
+                    colIntensity = i;
+                }
+            }
+        }
+
+        void readValues(List<string> tok)
+        {
+            int len = tok.Count;
+            if ((len < colWavenumber + 1) || (len < colIntensity + 1)) { return; }
+            if (VIGNETTE_COUNT > 0)
+            {
+                if (intensities.Count >= VIGNETTE_COUNT)
+                    return;
+
+                if (linecount++ < VIGNETTE_START)
+                    return;
+            }
+
+            double wavenumber = Convert.ToDouble(tok[colWavenumber]);
+            double intensity = Convert.ToDouble(tok[colIntensity]);
+
+            wavenumbers.Add(wavenumber);
+            intensities.Add(intensity);
+        }
+
+        public bool parseFile(string pathname)
+        {
+            var assembly = IntrospectionExtensions.GetTypeInfo(typeof(SimpleCSVParser)).Assembly;
+            Stream stream = assembly.GetManifestResourceStream(pathname);
+            if (stream is null)
+            {
+                errorType = ErrorTypes.NULL_STREAM;
+                return false;
+            }
+
+            return parseStream(stream);
+        }
+
+        public bool parseStream(Stream stream)
+        {
+            state = "READING_METADATA";
+            string line;
+            using (StreamReader sr = new StreamReader(stream))
+            {
+                while ((line = sr.ReadLine()) != null)
+                {
+                    line.Trim();
+
+                    // some files have "CSV blanks" (lines of nothing but commas)
+                    if (Regex.Match(line, "^[, ]*$").Success)
+                    {
+                        line = "";
+                    }
+
+                    List<string> tok = line.Split(',').ToList();
+
+                    if (state == "READING_METADATA")
+                    {
+                        if (isNum(line))
+                        {
+                            // We found a digit, so either this file doesn't have metadata, 
+                            // or we're already past it.  Unfortunately, this probably means
+                            // we don't know what the field ordering is, so assume defaults.
+                            state = "READING_DATA";
+                            readValues(tok);
+                        }
+                        else if (line.Length == 0)
+                        {
+                            // we found a blank, so assume next row is header
+                            state = "READING_HEADER";
+                        }
+                        else if (tok.Count > 1)
+                        {
+                            // process metadata
+                            string key = tok[0].Trim().ToLower();
+                            string value = tok[1].Trim();
+
+                            if (key == "label")
+                                name = value;
+                        }
+                    }
+                    else if (state == "READING_HEADER")
+                    {
+                        if (line.Length == 0)
+                        {
+                            // skip extra blank
+                        }
+                        else if (isNum(line))
+                        {
+                            state = "READING_DATA";
+                            readValues(tok);
+                        }
+                        else
+                        {
+                            readHeader(tok);
+                            state = "READING_DATA";
+                        }
+                    }
+                    else if (state == "READING_DATA")
+                    {
+                        readValues(tok);
+                    }
+                    else
+                    {
+                        errorType = ErrorTypes.INVALID_STATE;
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        public enum ErrorTypes { SUCCESS, NULL_STREAM, INVALID_STATE, NO_INTENSITIES };
+    }
+        internal class Library
     {
         Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
@@ -46,8 +203,27 @@ namespace EnlightenMAUI.Models
             }
         }
 
-        async Task loadCSV(string path) 
+        async Task loadCSV(string path)
         {
+            string name = path.Split('/').Last().Split('.').First();
+
+            SimpleCSVParser parser = new SimpleCSVParser();
+            AssetManager assets = Platform.AppContext.Assets;
+            Stream s = assets.Open(path);
+            StreamReader sr = new StreamReader(s);
+            parser.parseStream(s);
+
+            Measurement m = new Measurement();
+            m.wavenumbers = parser.wavenumbers.ToArray();
+            m.raw = parser.intensities.ToArray();
+            m.excitationNM = 785;
+
+            Measurement mOrig = m.copy();
+            originalRaws.Add(name, mOrig.raw);
+            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+
+            library.Add(name, updated);
+            logger.info("finish loading library file from {0}", path);
         }
         async Task loadJSON(string path)
         {
