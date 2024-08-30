@@ -350,7 +350,6 @@ public class WhittakerSmoother
     {
         Logger.getInstance().debug("creating initial stored smooth");
         spectrumVec = CreateVector.DenseOfArray(signal);
-        double[,] smoothingMatrix3 = new double[signal.Length - derivativeOrder, signal.Length];
         
         double[] diffArray = new double[derivativeOrder * 2 + 1];
         double[] diffXs = new double[derivativeOrder * 2 + 1];
@@ -360,21 +359,18 @@ public class WhittakerSmoother
         diffArray[derivativeOrder] = 1;
         diffArray = NumericalMethods.derivative(diffXs, diffArray, derivativeOrder);
 
-
-        Logger.getInstance().debug("copying derivs");
-        for (int i = 0; i < signal.Length - derivativeOrder; i++)
+        CSparse.Double.DenseMatrix mat = new CSparse.Double.DenseMatrix(signal.Length, derivativeOrder + 1);
+        for (int i = 0; i < signal.Length; i++)
         {
             for (int j = 0; j < derivativeOrder + 1; j++)
             {
                 //smoothingMatrix.s
-                smoothingMatrix3[i, i + j] = diffArray[j];
+                mat[i, j] = diffArray[j];
             }
         }
 
-
         Logger.getInstance().debug("creating sparse matrix");
-        CSparseMatrix smoothingMatrix = (CSparseMatrix)CSparseMatrix.OfArray(smoothingMatrix3);
-
+        CSparseMatrix smoothingMatrix = (CSparseMatrix)CSparseMatrix.OfDiagonals(mat, [0, 1, 2], signal.Length - derivativeOrder, signal.Length);
         Logger.getInstance().debug("transpose and multiply matrix");
         storedSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
 
@@ -385,11 +381,8 @@ public class WhittakerSmoother
 
         //newStoredSmooth = (CSparseMatrix)CSparseMatrix.OfArray(storedSmooth.ToArray());
         Logger.getInstance().debug("finalized initial stored smooth");
-
-        double[] sanityRow = storedSmooth.Row(0);
-        Logger.getInstance().debug("Sanity check value {0}", sanityRow[0]);
     }
-
+    
     public double[] smooth(double[] weights)
     {
         Logger.getInstance().debug("setting up weight matrix");
