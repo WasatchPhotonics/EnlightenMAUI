@@ -882,26 +882,26 @@ public class BluetoothViewModel : INotifyPropertyChanged
             logger.debug("BVM.doConnectAsync: initializing spectrometer");
             await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
 
-            subscribeToUpdates();
+            //subscribeToUpdates();
             // start notifications
-            /*
+            
             foreach (var pair in characteristicsByName)
             {
                 var name = pair.Key;
                 var c = pair.Value;
 
                 // disabled until I can troubleshoot with Nic
-                if (c.CanUpdate && (name == "batteryStatus" || name == "laserState"))
+                if (c.CanUpdate && (name == "batteryStatus"))
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
                     c.ValueUpdated += _characteristicUpdated;
 
                     // don't see a need to await this?
-                    _ = c.StartUpdatesAsync();
+                    await c.StartUpdatesAsync();
                 }
             }
-            */
+            
 
             ////////////////////////////////////////////////////////////////////
             // all done
