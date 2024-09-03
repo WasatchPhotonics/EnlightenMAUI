@@ -77,7 +77,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="dist\background_model.tflite" />
+	  <None Remove="dist\background_model.onnx" />
 	  <None Remove="libraries\SiG-785-OEM\Acetaminophen.json" />
 	  <None Remove="libraries\SiG-785-OEM\cyclohexane.csv" />
 	  <None Remove="libraries\SiG-785-OEM\ethanol.csv" />
@@ -104,12 +104,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <AndroidAsset Include="dist\background_model.tflite">
+	  <MauiAsset Include="dist\background_model.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </AndroidAsset>
-	</ItemGroup>
-
-	<ItemGroup>
+	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785-OEM\Acetaminophen.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
@@ -164,6 +161,9 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.21" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.21" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+		<PackageReference Include="Microsoft.ML" Version="3.0.1" />
+		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.1" />
+		<PackageReference Include="Microsoft.ML.OnnxTransformer" Version="3.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
@@ -205,6 +205,9 @@
 
 	<ItemGroup>
 	  <None Update="CHANGELOG.md">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
+	  <None Update="dist\background_model.tflite">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </None>
 	  <None Update="README.md">
