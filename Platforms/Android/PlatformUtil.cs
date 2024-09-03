@@ -1,12 +1,83 @@
 ﻿using Android;
+using Android.Content.Res;
+using Xamarin.TensorFlow.Lite;
 
 namespace EnlightenMAUI.Platforms;
 
 internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
+    static Interpreter interpreter = null;
 
     static string savePath;
+
+    public static void recursePath(Java.IO.File directory)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+            foreach (Java.IO.File path in paths)
+            {
+                logger.info("going deeper down {0}", path.AbsolutePath);
+                recursePath(path);
+            }
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+        }
+    }
+
+    public static void loadTFModel(string path)
+    {
+        try
+        {
+            var fullPath = System.IO.Path.Combine(FileSystem.AppDataDirectory, path);
+
+            List<string> dirs = new List<string>(System.IO.Directory.EnumerateDirectories(FileSystem.AppDataDirectory));
+            List<string> files = new List<string>(System.IO.Directory.EnumerateFiles(FileSystem.AppDataDirectory));
+
+            var libDir = Android.App.Application.Context.DataDir;
+            recursePath(libDir);
+
+            libDir = Android.App.Application.Context.FilesDir;
+            recursePath(libDir);
+
+            libDir = Android.App.Application.Context.CacheDir;
+            recursePath(libDir);
+
+            libDir = Android.App.Application.Context.ObbDir;
+            recursePath(libDir);
+
+            libDir = Android.App.Application.Context.CodeCacheDir;
+            recursePath(libDir);
+
+            libDir = Android.App.Application.Context.ExternalCacheDir;
+            recursePath(libDir);
+
+            libDir = Android.App.Application.Context.NoBackupFilesDir;
+            recursePath(libDir);
+            //Java.IO.File[] fileObj = libDir.ListFiles();
+            //Stream fileStream = await FileSystem.Current.OpenAppPackageFileAsync(path);
+
+            Java.IO.File file = new Java.IO.File(fullPath);
+            if (file.Exists())
+            {
+                logger.info("see file of size {0}", file.TotalSpace);
+                interpreter = new Interpreter(file);
+                logger.info("tf load succeeded");
+            }
+            else
+            {
+                logger.info("file does not seem to exist");
+
+            }
+        }
+        catch (Exception e)
+        {
+            logger.info("tf load failed with exception {0}", e.Message);
+        }
+    }
 
     public static string getLibraryFilenames()
     {

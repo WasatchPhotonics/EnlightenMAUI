@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
+using EnlightenMAUI.Platforms;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -47,6 +48,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
             library = new Library("libraries/SiG-785-OEM", spec);
+
+        PlatformUtil.loadTFModel("background_model.tflite");
 
         settings = Settings.getInstance();
 

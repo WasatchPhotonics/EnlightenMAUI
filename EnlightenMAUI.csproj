@@ -77,6 +77,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="dist\background_model.tflite" />
 	  <None Remove="libraries\SiG-785-OEM\Acetaminophen.json" />
 	  <None Remove="libraries\SiG-785-OEM\cyclohexane.csv" />
 	  <None Remove="libraries\SiG-785-OEM\ethanol.csv" />
@@ -100,6 +101,12 @@
 	  <None Remove="Resources\Images\ico_spectra.png" />
 	  <None Remove="Resources\Images\ico_xs.png" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AndroidAsset Include="dist\background_model.tflite">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </AndroidAsset>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -160,6 +167,7 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
+		<PackageReference Include="Xamarin.TensorFlow.Lite" Version="2.16.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -196,6 +204,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="CHANGELOG.md">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
 	  <None Update="README.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
