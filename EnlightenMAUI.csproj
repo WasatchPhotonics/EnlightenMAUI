@@ -104,7 +104,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiAsset Include="dist\background_model.onnx">
+	  <MauiAsset Include="background_model.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785-OEM\Acetaminophen.json">
@@ -167,7 +167,6 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
-		<PackageReference Include="Xamarin.TensorFlow.Lite" Version="2.16.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>

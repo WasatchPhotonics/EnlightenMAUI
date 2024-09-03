@@ -1,13 +1,35 @@
 ﻿using Android;
 using Android.Content.Res;
-using Xamarin.TensorFlow.Lite;
-
+using System.Linq;
+using Microsoft.ML;
+using Microsoft.ML.Data;
+using Microsoft.ML.Transforms.Onnx;
+using Telerik.Maui.Controls.Scheduler;
 namespace EnlightenMAUI.Platforms;
+
+
+internal class ModelInput
+{
+    [VectorType(2376,1)]
+    [ColumnName("serving_default_input_1:0")]
+    public float[,] spectrum { get; set; }
+}
+
+internal class Prediction
+{
+    [VectorType(2008, 1)]
+    [ColumnName("StatefulPartitionedCall:0")]
+    public float[,] spectrum { get; set; }
+
+}
 
 internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
-    static Interpreter interpreter = null;
+    static MLContext mlContext = new MLContext();
+    static PredictionEngine<ModelInput, Prediction> engine;
+    static ITransformer transformer;
+    public static bool transformerLoaded = false;
 
     static string savePath;
 
@@ -28,54 +50,69 @@ internal class PlatformUtil
         }
     }
 
-    public static void loadTFModel(string path)
+    public async static Task loadONNXModel(string path)
     {
         try
         {
             var fullPath = System.IO.Path.Combine(FileSystem.AppDataDirectory, path);
 
-            List<string> dirs = new List<string>(System.IO.Directory.EnumerateDirectories(FileSystem.AppDataDirectory));
-            List<string> files = new List<string>(System.IO.Directory.EnumerateFiles(FileSystem.AppDataDirectory));
-
-            var libDir = Android.App.Application.Context.DataDir;
-            recursePath(libDir);
-
-            libDir = Android.App.Application.Context.FilesDir;
-            recursePath(libDir);
-
-            libDir = Android.App.Application.Context.CacheDir;
-            recursePath(libDir);
-
-            libDir = Android.App.Application.Context.ObbDir;
-            recursePath(libDir);
-
-            libDir = Android.App.Application.Context.CodeCacheDir;
-            recursePath(libDir);
-
-            libDir = Android.App.Application.Context.ExternalCacheDir;
-            recursePath(libDir);
-
-            libDir = Android.App.Application.Context.NoBackupFilesDir;
-            recursePath(libDir);
-            //Java.IO.File[] fileObj = libDir.ListFiles();
-            //Stream fileStream = await FileSystem.Current.OpenAppPackageFileAsync(path);
-
-            Java.IO.File file = new Java.IO.File(fullPath);
-            if (file.Exists())
+            if (!File.Exists(fullPath))
             {
-                logger.info("see file of size {0}", file.TotalSpace);
-                interpreter = new Interpreter(file);
-                logger.info("tf load succeeded");
-            }
-            else
-            {
-                logger.info("file does not seem to exist");
+                logger.debug("copying asset into data folder");
+                // Open the source file
+                using Stream inputStream = await FileSystem.Current.OpenAppPackageFileAsync(path);
 
+                // Create an output filename
+                string targetFile = Path.Combine(FileSystem.Current.AppDataDirectory, path);
+
+                // Copy the file to the AppDataDirectory
+                using FileStream outputStream = File.Create(targetFile);
+                await inputStream.CopyToAsync(outputStream);
+                logger.debug("finished copying asset into data folder");
             }
+
+            var data = mlContext.Data.LoadFromEnumerable(new List<ModelInput>());
+            logger.debug("building pipeline");
+            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+            logger.debug("building transformer");
+            transformer = pipeline.Fit(data);
+            logger.debug("creating engine");
+            engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
+            
+            logger.debug("onnx model load complete");
+            transformerLoaded = true;
         }
         catch (Exception e)
         {
-            logger.info("tf load failed with exception {0}", e.Message);
+            logger.info("onnx load failed with exception {0}", e.Message);
+        }
+    }
+
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts)
+    {
+        try
+        {
+            ModelInput modelInput = new ModelInput();
+            modelInput.spectrum = new float[2376, 1];
+            for (int i =  0; i < counts.Length; i++) 
+                modelInput.spectrum[i,0] = (float)counts[i];
+
+            Prediction p = new Prediction();
+            p = engine.Predict(modelInput);
+
+            int outputSize = p.spectrum.GetLength(0);
+            double[] output = new double[outputSize];
+            for (int i = 0; i < outputSize; ++i)
+            {
+                output[i] = p.spectrum[i,0];
+            }
+
+            return output;
+        }
+        catch (Exception e)
+        {
+            logger.debug("background process failed with exception {0}", e.Message);
+            return null;
         }
     }
 

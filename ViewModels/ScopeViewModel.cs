@@ -49,7 +49,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
             library = new Library("libraries/SiG-785-OEM", spec);
 
-        PlatformUtil.loadTFModel("background_model.tflite");
+        PlatformUtil.loadONNXModel("background_model.onnx");
 
         settings = Settings.getInstance();
 
@@ -505,6 +505,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         isRefreshing = false;
 
         updateLaserProperties();
+
+        if (PlatformUtil.transformerLoaded)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(spec.measurement.wavenumbers, spec.measurement.processed);
+        }
+
 
         doMatchAsync();
 
