@@ -5,21 +5,23 @@ using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Transforms.Onnx;
 using Telerik.Maui.Controls.Scheduler;
+using Microsoft.ML.OnnxRuntime.Tensors;
+using AndroidX.AppCompat.Widget;
 namespace EnlightenMAUI.Platforms;
 
 
 internal class ModelInput
 {
-    [VectorType(2376,1)]
     [ColumnName("serving_default_input_1:0")]
-    public float[,] spectrum { get; set; }
+    [VectorType(1, 2376, 1)]
+    public float[] spectrum { get; set; }
 }
 
 internal class Prediction
 {
-    [VectorType(2008, 1)]
     [ColumnName("StatefulPartitionedCall:0")]
-    public float[,] spectrum { get; set; }
+    [VectorType(1, 2008, 1)]
+    public float[] spectrum { get; set; }
 
 }
 
@@ -71,14 +73,16 @@ internal class PlatformUtil
                 logger.debug("finished copying asset into data folder");
             }
 
-            var data = mlContext.Data.LoadFromEnumerable(new List<ModelInput>());
+            var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
             logger.debug("building pipeline");
             var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
             logger.debug("building transformer");
             transformer = pipeline.Fit(data);
+            var transCope = transformer;
             logger.debug("creating engine");
             engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
-            
+            var engCop = engine;
+
             logger.debug("onnx model load complete");
             transformerLoaded = true;
         }
@@ -92,21 +96,40 @@ internal class PlatformUtil
     {
         try
         {
+
             ModelInput modelInput = new ModelInput();
-            modelInput.spectrum = new float[2376, 1];
+            modelInput.spectrum = new float[2376];
             for (int i =  0; i < counts.Length; i++) 
-                modelInput.spectrum[i,0] = (float)counts[i];
+                modelInput.spectrum[i] = (float)counts[i];
 
             Prediction p = new Prediction();
+
+            /*
+            var res = engine.Predict(modelInput);
+
+            var data = mlContext.Data.LoadFromEnumerable(new List<ModelInput> { modelInput });
+            var pred = transformer.Transform(data);
+            DataViewSchema columns = pred.Schema;
+            var final = pred.GetColumn<float[,]>("StatefulPartitionedCall:0");
+            
+
+            int count = 0;
+            bool isOk = final.TryGetNonEnumeratedCount(out count);
+            */
+            //transformer.Transform()
+
+            logger.debug("making prediction");
             p = engine.Predict(modelInput);
+            logger.debug("packing prediction");
 
             int outputSize = p.spectrum.GetLength(0);
             double[] output = new double[outputSize];
             for (int i = 0; i < outputSize; ++i)
             {
-                output[i] = p.spectrum[i,0];
+                output[i] = p.spectrum[i];
             }
 
+            logger.debug("returning processed spectrum");
             return output;
         }
         catch (Exception e)
