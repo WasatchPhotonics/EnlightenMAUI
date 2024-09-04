@@ -225,6 +225,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         set => spec.useRamanIntensityCorrection = value;
     }
 
+    public bool useBackgroundRemoval
+    {
+        get => _useBackgroundRemoval;
+        set
+        {
+            _useBackgroundRemoval = value;
+            if (spec != null)
+                spec.useBackgroundRemoval = value;
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
+        }
+    }
+    private bool _useBackgroundRemoval = false;
+
+
     public string note
     {
         get => spec.note;
@@ -507,12 +522,6 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded)
-        {
-            double[] smoothed = PlatformUtil.ProcessBackground(spec.measurement.wavenumbers, spec.measurement.processed);
-        }
-
-
         doMatchAsync();
 
         return ok;
@@ -661,8 +670,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("refreshChartData: start");
 
         // use last Measurement from the Spectrometer
-        uint pixels = spec.pixels;
+        uint pixels = (uint)spec.measurement.processed.Length;
         double[] intensities = spec.measurement.processed;
+
+        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.measurement.dark != null;
 
         try
         {
@@ -670,7 +681,12 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (xAxisName == "Wavelength")
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
-                xAxis = spec.wavenumbers;
+            {
+                if (usingRemovalAxis)
+                    xAxis = spec.measurement.wavenumbers;
+                else
+                    xAxis = spec.wavenumbers;
+            }
             else
                 xAxis = spec.xAxisPixels;
 
@@ -688,7 +704,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             int pxHi = -1;
             for (int i = 0; i < pixels; i++)
             {
-                if (useHorizontalROI && 
+                if (!usingRemovalAxis &&
+                    useHorizontalROI && 
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd && 
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
                         continue;

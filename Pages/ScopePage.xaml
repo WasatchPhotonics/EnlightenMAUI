@@ -191,20 +191,25 @@
                             <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
                             <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
                             <RowDefinition Height="Auto"/> <!-- Raman Mode                 -->
+                            <RowDefinition Height="Auto"/> <!-- Background Removal         -->
                         </Grid.RowDefinitions>
 
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Switch Grid.Row="0" Grid.Column="0" IsToggled="{Binding useHorizontalROI}" />
-                        <Label Grid.Row="0" Grid.Column="1" Text="Horizontal ROI" TextColor="#eee" />
+                        <Switch Grid.Row="0" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useHorizontalROI}" />
+                        <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Horizontal ROI" TextColor="#eee" />
 
-                        <Switch Grid.Row="1" Grid.Column="0" IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label Grid.Row="1" Grid.Column="1" Text="Raman Intensity Correction" TextColor="#eee" />
+                        <Switch Grid.Row="1" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useRamanIntensityCorrection}" />
+                        <Label Grid.Row="1" VerticalOptions="Center" Grid.Column="0" Text="Raman Intensity Correction" TextColor="#eee" />
 
-                        <Switch Grid.Row="2" Grid.Column="0" IsToggled="{Binding ramanModeEnabled}" />
-                        <Label Grid.Row="2" Grid.Column="1" Text="Auto-Raman Mode" TextColor="#eee" />
+                        <Switch Grid.Row="2" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding ramanModeEnabled}" />
+                        <Label Grid.Row="2" VerticalOptions="Center" Grid.Column="0" Text="Auto-Raman Mode" TextColor="#eee" />
+
+                        <Switch Grid.Row="3" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useBackgroundRemoval}" />
+                        <Label Grid.Row="3" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
                     </Grid>
                 </StackLayout>
             </Grid>

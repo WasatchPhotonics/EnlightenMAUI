@@ -449,7 +449,11 @@ public class Measurement : INotifyPropertyChanged
         processed = (double[])raw.Clone(); // MZ: needed?
         timestamp = DateTime.Now;
 
-        dark = spec.dark;
+        if (spec.stretchedDark != null)
+            dark = spec.stretchedDark;
+        else
+            dark = spec.dark;
+
         postProcess();
 
         roiStart = spec is null ? 0 : (uint)spec.eeprom.ROIHorizStart;

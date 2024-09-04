@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Android.Hardware.Usb;
 using CommunityToolkit.Maui.Converters;
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
 using Plugin.BLE.Abstractions.Contracts;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using static Android.Provider.ContactsContract.CommonDataKinds;
@@ -414,6 +415,13 @@ namespace EnlightenMAUI.Models
 
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
+
+            if (PlatformUtil.transformerLoaded && useBackgroundRemoval)
+            {
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
+                wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                spectrum = smoothed;
+            }
 
             ////////////////////////////////////////////////////////////////////////
             // Store Measurement

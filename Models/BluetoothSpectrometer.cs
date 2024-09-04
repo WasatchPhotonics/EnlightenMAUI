@@ -2,6 +2,9 @@
 using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
+using static Android.Widget.GridLayout;
+using Java.Util.Functions;
 
 namespace EnlightenMAUI.Models;
 
@@ -725,6 +728,20 @@ public class BluetoothSpectrometer : Spectrometer
 
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
+
+
+        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && dark != null)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
+            measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            double[] temp = Wavecal.mapWavenumbers(wavenumbers, dark, measurement.wavenumbers);
+            stretchedDark = temp;
+            spectrum = smoothed;
+        }
+        else
+        {
+            measurement.wavenumbers = wavenumbers;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Store Measurement
