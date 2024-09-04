@@ -7,6 +7,7 @@ using Microsoft.ML.Transforms.Onnx;
 using Telerik.Maui.Controls.Scheduler;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using AndroidX.AppCompat.Widget;
+using EnlightenMAUI.Models;
 namespace EnlightenMAUI.Platforms;
 
 
@@ -96,11 +97,20 @@ internal class PlatformUtil
     {
         try
         {
+            double[] targetWavenum = new double[2376];
+            for (int i = 0; i < targetWavenum.Length; i++)
+            {
+                targetWavenum[i] = i + 216;
+            }
+
+            double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
+            double max = interpolatedCounts.Max();
+            interpolatedCounts = interpolatedCounts.Select(x => x / max).ToArray();
 
             ModelInput modelInput = new ModelInput();
             modelInput.spectrum = new float[2376];
             for (int i =  0; i < counts.Length; i++) 
-                modelInput.spectrum[i] = (float)counts[i];
+                modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
             Prediction p = new Prediction();
 
@@ -126,7 +136,7 @@ internal class PlatformUtil
             double[] output = new double[outputSize];
             for (int i = 0; i < outputSize; ++i)
             {
-                output[i] = p.spectrum[i];
+                output[i] = p.spectrum[i] * max;
             }
 
             logger.debug("returning processed spectrum");

@@ -11,6 +11,7 @@ using System.IO;
 using System.Xml.XPath;
 using Newtonsoft.Json;
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
 using static Java.Util.Jar.Attributes;
 
 namespace EnlightenMAUI.Models
@@ -220,6 +221,14 @@ namespace EnlightenMAUI.Models
 
             Measurement mOrig = m.copy();
             originalRaws.Add(name, mOrig.raw);
+
+            double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            while (smoothedSpec == null || smoothedSpec.Length == 0)
+            {
+                smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                await Task.Delay(50);
+            }
+
             Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
 
             library.Add(name, updated);

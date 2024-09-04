@@ -46,10 +46,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        PlatformUtil.loadONNXModel("background_model.onnx");
+        Thread.Sleep(100);
+
         if (spec != null && spec.paired)
             library = new Library("libraries/SiG-785-OEM", spec);
-
-        PlatformUtil.loadONNXModel("background_model.onnx");
 
         settings = Settings.getInstance();
 
