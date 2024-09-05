@@ -10,9 +10,10 @@ using System.Reflection;
 using System.IO;
 using System.Xml.XPath;
 using Newtonsoft.Json;
-using EnlightenMAUI.Common;
+using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using static Java.Util.Jar.Attributes;
+using Deconvolution = DeconvolutionMAUI;
 
 namespace EnlightenMAUI.Models
 {
@@ -170,7 +171,8 @@ namespace EnlightenMAUI.Models
 
         public enum ErrorTypes { SUCCESS, NULL_STREAM, INVALID_STATE, NO_INTENSITIES };
     }
-        internal class Library
+
+    internal class Library
     {
         Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
@@ -281,7 +283,7 @@ namespace EnlightenMAUI.Models
             {
                 matchTasks.Add(Task.Run(() =>
                 {
-                    double score = Util.pearsonLibraryMatch(spectrum, library[sample]);
+                    double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample]);
                     scores[sample] = score;
                 }));
             }

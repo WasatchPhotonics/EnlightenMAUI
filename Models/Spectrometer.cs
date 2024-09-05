@@ -232,7 +232,17 @@ namespace EnlightenMAUI.Models
             }
         }
 
-        public bool useBackgroundRemoval { get; set; } = false;
+        public bool useBackgroundRemoval
+        {
+            get { return _useBackgroundRemoval; }
+            set
+            {
+                if (!value)
+                    stretchedDark = null;
+                _useBackgroundRemoval = value;
+            }
+        }
+        bool _useBackgroundRemoval = false;
 
         public virtual byte laserWatchdogSec
         {
