@@ -174,6 +174,7 @@ namespace EnlightenMAUI.Models
 
     internal class Library
     {
+        Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
         Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
@@ -220,6 +221,7 @@ namespace EnlightenMAUI.Models
             m.wavenumbers = parser.wavenumbers.ToArray();
             m.raw = parser.intensities.ToArray();
             m.excitationNM = 785;
+            Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
 
             Measurement mOrig = m.copy();
             originalRaws.Add(name, mOrig.raw);
@@ -234,6 +236,8 @@ namespace EnlightenMAUI.Models
             Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
 
             library.Add(name, updated);
+            deconvolutionLibrary.library.Add(name, spec);
+
             logger.info("finish loading library file from {0}", path);
         }
         async Task loadJSON(string path)
@@ -310,5 +314,19 @@ namespace EnlightenMAUI.Models
 
             return new Tuple<string, double>(finalSample, maxScore);
         }
+
+        public async Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)
+        {
+            List<double> intensities = new List<double>(spectrum.processed);
+            List<double> wavenumbers = new List<double>(spectrum.wavenumbers);
+
+            Deconvolution.Spectrum spec = new Deconvolution.Spectrum(wavenumbers, intensities);
+            Deconvolution.Matches matches = null;
+
+            await Task.Run(() => matches = deconvolutionLibrary.process(spec, 0.8));
+
+            return matches;
+        }
+
     }
 }

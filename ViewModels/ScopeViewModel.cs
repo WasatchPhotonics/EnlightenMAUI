@@ -843,13 +843,38 @@ public class ScopeViewModel : INotifyPropertyChanged
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
         var result = await library.findMatch(spec.measurement);
-        waitingForMatch = false;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
 
         logger.info("returned from library match function with result {0}", result);
 
+        var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
+        string matched = "";
+        string alts = "";
+        logger.info("setting match result string");
+        foreach (double match_concentrations in matched_spectra.compounds.Keys)
+        {
+            string[] matches = matched_spectra.compounds[match_concentrations].ToArray();
+            matched += match_concentrations.ToString("F1") + "%: ";
+            logger.info($"match value of {match_concentrations}");
+            foreach (string match in matches)
+            {
+                matched += match + " ";
+                logger.info($"For this matched {match}");
+            }
+            matched += "\n";
+        }
+        foreach (string alternate in matched_spectra.alternatives)
+        {
+            alts += alternate + " ";
+        }
+        logger.info("combining results string");
+        string decon = $"Matches: \n{(matched == "" ? "None\n" : matched)}Alternative: \n{alts}";
+        logger.info("deconvolution results: {0}", decon);
+
         matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
         hasMatch = true;
+        waitingForMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
