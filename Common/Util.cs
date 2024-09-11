@@ -108,8 +108,14 @@ public class Util
         {
             //logger.info("smoothing sample and library");
             double[] yIn = AirPLS.smooth(sampleM.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
-            double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
-            //logger.info("smooth complete");
+            //double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
+            double[] array = library.processed.Skip((int)sampleM.roiStart).Take(yIn.Length).ToArray();
+
+            logger.info("matching library array of length {0} to {1} with start val {2} and end val {3}",
+                array.Length,
+                yIn.Length,
+                array[0],
+                array[array.Length - 1]);
 
             double score = 0;
 

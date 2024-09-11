@@ -14,6 +14,8 @@ using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using static Java.Util.Jar.Attributes;
 using Deconvolution = DeconvolutionMAUI;
+using Android.Renderscripts;
+using EnlightenMAUI.Common;
 
 namespace EnlightenMAUI.Models
 {
@@ -183,6 +185,8 @@ namespace EnlightenMAUI.Models
         List<Task> loaders = new List<Task>();
 
         Wavecal wavecal;
+        int roiStart = 0;
+        int roiEnd = 0;
 
         public Library(string root, Spectrometer spec)
         {
@@ -197,6 +201,9 @@ namespace EnlightenMAUI.Models
             wavecal = new Wavecal(spec.pixels);
             wavecal.coeffs = spec.eeprom.wavecalCoeffs;
             wavecal.excitationNM = spec.laserExcitationNM;
+
+            roiStart = spec.eeprom.ROIHorizStart;
+            roiEnd = spec.eeprom.ROIHorizEnd;
 
             foreach (string path in assetP)
             {
@@ -266,6 +273,14 @@ namespace EnlightenMAUI.Models
             originalDarks.Add(name, mOrig.dark);
 
             Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+
             library.Add(name, updated);
             logger.info("finish loading library file from {0}", path);
         }
