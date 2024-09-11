@@ -78,9 +78,63 @@
 
 	<ItemGroup>
 	  <None Remove="dist\background_model.onnx" />
+	  <None Remove="libraries\SiG-785-OEM\acetaminophen-2.csv" />
 	  <None Remove="libraries\SiG-785-OEM\Acetaminophen.json" />
+	  <None Remove="libraries\SiG-785-OEM\acetone.csv" />
+	  <None Remove="libraries\SiG-785-OEM\acetonitrile.csv" />
+	  <None Remove="libraries\SiG-785-OEM\adonitol.csv" />
+	  <None Remove="libraries\SiG-785-OEM\ammonium chloride.csv" />
+	  <None Remove="libraries\SiG-785-OEM\ammonium nitrate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\benzene.csv" />
+	  <None Remove="libraries\SiG-785-OEM\benzonitrile.csv" />
+	  <None Remove="libraries\SiG-785-OEM\bmsb.csv" />
+	  <None Remove="libraries\SiG-785-OEM\calcium carbonate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\coconut oil.csv" />
+	  <None Remove="libraries\SiG-785-OEM\composition 4.csv" />
 	  <None Remove="libraries\SiG-785-OEM\cyclohexane.csv" />
+	  <None Remove="libraries\SiG-785-OEM\erythritol tetra nitrate.csv" />
 	  <None Remove="libraries\SiG-785-OEM\ethanol.csv" />
+	  <None Remove="libraries\SiG-785-OEM\ethly acetate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\fructose.csv" />
+	  <None Remove="libraries\SiG-785-OEM\glucose.csv" />
+	  <None Remove="libraries\SiG-785-OEM\glycerol.csv" />
+	  <None Remove="libraries\SiG-785-OEM\hexamethylene triperoxide diamine.csv" />
+	  <None Remove="libraries\SiG-785-OEM\hexamethylenetetramine.csv" />
+	  <None Remove="libraries\SiG-785-OEM\hexamine.csv" />
+	  <None Remove="libraries\SiG-785-OEM\hydrogen peroxide.csv" />
+	  <None Remove="libraries\SiG-785-OEM\isopropanol.csv" />
+	  <None Remove="libraries\SiG-785-OEM\lactose.csv" />
+	  <None Remove="libraries\SiG-785-OEM\linseed oil.csv" />
+	  <None Remove="libraries\SiG-785-OEM\mannitol hexanitrate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\methanol.csv" />
+	  <None Remove="libraries\SiG-785-OEM\methyl ethyl ketone.csv" />
+	  <None Remove="libraries\SiG-785-OEM\mineral oil.csv" />
+	  <None Remove="libraries\SiG-785-OEM\naphthalene.csv" />
+	  <None Remove="libraries\SiG-785-OEM\nitromethane.csv" />
+	  <None Remove="libraries\SiG-785-OEM\pentaerythritol.csv" />
+	  <None Remove="libraries\SiG-785-OEM\potassium chlorate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\potassium perchlorate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\potassium permanganate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\r salt.csv" />
+	  <None Remove="libraries\SiG-785-OEM\rdx.csv" />
+	  <None Remove="libraries\SiG-785-OEM\ribitol pentanitrate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\semtex 1a.csv" />
+	  <None Remove="libraries\SiG-785-OEM\semtex h.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sesame oil.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sodium chlorate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sodium perchlorate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sorbitol hexanitrate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sucrose.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sugar.csv" />
+	  <None Remove="libraries\SiG-785-OEM\sulfur.csv" />
+	  <None Remove="libraries\SiG-785-OEM\toluene.csv" />
+	  <None Remove="libraries\SiG-785-OEM\triacetone triperoxide.csv" />
+	  <None Remove="libraries\SiG-785-OEM\trinitrotoluene.csv" />
+	  <None Remove="libraries\SiG-785-OEM\urea nitrate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\urea.csv" />
+	  <None Remove="libraries\SiG-785-OEM\vinyl acetate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\xylitol pentanitrate.csv" />
+	  <None Remove="libraries\SiG-785-OEM\xylitol.csv" />
 	  <None Remove="libraries\SiG-785\2mmHDPE.csv" />
 	  <None Remove="libraries\SiG-785\4mmHDPE.csv" />
 	  <None Remove="libraries\SiG-785\acetone.csv" />
@@ -107,13 +161,175 @@
 	  <MauiAsset Include="background_model.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\acetaminophen-2.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785-OEM\Acetaminophen.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\acetone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\acetonitrile.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\adonitol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\ammonium chloride.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\ammonium nitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\benzene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\benzonitrile.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\bmsb.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\calcium carbonate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\coconut oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\composition 4.csv">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785-OEM\cyclohexane.csv">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\erythritol tetra nitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785-OEM\ethanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\ethly acetate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\fructose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\glucose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\glycerol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\hexamethylene triperoxide diamine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\hexamethylenetetramine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\hexamine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\hydrogen peroxide.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\isopropanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\lactose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\linseed oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\mannitol hexanitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\methanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\methyl ethyl ketone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\mineral oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\naphthalene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\nitromethane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\pentaerythritol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\potassium chlorate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\potassium perchlorate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\potassium permanganate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\r salt.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\rdx.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\ribitol pentanitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\semtex 1a.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\semtex h.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sesame oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sodium chlorate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sodium perchlorate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sorbitol hexanitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sucrose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sugar.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\sulfur.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\toluene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\triacetone triperoxide.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\trinitrotoluene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\urea nitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\urea.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\vinyl acetate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\xylitol pentanitrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\xylitol.csv">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785\2mmHDPE.csv">

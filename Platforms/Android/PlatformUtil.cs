@@ -109,7 +109,7 @@ internal class PlatformUtil
 
             ModelInput modelInput = new ModelInput();
             modelInput.spectrum = new float[2376];
-            for (int i =  0; i < counts.Length; i++) 
+            for (int i =  0; i < interpolatedCounts.Length; i++) 
                 modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
             Prediction p = new Prediction();

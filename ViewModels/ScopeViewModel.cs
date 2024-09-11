@@ -849,7 +849,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
         string matched = "";
         string alts = "";
-        logger.info("setting match result string");
+        logger.info("finished deconvolution match, setting match result string");
         foreach (double match_concentrations in matched_spectra.compounds.Keys)
         {
             string[] matches = matched_spectra.compounds[match_concentrations].ToArray();

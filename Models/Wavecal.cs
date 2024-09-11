@@ -431,13 +431,19 @@ namespace EnlightenMAUI.Models
                     int first = index - 1;
                     int second = index;
 
+                    if (first < 0)
+                    {
+                        raw[i] = intensities[second];
+                        continue;
+                    }
+
                     double pixelSize = wavenumbers[second] - wavenumbers[first];
                     double pctFirst = 1 - ((pixelSize - (wavenumbers[second] - targetWavenumbers[i])) / pixelSize);
 
-                    if (targetWavenumbers[i] > 790 && targetWavenumbers[i] < 810)
-                    {
-                        Logger.getInstance().info("diving into key cyclo peak interp");
-                    }
+                    //if (targetWavenumbers[i] > 790 && targetWavenumbers[i] < 810)
+                    //{
+                    //    Logger.getInstance().info("diving into key cyclo peak interp");
+                    //}
 
                     //Logger.getInstance().info("interpolating at {0:f3} pct {1:f2} vs. {2:f2}", pctFirst, targetWavenumbers[first], targetWavenumbers[second]);
                     raw[i] = Util.interpolate(intensities[first], intensities[second], pctFirst);
