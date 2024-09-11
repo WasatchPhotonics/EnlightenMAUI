@@ -241,6 +241,13 @@ namespace EnlightenMAUI.Models
             }
 
             Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
 
             library.Add(name, updated);
             deconvolutionLibrary.library.Add(name, spec);
