@@ -16,6 +16,7 @@ using static Java.Util.Jar.Attributes;
 using Deconvolution = DeconvolutionMAUI;
 using Android.Renderscripts;
 using EnlightenMAUI.Common;
+using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.Models
 {
@@ -182,7 +183,7 @@ namespace EnlightenMAUI.Models
         Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
 
         Logger logger = Logger.getInstance();
-        List<Task> loaders = new List<Task>();
+        Task libraryLoader;
 
         Wavecal wavecal;
         int roiStart = 0;
@@ -191,12 +192,6 @@ namespace EnlightenMAUI.Models
         public Library(string root, Spectrometer spec)
         {
             logger.debug($"instantiating Library from {root}");
-            AssetManager assets = Platform.AppContext.Assets;
-
-            string[] assetP = assets.List(root);
-
-            Regex csvReg = new Regex(@".*\.csv$");
-            Regex jsonReg = new Regex(@".*\.json$");
 
             wavecal = new Wavecal(spec.pixels);
             wavecal.coeffs = spec.eeprom.wavecalCoeffs;
@@ -205,14 +200,27 @@ namespace EnlightenMAUI.Models
             roiStart = spec.eeprom.ROIHorizStart;
             roiEnd = spec.eeprom.ROIHorizEnd;
 
+            libraryLoader = loadFiles(root);
+
+            logger.debug($"finished initializing library load from {root}");
+        }
+
+        async Task loadFiles(string root)
+        {
+            AssetManager assets = Platform.AppContext.Assets;
+
+            string[] assetP = assets.List(root);
+
+            Regex csvReg = new Regex(@".*\.csv$");
+            Regex jsonReg = new Regex(@".*\.json$");
+
             foreach (string path in assetP)
             {
                 if (jsonReg.IsMatch(path))
-                    loaders.Add(Task.Run(() => loadJSON(root + "/" + path)));
+                    await loadJSON(root + "/" + path);
                 else if (csvReg.IsMatch(path))
-                    loaders.Add(Task.Run(() => loadCSV(root + "/" + path)));
+                    await loadCSV(root + "/" + path);
             }
-            logger.debug($"finished initializing library load from {root}");
         }
 
         async Task loadCSV(string path)
@@ -299,11 +307,7 @@ namespace EnlightenMAUI.Models
         {
             logger.debug("Library.findMatch: trying to match spectrum");
 
-            foreach (Task loader in loaders)
-            {
-                if (!loader.IsCompleted)
-                    await loader;
-            }    
+            await libraryLoader;
 
             Dictionary<string, double> scores = new Dictionary<string, double>();
             List<Task> matchTasks = new List<Task>();
