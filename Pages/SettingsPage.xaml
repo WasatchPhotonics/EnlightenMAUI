@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:DataType="local:ViewModels.SettingsViewModel"
+             Shell.NavBarIsVisible="False"
              x:Class="EnlightenMAUI.SettingsPage"
              BackgroundColor="#333">
 

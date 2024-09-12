@@ -6,7 +6,6 @@
              x:Class="EnlightenMAUI.ScopePage"
              x:DataType="local:ViewModels.ScopeViewModel"
              Shell.NavBarIsVisible="False"
-             Shell.TabBarIsVisible="False"
              BackgroundColor="#333">
 
     <ContentPage.BindingContext>

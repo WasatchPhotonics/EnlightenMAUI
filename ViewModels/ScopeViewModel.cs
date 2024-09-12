@@ -47,7 +47,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        //PlatformUtil.loadONNXModel("background_model.onnx");
+        PlatformUtil.loadONNXModel("background_model.onnx");
         //Thread.Sleep(100);
 
         if (spec != null && spec.paired)
