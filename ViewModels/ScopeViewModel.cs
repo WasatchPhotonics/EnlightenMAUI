@@ -30,6 +30,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     Logger logger = Logger.getInstance();
     Library library;
+    Task libraryLoader;
 
     public delegate void UserNotification(string title, string message, string button);
     public event UserNotification notifyUser;
@@ -46,11 +47,13 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        PlatformUtil.loadONNXModel("background_model.onnx");
-        Thread.Sleep(100);
+        //PlatformUtil.loadONNXModel("background_model.onnx");
+        //Thread.Sleep(100);
 
         if (spec != null && spec.paired)
-            library = new Library("libraries/SiG-785-OEM", spec);
+        {
+            libraryLoader = Task.Run(() => library = new Library("libraries/SiG-785-OEM", spec));
+        }
 
         settings = Settings.getInstance();
 

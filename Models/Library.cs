@@ -84,7 +84,7 @@ namespace EnlightenMAUI.Models
             intensities.Add(intensity);
         }
 
-        public bool parseFile(string pathname)
+        public async Task<bool> parseFile(string pathname)
         {
             var assembly = IntrospectionExtensions.GetTypeInfo(typeof(SimpleCSVParser)).Assembly;
             Stream stream = assembly.GetManifestResourceStream(pathname);
@@ -94,16 +94,16 @@ namespace EnlightenMAUI.Models
                 return false;
             }
 
-            return parseStream(stream);
+            return await parseStream(stream);
         }
 
-        public bool parseStream(Stream stream)
+        public async Task<bool> parseStream(Stream stream)
         {
             state = "READING_METADATA";
             string line;
             using (StreamReader sr = new StreamReader(stream))
             {
-                while ((line = sr.ReadLine()) != null)
+                while ((line = await sr.ReadLineAsync()) != null)
                 {
                     line.Trim();
 
@@ -208,10 +208,11 @@ namespace EnlightenMAUI.Models
             foreach (string path in assetP)
             {
                 if (jsonReg.IsMatch(path))
-                    loaders.Add(loadJSON(root + "/" + path));
+                    loaders.Add(Task.Run(() => loadJSON(root + "/" + path)));
                 else if (csvReg.IsMatch(path))
-                    loaders.Add(loadCSV(root + "/" + path));
+                    loaders.Add(Task.Run(() => loadCSV(root + "/" + path)));
             }
+            logger.debug($"finished initializing library load from {root}");
         }
 
         async Task loadCSV(string path)
@@ -222,7 +223,7 @@ namespace EnlightenMAUI.Models
             AssetManager assets = Platform.AppContext.Assets;
             Stream s = assets.Open(path);
             StreamReader sr = new StreamReader(s);
-            parser.parseStream(s);
+            await parser.parseStream(s);
 
             Measurement m = new Measurement();
             m.wavenumbers = parser.wavenumbers.ToArray();
@@ -233,12 +234,14 @@ namespace EnlightenMAUI.Models
             Measurement mOrig = m.copy();
             originalRaws.Add(name, mOrig.raw);
 
+            /*
             double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
             while (smoothedSpec == null || smoothedSpec.Length == 0)
             {
                 smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
                 await Task.Delay(50);
             }
+            */
 
             Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
             double airPLSLambda = 10000;
