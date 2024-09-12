@@ -77,6 +77,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="libraries\SiG-785-OEM\Acetaminophen.json" />
+	  <None Remove="libraries\SiG-785-OEM\cyclohexane.csv" />
+	  <None Remove="libraries\SiG-785-OEM\ethanol.csv" />
 	  <None Remove="libraries\SiG-785\2mmHDPE.csv" />
 	  <None Remove="libraries\SiG-785\4mmHDPE.csv" />
 	  <None Remove="libraries\SiG-785\acetone.csv" />
@@ -100,6 +103,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiAsset Include="libraries\SiG-785-OEM\Acetaminophen.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\cyclohexane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="libraries\SiG-785-OEM\ethanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785\2mmHDPE.csv">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
@@ -139,11 +151,13 @@
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="8.0.1" />
 		<PackageReference Include="CommunityToolkit.Maui.Core" Version="8.0.1" />
+		<PackageReference Include="CSparse" Version="4.1.0" />
 		<PackageReference Include="LibUsbDotNet" Version="2.2.29" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.21" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.21" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
 	</ItemGroup>

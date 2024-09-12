@@ -80,6 +80,7 @@
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!--      ProgressBar       -->
+                    <RowDefinition Height="Auto"/> <!--      Match Result      -->
                     <RowDefinition Height="Auto"/> <!--  Laser Acquire Dark    -->
                     <RowDefinition Height="Auto"/> <!-- Save Upload Add Clear  -->
                     <RowDefinition Height="Auto"/> <!-- Acquisition Parameters -->
@@ -92,9 +93,15 @@
 
                 <!-- Acquisition ProgressBar -->
                 <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/> <!-- ProgressColor="#2994d3"/> -->
-
+                
+                <!-- Match Result -->
+                <StackLayout Grid.Row="1" HorizontalOptions="CenterAndExpand" Spacing="10" Padding="10" Orientation="Vertical">
+                    <ActivityIndicator IsVisible="{Binding waitingForMatch}" Color="#27c0a1" IsRunning="{Binding waitingForMatch}"/>
+                    <Label Grid.Row="1" TextColor="#ccc" Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+                </StackLayout>
+                
                 <!-- Command buttons -->
-                <StackLayout Grid.Row="1" Grid.Column="0" Margin="2">
+                <StackLayout Grid.Row="2" Grid.Column="0" Margin="2">
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Laser -->
@@ -122,7 +129,7 @@
                     </FlexLayout>
                 </StackLayout>
 
-                <StackLayout Grid.Row="2" Grid.Column="0" Margin="2">
+                <StackLayout Grid.Row="3" Grid.Column="0" Margin="2">
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Save -->
@@ -145,11 +152,8 @@
                     </FlexLayout>
                 </StackLayout>
 
-                <!-- Match Result -->
-                <Label Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
-
                 <!-- Acquisition Parameters -->
-                <StackLayout Grid.Row="3" Grid.Column="0" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                <StackLayout Grid.Row="4" Grid.Column="0" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
                     <!-- integration time -->
                     <StackLayout Orientation="Horizontal">
@@ -181,7 +185,7 @@
 
                 </StackLayout>
 
-                <StackLayout Grid.Row="4" Grid.Column="0" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                <StackLayout Grid.Row="5" Grid.Column="0" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
                     <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
