@@ -35,6 +35,13 @@ public partial class ScopePage : ContentPage
     async void notifyUserAsync(string title, string message, string button) =>
        await DisplayAlert(title, message, button);
 
+    protected override async void OnNavigatedTo(NavigatedToEventArgs args)
+    {
+        base.OnNavigatedTo(args);
+        await Task.Delay(1);//Yield thread so the page is shown to the user
+                            //This initial page should mostly just have a spinner
+        //await VM?.UILoaded();//Load slow complex elements while the user watches the spinner
+    }
     /*
     private void qrScan(object sender, EventArgs e)
     {

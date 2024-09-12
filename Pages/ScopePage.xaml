@@ -5,6 +5,8 @@
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:Class="EnlightenMAUI.ScopePage"
              x:DataType="local:ViewModels.ScopeViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
              BackgroundColor="#333">
 
     <ContentPage.BindingContext>

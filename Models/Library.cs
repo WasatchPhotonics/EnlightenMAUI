@@ -200,7 +200,7 @@ namespace EnlightenMAUI.Models
             roiStart = spec.eeprom.ROIHorizStart;
             roiEnd = spec.eeprom.ROIHorizEnd;
 
-            libraryLoader = loadFiles(root);
+            libraryLoader = Task.Run(() => loadFiles(root));
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -214,13 +214,33 @@ namespace EnlightenMAUI.Models
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");
 
+
             foreach (string path in assetP)
             {
                 if (jsonReg.IsMatch(path))
-                    await loadJSON(root + "/" + path);
+                {
+                    try
+                    {
+                        await loadJSON(root + "/" + path);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.debug("loading {0} failed with exception {1}", path, e.Message);
+                    }
+                }
                 else if (csvReg.IsMatch(path))
-                    await loadCSV(root + "/" + path);
+                {
+                    try
+                    {
+                        await loadCSV(root + "/" + path);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.debug("loading {0} failed with exception {1}", path, e.Message);
+                    }
+                }
             }
+            logger.debug("finished loading library files");
         }
 
         async Task loadCSV(string path)
@@ -308,6 +328,8 @@ namespace EnlightenMAUI.Models
             logger.debug("Library.findMatch: trying to match spectrum");
 
             await libraryLoader;
+
+            logger.debug("Library.findMatch: library is loaded");
 
             Dictionary<string, double> scores = new Dictionary<string, double>();
             List<Task> matchTasks = new List<Task>();
