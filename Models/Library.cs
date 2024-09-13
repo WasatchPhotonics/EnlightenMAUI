@@ -241,6 +241,12 @@ namespace EnlightenMAUI.Models
                 }
             }
             logger.debug("finished loading library files");
+
+            logger.debug("prepping data for decon");
+
+            await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+
+            logger.debug("finished prepping data for decon");
         }
 
         async Task loadCSV(string path)
@@ -374,7 +380,7 @@ namespace EnlightenMAUI.Models
             Deconvolution.Spectrum spec = new Deconvolution.Spectrum(wavenumbers, intensities);
             Deconvolution.Matches matches = null;
 
-            await Task.Run(() => matches = deconvolutionLibrary.process(spec, 0.8));
+            matches = await deconvolutionLibrary.process(spec, 0.8);
 
             return matches;
         }
