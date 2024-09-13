@@ -10,7 +10,7 @@ public class LaserState
     public LaserMode mode = LaserMode.MANUAL;
     public bool enabled;
     public byte watchdogSec = 5;
-    public ushort laserDelayMS = 500;
+    public ushort laserDelayMS { get; set; } = 0;
 
     // While we're working out various timing and stabilization issues in FW,
     // we're just going to implment Raman Mode in SW.  However, the FW version
@@ -88,6 +88,12 @@ public class LaserState
                 data[4] = 0;
                 data[5] = 0;
             }
+
+            // ignore laserDelayMS, as we'll do it in SW
+            data[4] = 0;
+            data[5] = 0;
+            
+            
             /*
             else
             {
