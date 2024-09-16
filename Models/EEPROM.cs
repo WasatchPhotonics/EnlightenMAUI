@@ -97,6 +97,7 @@ public class EEPROM
     public ushort[] ROIVertRegionStart { get; set; }
     public ushort[] ROIVertRegionEnd { get; set; }
     public float[] linearityCoeffs { get; set; }
+    public byte laserWarmupSec { get; set; }
 
     /////////////////////////////////////////////////////////////////////////
     // Page 3
@@ -312,6 +313,11 @@ public class EEPROM
 
             if (format >= 9)
                 featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+
+            if (format >= 10)
+                laserWarmupSec = pages[2][18];
+            else
+                laserWarmupSec = 20;
         }
         catch (Exception ex)
         {
@@ -444,6 +450,8 @@ public class EEPROM
         register("intensityCorrectionOrder", intensityCorrectionOrder);
         for (int i = 0; i < intensityCorrectionCoeffs.Length; i++)
             register($"intensityCorrectionCoeffs[{i}]", intensityCorrectionCoeffs[i]);
+
+        register("laserWarmupSec", laserWarmupSec);
 
         logger.debug("EEPROM.registerAll: done");
     }
