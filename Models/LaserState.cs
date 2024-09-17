@@ -10,7 +10,7 @@ public class LaserState
     public LaserMode mode = LaserMode.MANUAL;
     public bool enabled;
     public byte watchdogSec = 5;
-    public ushort laserDelayMS = 500;
+    public ushort laserDelayMS { get; set; } = 0;
 
     // While we're working out various timing and stabilization issues in FW,
     // we're just going to implment Raman Mode in SW.  However, the FW version
@@ -20,7 +20,7 @@ public class LaserState
     // Nevertheless, laserState.mode is still used for internal state; we
     // just don't send that mode to the FW, or read it back from the FW.
     // But we do still use it for internal decision-making.
-    public const bool SW_RAMAN_MODE = true;
+    public const bool SW_RAMAN_MODE = false;
 
     Logger logger = Logger.getInstance();
 
@@ -69,8 +69,8 @@ public class LaserState
     {
         byte[] data = new byte[6];
 
-        data[0] = (byte)type;
-        data[1] = (byte)mode;
+        data[1] = (byte)type;
+        data[0] = (byte)mode;
         data[2] = (byte)(enabled ? 1 : 0);
         data[3] = watchdogSec;
         data[4] = (byte)((laserDelayMS >> 8) & 0xff);
@@ -82,12 +82,18 @@ public class LaserState
             {
                 // If we're in SW Raman Mode, tell the device we're in 
                 // Manual Mode
-                data[1] = (byte)LaserMode.MANUAL;
+                data[0] = (byte)LaserMode.MANUAL;
 
                 // ignore laserDelayMS, as we'll do it in SW
                 data[4] = 0;
                 data[5] = 0;
             }
+
+            // ignore laserDelayMS, as we'll do it in SW
+            data[4] = 0;
+            data[5] = 0;
+            
+            
             /*
             else
             {
@@ -119,7 +125,7 @@ public class LaserState
         ////////////////////////////////////////////////////////////////////
 
         LaserType newType = LaserType.NORMAL;
-        byte value = data[0];
+        byte value = data[1];
         if (value < (byte)LaserType.MAX_LASER_TYPES)
         {
             newType = (LaserType)value;
@@ -135,7 +141,7 @@ public class LaserState
         ////////////////////////////////////////////////////////////////////
 
         LaserMode newMode = LaserMode.MANUAL;
-        value = data[1];
+        value = data[0];
         if (value < (byte)LaserMode.MAX_LASER_MODES)
         {
             newMode = (LaserMode)value;

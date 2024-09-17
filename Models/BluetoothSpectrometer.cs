@@ -27,7 +27,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     ushort lastCRC;
 
-    const int MAX_RETRIES = 4;
+    const int MAX_RETRIES = 400;
     const int THROWAWAY_SPECTRA = 9;
 
     uint totalPixelsToRead;
@@ -811,7 +811,12 @@ public class BluetoothSpectrometer : Spectrometer
 
         // wait for acquisition to complete
         logger.debug($"takeOneAsync: waiting {integrationTimeMS}ms");
-        await Task.Delay((int)integrationTimeMS);
+
+        int waitTime = (int)integrationTimeMS;
+        if (laserState.mode == LaserMode.RAMAN)
+            waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+
+        await Task.Delay(waitTime);
 
         var spectrum = new double[pixels];
         UInt16 pixelsRead = 0;
@@ -857,7 +862,21 @@ public class BluetoothSpectrometer : Spectrometer
 
             // make sure response length is even, and has both header and at least one pixel of data
             var responseLen = response.data.Length;
-            if (responseLen < headerLen || responseLen % 2 != 0)
+
+            if (responseLen == 3)
+            {
+                logger.error("attempted spectrum read returned error code 0x{0:x2},0x{1:x2},0x{2:x2}", response.data[0],response.data[1],response.data[2]);
+
+                if (response.data[2] != 0)
+                    return null;
+                else
+                { 
+                    requestRetry = true;
+                    continue;
+                }
+
+            }
+            else if (responseLen < headerLen || responseLen % 2 != 0)
             {
                 logger.error($"received invalid response of {responseLen} bytes");
                 requestRetry = true;
