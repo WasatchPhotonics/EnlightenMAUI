@@ -836,8 +836,10 @@ public class ScopeViewModel : INotifyPropertyChanged
     public Command matchCmd { get; }
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
+    public bool hasDecon {get; private set;}
     public bool waitingForMatch {get; private set;}
     public string matchResult {get; private set;}
+    public string deconResult {get; private set;}
 
     async Task<bool> doMatchAsync()
     {
@@ -848,19 +850,27 @@ public class ScopeViewModel : INotifyPropertyChanged
         var result = await library.findMatch(spec.measurement);
 
         logger.info("returned from library match function with result {0}", result);
+        
+        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
+        hasMatch = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
 
         var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
         string matched = "";
+        string deconS = "";
         string alts = "";
         logger.info("finished deconvolution match, setting match result string");
         foreach (double match_concentrations in matched_spectra.compounds.Keys)
         {
             string[] matches = matched_spectra.compounds[match_concentrations].ToArray();
             matched += match_concentrations.ToString("F1") + "%: ";
+            deconS += match_concentrations.ToString("F1") + "%: ";
             logger.info($"match value of {match_concentrations}");
             foreach (string match in matches)
             {
                 matched += match + " ";
+                deconS += match + " ";
                 logger.info($"For this matched {match}");
             }
             matched += "\n";
@@ -873,14 +883,23 @@ public class ScopeViewModel : INotifyPropertyChanged
         string decon = $"Matches: \n{(matched == "" ? "None\n" : matched)}Alternative: \n{alts}";
         logger.info("deconvolution results: {0}", decon);
 
-        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
-        hasMatch = true;
+        if (matched != "")
+        {
+            deconResult = deconS;
+            hasDecon = true;
+            logger.info("deconvolution matches: {0}", deconResult);
+        }
+        else
+        {
+            hasDecon = false;
+        }
+
         waitingForMatch = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
 
 
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasDecon)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deconResult)));
 
         return true;
     }

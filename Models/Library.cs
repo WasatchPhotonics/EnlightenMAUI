@@ -17,6 +17,7 @@ using Deconvolution = DeconvolutionMAUI;
 using Android.Renderscripts;
 using EnlightenMAUI.Common;
 using static Android.Widget.GridLayout;
+using Android.Content;
 
 namespace EnlightenMAUI.Models
 {
@@ -193,6 +194,52 @@ namespace EnlightenMAUI.Models
         {
             logger.debug($"instantiating Library from {root}");
 
+            
+            var dir = Android.OS.Environment.DataDirectory;
+            logger.debug("recursing down dir {0}", dir.AbsolutePath);
+            PlatformUtil.recursePath(dir);
+            //exploreDataFiles();
+
+            dir = Android.OS.Environment.ExternalStorageDirectory;
+            logger.debug("recursing down dir {0}", dir.AbsolutePath);
+            PlatformUtil.recursePath(dir);
+
+            var cacheDirs = Platform.AppContext.GetExternalCacheDirs();
+            foreach (var cDir in cacheDirs)
+            {
+                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                PlatformUtil.recursePath(cDir);
+            }
+
+
+            dir = Platform.AppContext.GetExternalFilesDir(null);
+            logger.debug("recursing down dir {0}", dir.AbsolutePath);
+            PlatformUtil.recursePath(dir);
+            
+
+            cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            foreach (var cDir in cacheDirs)
+            {
+                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                PlatformUtil.recursePath(cDir);
+            }
+
+            /*
+            logger.debug("recursing down dir {0}", dir.AbsolutePath);
+            PlatformUtil.recursePath(dir);*/
+            //exploreDataFiles();
+
+            /*
+            if (PlatformUtil.HasFolderBeenSelectedAndPermissionsGiven())
+            {
+                PlatformUtil.OpenLogFileForWriting("test_file.txt", "hello, world!");
+            }
+            else
+            {
+                PlatformUtil.RequestSelectLogFolder();
+            }
+            */
+
             wavecal = new Wavecal(spec.pixels);
             wavecal.coeffs = spec.eeprom.wavecalCoeffs;
             wavecal.excitationNM = spec.laserExcitationNM;
@@ -203,6 +250,45 @@ namespace EnlightenMAUI.Models
             libraryLoader = Task.Run(() => loadFiles(root));
 
             logger.debug($"finished initializing library load from {root}");
+        }
+
+        void exploreDataFiles()
+        {
+            /*
+            var fullPath = System.IO.Path.Combine(FileSystem.AppDataDirectory, path);
+
+            if (!File.Exists(fullPath))
+            {
+                logger.debug("copying asset into data folder");
+                // Open the source file
+                using Stream inputStream = await FileSystem.Current.OpenAppPackageFileAsync(path);
+
+                // Create an output filename
+                string targetFile = Path.Combine(FileSystem.Current.AppDataDirectory, path);
+
+                // Copy the file to the AppDataDirectory
+                using FileStream outputStream = File.Create(targetFile);
+                await inputStream.CopyToAsync(outputStream);
+                logger.debug("finished copying asset into data folder");
+            }
+            */
+
+            /*
+            string dataPath = FileSystem.Current.AppDataDirectory;
+            logger.debug("looking for files in {0}", dataPath);
+            var files = Directory.GetFiles(dataPath);
+            foreach (var file in files)
+            {
+                logger.debug("found file {0}", file);
+            }
+            */
+
+            //ContentResolver cr = Platform.AppContext.ContentResolver;
+            //cr.OpenInputStream();
+            //actiona
+            //Android.Content.Intent intent = new Android.Content.Intent(Android.Content.Intent.ActionOpenDocument);
+            //intent.
+
         }
 
         async Task loadFiles(string root)
@@ -294,6 +380,9 @@ namespace EnlightenMAUI.Models
         async Task loadJSON(string path)
         {
             logger.info("start loading library file from {0}", path);
+
+
+
             string name = path.Split('/').Last().Split('.').First();
 
             AssetManager assets = Platform.AppContext.Assets;

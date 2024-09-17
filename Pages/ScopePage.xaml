@@ -98,7 +98,8 @@
                 <!-- Match Result -->
                 <StackLayout Grid.Row="1" HorizontalOptions="CenterAndExpand" Spacing="10" Padding="10" Orientation="Vertical">
                     <ActivityIndicator IsVisible="{Binding waitingForMatch}" Color="#27c0a1" IsRunning="{Binding waitingForMatch}"/>
-                    <Label Grid.Row="1" TextColor="#ccc" Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+                    <Label TextColor="#ccc" Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+                    <Label TextColor="#ccc" Text="{Binding deconResult}" IsVisible="{Binding hasDecon}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
                 </StackLayout>
                 
                 <!-- Command buttons -->
