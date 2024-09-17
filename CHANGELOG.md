@@ -1,5 +1,11 @@
 # Changelog
 
+- 2024-09-11 0.6.0
+    - added USBSpectrometer and option to select comm type
+    - added many metadata fields
+    - added AirPLS smoothing implementation
+    - added facilities and feedback for library matching
+    - added single sample "library" for testing matching
 - 2024-08-16 0.5.1
     - added BluetoothSpectrometer
     - changed vertical ROI to use generic characteristic
