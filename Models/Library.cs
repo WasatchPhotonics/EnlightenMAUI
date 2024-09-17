@@ -13,7 +13,6 @@ using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using static Java.Util.Jar.Attributes;
-using Deconvolution = DeconvolutionMAUI;
 
 namespace EnlightenMAUI.Models
 {

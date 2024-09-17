@@ -170,12 +170,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="DeconvolutionMAUI">
-	    <HintPath>..\DeconvolutionMAUI\DeconvolutionMAUI\bin\Debug\net8.0-android\DeconvolutionMAUI.dll</HintPath>
-	  </Reference>
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Compile Update="Pages\ClipboardPage.xaml.cs">
 	    <DependentUpon>ClipboardPage.xaml</DependentUpon>
 	  </Compile>
