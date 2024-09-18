@@ -77,8 +77,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="dist\background_model.onnx" />
-	  <None Remove="libraries\SiG-785-OEM\acetaminophen-2.csv" />
 	  <None Remove="libraries\SiG-785-OEM\Acetaminophen.json" />
 	  <None Remove="libraries\SiG-785-OEM\acetone.csv" />
 	  <None Remove="libraries\SiG-785-OEM\acetonitrile.csv" />
@@ -158,12 +156,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiAsset Include="background_model.onnx">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785-OEM\acetaminophen-2.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
 	  <MauiAsset Include="libraries\SiG-785-OEM\Acetaminophen.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
