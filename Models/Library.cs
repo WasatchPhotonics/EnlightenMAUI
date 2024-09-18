@@ -13,7 +13,9 @@ using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using static Java.Util.Jar.Attributes;
+#if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
+#endif
 using Android.Renderscripts;
 using EnlightenMAUI.Common;
 using static Android.Widget.GridLayout;
@@ -178,7 +180,9 @@ namespace EnlightenMAUI.Models
 
     internal class Library
     {
+#if USE_DECON
         Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
+#endif
         Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
@@ -195,6 +199,7 @@ namespace EnlightenMAUI.Models
             logger.debug($"instantiating Library from {root}");
 
             
+            /*
             var dir = Android.OS.Environment.DataDirectory;
             logger.debug("recursing down dir {0}", dir.AbsolutePath);
             PlatformUtil.recursePath(dir);
@@ -224,12 +229,12 @@ namespace EnlightenMAUI.Models
                 PlatformUtil.recursePath(cDir);
             }
 
-            /*
+            
             logger.debug("recursing down dir {0}", dir.AbsolutePath);
-            PlatformUtil.recursePath(dir);*/
+            PlatformUtil.recursePath(dir);
             //exploreDataFiles();
 
-            /*
+            
             if (PlatformUtil.HasFolderBeenSelectedAndPermissionsGiven())
             {
                 PlatformUtil.OpenLogFileForWriting("test_file.txt", "hello, world!");
@@ -330,7 +335,10 @@ namespace EnlightenMAUI.Models
 
             logger.debug("prepping data for decon");
 
+
+#if USE_DECON
             await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+#endif
 
             logger.debug("finished prepping data for decon");
         }
@@ -349,7 +357,11 @@ namespace EnlightenMAUI.Models
             m.wavenumbers = parser.wavenumbers.ToArray();
             m.raw = parser.intensities.ToArray();
             m.excitationNM = 785;
+
+
+#if USE_DECON
             Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
+#endif
 
             Measurement mOrig = m.copy();
             originalRaws.Add(name, mOrig.raw);
@@ -373,7 +385,10 @@ namespace EnlightenMAUI.Models
             updated.dark = null;
 
             library.Add(name, updated);
+
+#if USE_DECON
             deconvolutionLibrary.library.Add(name, spec);
+#endif
 
             logger.info("finish loading library file from {0}", path);
         }
@@ -461,6 +476,8 @@ namespace EnlightenMAUI.Models
             return new Tuple<string, double>(finalSample, maxScore);
         }
 
+
+#if USE_DECON
         public async Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)
         {
             List<double> intensities = new List<double>(spectrum.processed);
@@ -473,6 +490,7 @@ namespace EnlightenMAUI.Models
 
             return matches;
         }
+#endif
 
     }
 }

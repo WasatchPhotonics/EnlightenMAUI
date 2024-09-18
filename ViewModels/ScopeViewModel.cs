@@ -856,6 +856,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
 
+
+#if USE_DECON
         var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
         string matched = "";
         string deconS = "";
@@ -894,12 +896,13 @@ public class ScopeViewModel : INotifyPropertyChanged
             hasDecon = false;
         }
 
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasDecon)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deconResult)));
+#endif
+
         waitingForMatch = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
 
-
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasDecon)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deconResult)));
 
         return true;
     }

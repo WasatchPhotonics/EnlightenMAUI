@@ -51,6 +51,7 @@
 	  <IsPublishable>False</IsPublishable>
 	  <ApplicationDisplayVersion>0.6.3</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
+	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
@@ -376,6 +377,12 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="DeconvolutionMAUI">
+	    <HintPath>..\DeconvolutionMAUI\DeconvolutionMAUI\bin\Debug\net8.0-android\DeconvolutionMAUI.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 	<ItemGroup>
