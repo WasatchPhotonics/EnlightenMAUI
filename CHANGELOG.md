@@ -1,5 +1,7 @@
 # Changelog
 
+- 2024-09-17 0.6.4
+	- 
 - 2024-09-11 0.6.0
     - added USBSpectrometer and option to select comm type
     - added many metadata fields

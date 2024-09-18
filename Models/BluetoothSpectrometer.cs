@@ -862,7 +862,21 @@ public class BluetoothSpectrometer : Spectrometer
 
             // make sure response length is even, and has both header and at least one pixel of data
             var responseLen = response.data.Length;
-            if (responseLen < headerLen || responseLen % 2 != 0)
+
+            if (responseLen == 3)
+            {
+                logger.error("attempted spectrum read returned error code 0x{0:x2},0x{1:x2},0x{2:x2}", response.data[0],response.data[1],response.data[2]);
+
+                if (response.data[2] != 0)
+                    return null;
+                else
+                { 
+                    requestRetry = true;
+                    continue;
+                }
+
+            }
+            else if (responseLen < headerLen || responseLen % 2 != 0)
             {
                 logger.error($"received invalid response of {responseLen} bytes");
                 requestRetry = true;
