@@ -53,6 +53,45 @@ internal class PlatformUtil
         }
     }
 
+    public static string recursePathAndOpen(Java.IO.File directory, string name)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+
+            string finalBlob = null;
+
+            if (paths != null)
+            {
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    string tempBlob = recursePathAndOpen(path, name);
+                    if (tempBlob != null && finalBlob == null)
+                        finalBlob = tempBlob;
+                }
+
+                return finalBlob;
+            }
+
+            return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath) && directory.AbsolutePath.Split('/').Last() == name)
+            {
+                using Stream inputStream = System.IO.File.OpenRead(directory.AbsolutePath);
+                StreamReader sr = new StreamReader(inputStream);
+                string blob = sr.ReadToEnd();
+                return blob;
+            }
+
+            return null;
+        }
+    }
+
     public async static Task loadONNXModel(string path)
     {
         try
