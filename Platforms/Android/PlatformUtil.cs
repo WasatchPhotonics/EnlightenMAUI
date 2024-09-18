@@ -91,27 +91,59 @@ internal class PlatformUtil
             return null;
         }
     }
+    public static string recurseAndFindPath(Java.IO.File directory, string name)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+
+            string finalBlob = null;
+
+            if (paths != null)
+            {
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    string tempBlob = recurseAndFindPath(path, name);
+                    if (tempBlob != null && finalBlob == null)
+                        finalBlob = tempBlob;
+                }
+
+                return finalBlob;
+            }
+
+            return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath) && directory.AbsolutePath.Split('/').Last() == name)
+            {
+                return directory.AbsolutePath;
+            }
+
+            return null;
+        }
+    }
 
     public async static Task loadONNXModel(string path)
     {
         try
         {
-            var fullPath = System.IO.Path.Combine(FileSystem.AppDataDirectory, path);
+            string fullPath = null;
 
-            if (!File.Exists(fullPath))
+            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            foreach (var cDir in cacheDirs)
             {
-                logger.debug("copying asset into data folder");
-                // Open the source file
-                using Stream inputStream = await FileSystem.Current.OpenAppPackageFileAsync(path);
-
-                // Create an output filename
-                string targetFile = Path.Combine(FileSystem.Current.AppDataDirectory, path);
-
-                // Copy the file to the AppDataDirectory
-                using FileStream outputStream = File.Create(targetFile);
-                await inputStream.CopyToAsync(outputStream);
-                logger.debug("finished copying asset into data folder");
+                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                fullPath = recurseAndFindPath(cDir, path);
+                if (fullPath != null)
+                    break;
             }
+
+            if (fullPath == null)
+                return;
 
             var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
             logger.debug("building pipeline");
