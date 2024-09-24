@@ -190,7 +190,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
                             <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
-                            <RowDefinition Height="Auto"/> <!-- Raman Mode                 -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Auto-Dark Mode             -->
                             <RowDefinition Height="Auto"/> <!-- Background Removal         -->
                         </Grid.RowDefinitions>
 

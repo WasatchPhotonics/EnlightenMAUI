@@ -1,7 +1,7 @@
 ﻿using System;
 namespace EnlightenMAUI.Models;
 
-public enum LaserMode { MANUAL=0, RAMAN=1, MAX_LASER_MODES=2 };
+public enum LaserMode { MANUAL=0, AUTO_DARK=1, MAX_LASER_MODES=2 };
 public enum LaserType { NORMAL=0, MAX_LASER_TYPES=1 } // add others if/when implemented in FW
 
 public class LaserState
@@ -58,7 +58,7 @@ public class LaserState
         dump();
     }
 
-    // Generate a 6-byte payload to be sent from Central to Peripheral.  
+    // Generate a 4-byte payload to be sent from Central to Peripheral.  
     //
     // We enforce some cross-field logic here, so that we're not actually 
     // overwrite values in the Spectrometer or LaserState models, so that
@@ -67,16 +67,16 @@ public class LaserState
     // override these is.
     public byte[] serialize()
     {
-        byte[] data = new byte[6];
+        byte[] data = new byte[4];
 
         data[1] = (byte)type;
         data[0] = (byte)mode;
         data[2] = (byte)(enabled ? 1 : 0);
         data[3] = watchdogSec;
-        data[4] = (byte)((laserDelayMS >> 8) & 0xff);
-        data[5] = (byte)( laserDelayMS       & 0xff);
+        //data[4] = (byte)((laserDelayMS >> 8) & 0xff);
+        //data[5] = (byte)( laserDelayMS       & 0xff);
 
-        if (mode == LaserMode.RAMAN)
+        if (mode == LaserMode.AUTO_DARK)
         {
             if (SW_RAMAN_MODE)
             {
@@ -85,13 +85,13 @@ public class LaserState
                 data[0] = (byte)LaserMode.MANUAL;
 
                 // ignore laserDelayMS, as we'll do it in SW
-                data[4] = 0;
-                data[5] = 0;
+                //data[4] = 0;
+                //data[5] = 0;
             }
 
             // ignore laserDelayMS, as we'll do it in SW
-            data[4] = 0;
-            data[5] = 0;
+            //data[4] = 0;
+            //data[5] = 0;
             
             
             /*
