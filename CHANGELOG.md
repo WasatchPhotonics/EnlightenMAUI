@@ -1,7 +1,8 @@
 # Changelog
 
-- 2024-09-17 0.6.4
-	- 
+- 2024-09-24 0.6.4
+	- fixed issues in interfacing with auto dark (fka raman) mode
+	- renamed references to auto dark mode to reflect name change
 - 2024-09-11 0.6.0
     - added USBSpectrometer and option to select comm type
     - added many metadata fields
