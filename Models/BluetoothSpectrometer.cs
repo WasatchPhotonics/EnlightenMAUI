@@ -27,7 +27,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     ushort lastCRC;
 
-    const int MAX_RETRIES = 400;
+    const int MAX_RETRIES = 5;
     const int THROWAWAY_SPECTRA = 9;
 
     uint totalPixelsToRead;
@@ -53,7 +53,7 @@ public class BluetoothSpectrometer : Spectrometer
     {
         logger.debug("Spectrometer.disconnect: start");
         laserEnabled = false;
-        ramanModeEnabled = false;
+        autoDarkEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
     }
@@ -478,12 +478,12 @@ public class BluetoothSpectrometer : Spectrometer
         return ok;
     }
 
-    public override bool ramanModeEnabled
+    public override bool autoDarkEnabled
     {
-        get => laserState.mode == LaserMode.RAMAN;
+        get => laserState.mode == LaserMode.AUTO_DARK;
         set
         {
-            var mode = value ? LaserMode.RAMAN : LaserMode.MANUAL;
+            var mode = value ? LaserMode.AUTO_DARK : LaserMode.MANUAL;
             if (laserState.mode != mode)
             { 
                 logger.debug($"Spectrometer.ramanModeEnabled: laserState.mode -> {mode}");
@@ -671,7 +671,7 @@ public class BluetoothSpectrometer : Spectrometer
         acquiring = true;
 
         // TODO: integrate laserDelayMS into showProgress
-        var swRamanMode = laserState.mode == LaserMode.RAMAN && LaserState.SW_RAMAN_MODE;
+        var swRamanMode = laserState.mode == LaserMode.AUTO_DARK && LaserState.SW_RAMAN_MODE;
         logger.debug($"Spectrometer.takeOneAveragedAsync: swRamanMode {swRamanMode}");
         if (swRamanMode)
         {
@@ -802,7 +802,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
-        byte[] request = ToBLEData.convert(ramanModeEnabled);
+        byte[] request = ToBLEData.convert(autoDarkEnabled);
         if (0 != await acquireChar.WriteAsync(request))
         {
             logger.error("failed to send acquire");
@@ -813,7 +813,7 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug($"takeOneAsync: waiting {integrationTimeMS}ms");
 
         int waitTime = (int)integrationTimeMS;
-        if (laserState.mode == LaserMode.RAMAN)
+        if (laserState.mode == LaserMode.AUTO_DARK)
             waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
 
         await Task.Delay(waitTime);
@@ -865,12 +865,13 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (responseLen == 3)
             {
-                logger.error("attempted spectrum read returned error code 0x{0:x2},0x{1:x2},0x{2:x2}", response.data[0],response.data[1],response.data[2]);
-
                 if (response.data[2] != 0)
+                {
+                    logger.error("attempted spectrum read returned error code 0x{0:x2},0x{1:x2},0x{2:x2}", response.data[0], response.data[1], response.data[2]);
                     return null;
+                }
                 else
-                { 
+                {
                     requestRetry = true;
                     continue;
                 }

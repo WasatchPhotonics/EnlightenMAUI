@@ -299,11 +299,11 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool ramanModeEnabled
     {
-        get => spec.ramanModeEnabled;
+        get => spec.autoDarkEnabled;
         set
         {
-            if (spec.ramanModeEnabled != value)
-                spec.ramanModeEnabled = value;
+            if (spec.autoDarkEnabled != value)
+                spec.autoDarkEnabled = value;
             updateLaserProperties();
         }
     }

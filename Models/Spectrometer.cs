@@ -214,18 +214,18 @@ namespace EnlightenMAUI.Models
         }
         protected byte _laserWarningDelaySec = 3;
 
-        public virtual bool ramanModeEnabled
+        public virtual bool autoDarkEnabled
         {
-            get => laserState.mode == LaserMode.RAMAN;
+            get => laserState.mode == LaserMode.AUTO_DARK;
             set
             {
-                var mode = value ? LaserMode.RAMAN : LaserMode.MANUAL;
+                var mode = value ? LaserMode.AUTO_DARK : LaserMode.MANUAL;
                 if (laserState.mode != mode)
                 {
                     logger.debug($"Spectrometer.ramanModeEnabled: laserState.mode -> {mode}");
                     laserState.mode = mode;
                     laserState.enabled = false;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ramanModeEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
                 }
                 else
                     logger.debug($"Spectrometer.ramanModeEnabled: mode already {mode}");
