@@ -198,53 +198,6 @@ namespace EnlightenMAUI.Models
         {
             logger.debug($"instantiating Library from {root}");
 
-            
-            /*
-            var dir = Android.OS.Environment.DataDirectory;
-            logger.debug("recursing down dir {0}", dir.AbsolutePath);
-            PlatformUtil.recursePath(dir);
-            //exploreDataFiles();
-
-            dir = Android.OS.Environment.ExternalStorageDirectory;
-            logger.debug("recursing down dir {0}", dir.AbsolutePath);
-            PlatformUtil.recursePath(dir);
-
-            var cacheDirs = Platform.AppContext.GetExternalCacheDirs();
-            foreach (var cDir in cacheDirs)
-            {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                PlatformUtil.recursePath(cDir);
-            }
-
-
-            dir = Platform.AppContext.GetExternalFilesDir(null);
-            logger.debug("recursing down dir {0}", dir.AbsolutePath);
-            PlatformUtil.recursePath(dir);
-            
-
-            cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            foreach (var cDir in cacheDirs)
-            {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                PlatformUtil.recursePath(cDir);
-            }
-
-            
-            logger.debug("recursing down dir {0}", dir.AbsolutePath);
-            PlatformUtil.recursePath(dir);
-            //exploreDataFiles();
-
-            
-            if (PlatformUtil.HasFolderBeenSelectedAndPermissionsGiven())
-            {
-                PlatformUtil.OpenLogFileForWriting("test_file.txt", "hello, world!");
-            }
-            else
-            {
-                PlatformUtil.RequestSelectLogFolder();
-            }
-            */
-
             wavecal = new Wavecal(spec.pixels);
             wavecal.coeffs = spec.eeprom.wavecalCoeffs;
             wavecal.excitationNM = spec.laserExcitationNM;
@@ -298,36 +251,52 @@ namespace EnlightenMAUI.Models
 
         async Task loadFiles(string root)
         {
-            AssetManager assets = Platform.AppContext.Assets;
 
-            string[] assetP = assets.List(root);
+            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            Java.IO.File libraryFolder = null;
+            foreach (var cDir in cacheDirs)
+            {
+                var subs = cDir.ListFiles();
+                foreach(var sub in subs)
+                {
+                    if (sub.AbsolutePath.Split('/').Last() == root)
+                    {
+                        libraryFolder = sub;
+                        break;
+                    }
+                }
+            }
+
+            if (libraryFolder == null)
+                return;
 
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");
 
+            var libraryFiles = libraryFolder.ListFiles();
 
-            foreach (string path in assetP)
+            foreach (var libraryFile in libraryFiles)
             {
-                if (jsonReg.IsMatch(path))
+                if (jsonReg.IsMatch(libraryFile.AbsolutePath))
                 {
                     try
                     {
-                        await loadJSON(root + "/" + path);
+                        await loadJSON(libraryFile);
                     }
                     catch (Exception e)
                     {
-                        logger.debug("loading {0} failed with exception {1}", path, e.Message);
+                        logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
                     }
                 }
-                else if (csvReg.IsMatch(path))
+                else if (csvReg.IsMatch(libraryFile.AbsolutePath))
                 {
                     try
                     {
-                        await loadCSV(root + "/" + path);
+                        await loadCSV(libraryFile);
                     }
                     catch (Exception e)
                     {
-                        logger.debug("loading {0} failed with exception {1}", path, e.Message);
+                        logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
                     }
                 }
             }
@@ -392,6 +361,56 @@ namespace EnlightenMAUI.Models
 
             logger.info("finish loading library file from {0}", path);
         }
+        async Task loadCSV(Java.IO.File file)
+        {
+            logger.info("start loading library file from {0}", file.AbsolutePath);
+
+            string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+            SimpleCSVParser parser = new SimpleCSVParser();
+            Stream s = File.OpenRead(file.AbsolutePath); 
+            StreamReader sr = new StreamReader(s);
+            await parser.parseStream(s);
+
+            Measurement m = new Measurement();
+            m.wavenumbers = parser.wavenumbers.ToArray();
+            m.raw = parser.intensities.ToArray();
+            m.excitationNM = 785;
+
+
+#if USE_DECON
+            Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
+#endif
+
+            Measurement mOrig = m.copy();
+            originalRaws.Add(name, mOrig.raw);
+
+            /*
+            double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            while (smoothedSpec == null || smoothedSpec.Length == 0)
+            {
+                smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                await Task.Delay(50);
+            }
+            */
+
+            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+
+            library.Add(name, updated);
+
+#if USE_DECON
+            deconvolutionLibrary.library.Add(name, spec);
+#endif
+
+            logger.info("finish loading library file from {0}", file.AbsolutePath);
+        }
         async Task loadJSON(string path)
         {
             logger.info("start loading library file from {0}", path);
@@ -431,6 +450,44 @@ namespace EnlightenMAUI.Models
 
             library.Add(name, updated);
             logger.info("finish loading library file from {0}", path);
+        }
+        async Task loadJSON(Java.IO.File file)
+        {
+            logger.info("start loading library file from {0}", file.AbsolutePath);
+
+            string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+            SimpleCSVParser parser = new SimpleCSVParser();
+            Stream s = File.OpenRead(file.AbsolutePath);
+            StreamReader sr = new StreamReader(s);
+            string blob = await sr.ReadToEndAsync();
+
+            spectrumJSON json = JsonConvert.DeserializeObject<spectrumJSON>(blob);
+            if (json.tag != null && json.tag.Length > 0)
+            {
+                name = json.tag;
+            }
+
+            Measurement m = new Measurement(json);
+            Wavecal otherCal = new Wavecal(m.pixels);
+            otherCal.coeffs = m.wavecalCoeffs;
+            otherCal.excitationNM = m.excitationNM;
+
+            Measurement mOrig = m.copy();
+            originalRaws.Add(name, mOrig.raw);
+            originalDarks.Add(name, mOrig.dark);
+
+            Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+
+            library.Add(name, updated);
+            logger.info("finish loading library file from {0}", file.AbsolutePath);
         }
 
         public async Task<Tuple<string,double>> findMatch(Measurement spectrum)

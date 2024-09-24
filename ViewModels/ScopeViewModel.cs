@@ -52,7 +52,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            libraryLoader = Task.Run(() => library = new Library("libraries/SiG-785-OEM", spec));
+            libraryLoader = Task.Run(() => library = new Library("library", spec));
         }
 
         settings = Settings.getInstance();
