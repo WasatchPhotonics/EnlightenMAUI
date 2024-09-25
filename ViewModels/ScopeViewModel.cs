@@ -275,7 +275,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool ramanModeEnabled
+    public bool autoDarkEnabled
     {
         get => spec.autoDarkEnabled;
         set
@@ -293,9 +293,9 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         get
         {
-            var available = !ramanModeEnabled && spec.battery.level >= 5;
+            var available = !autoDarkEnabled && spec.battery.level >= 5;
             if (!available)
-                logger.debug($"laser not available because ramanModeEnabled ({ramanModeEnabled}) or bettery < 5 ({spec.battery.level})");
+                logger.debug($"laser not available because ramanModeEnabled ({autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
             return available;
         }
     }
@@ -305,7 +305,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.updateLaserProperties: start");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ramanModeEnabled)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
         logger.debug("SVM.updateLaserProperties: done");
     }
 
