@@ -135,19 +135,19 @@
                     <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
                         <!-- Save -->
-                        <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/>
+                        <!-- <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/> -->
 
                         <!-- Upload -->
-                        <Button Margin="2" Text="Upload" Command="{Binding uploadCmd}" IsEnabled="{Binding hasSpectrum}"/>
+                        <!-- <Button Margin="2" Text="Upload" Command="{Binding uploadCmd}" IsEnabled="{Binding hasSpectrum}"/> -->
 
                         <!-- Add -->
-                        <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/>
+                        <!-- <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/> -->
 
                         <!-- Clear -->
-                        <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" IsEnabled="{Binding hasTraces}"/>
+                        <!--  <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" IsEnabled="{Binding hasTraces}"/> -->
 
                         <!-- Match -->
-                        <Button Margin="2" Text="Match" Command="{Binding matchCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="{Binding hasMatchingLibrary}"/>
+                        <!-- <Button Margin="2" Text="Match" Command="{Binding matchCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="{Binding hasMatchingLibrary}"/> -->
 
                         <!-- <Button Margin="2" Text="QR" Clicked="qrScan" /> -->
                         <!-- <Button Margin="2" Text="Photo" Clicked="photoCapture" /> -->
@@ -192,9 +192,9 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
                             <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Auto-Dark Mode             -->
+                            <RowDefinition Height="Auto"/> <!-- Auto-Dark Mode             -->
                             <RowDefinition Height="Auto"/> <!-- Background Removal         -->
+                            <RowDefinition Height="Auto"/> <!-- Perform Match              -->
                         </Grid.RowDefinitions>
 
                         <Grid.ColumnDefinitions>
@@ -213,6 +213,9 @@
                         
                         <Switch Grid.Row="3" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useBackgroundRemoval}" />
                         <Label Grid.Row="3" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
+
+                        <Switch Grid.Row="4" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding performMatch}" />
+                        <Label Grid.Row="4" VerticalOptions="Center" Grid.Column="0" Text="Library Matching" TextColor="#eee" />
                     </Grid>
                 </StackLayout>
             </Grid>

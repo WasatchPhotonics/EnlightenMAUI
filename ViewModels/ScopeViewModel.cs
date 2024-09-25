@@ -242,6 +242,17 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
     private bool _useBackgroundRemoval = false;
+    
+    public bool performMatch
+    {
+        get => _performMatch;
+        set
+        {
+            _performMatch = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
+        }
+    }
+    private bool _performMatch = false;
 
 
     public string note
@@ -526,7 +537,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        doMatchAsync();
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && performMatch && spec.dark != null)
+            doMatchAsync();
 
         return ok;
     }
