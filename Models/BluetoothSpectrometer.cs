@@ -149,8 +149,8 @@ public class BluetoothSpectrometer : Spectrometer
         // for now, ignore EEPROM configuration and hardcode
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
-        integrationTimeMS = 400;
-        gainDb = 8;
+        integrationTimeMS = 2000;
+        gainDb = 24;
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
@@ -733,6 +733,11 @@ public class BluetoothSpectrometer : Spectrometer
         if (PlatformUtil.transformerLoaded && useBackgroundRemoval && dark != null)
         {
             logger.info("Performing background removal");
+            for (int i = 0; i < spectrum.Length; ++i)
+            {
+                spectrum[i] -= dark[i];
+            }
+
             double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             stretchedDark = new double[smoothed.Length];

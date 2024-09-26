@@ -21,6 +21,7 @@ using EnlightenMAUI.Common;
 using static Android.Widget.GridLayout;
 using Android.Content;
 using DeconvolutionMAUI;
+using Google.Android.Material.Color.Utilities;
 
 namespace EnlightenMAUI.Models
 {
@@ -206,7 +207,7 @@ namespace EnlightenMAUI.Models
             roiStart = spec.eeprom.ROIHorizStart;
             roiEnd = spec.eeprom.ROIHorizEnd;
 
-            libraryLoader = Task.Run(() => loadFiles(root));
+            libraryLoader = loadFiles(root);
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -547,17 +548,21 @@ namespace EnlightenMAUI.Models
 
             foreach (string sample in library.Keys)
             {
+                logger.info($"trying to match {sample}");
                 matchTasks.Add(Task.Run(() =>
                 {
                     double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                    logger.info($"{sample} score: {score}");
                     scores[sample] = score;
                 }));
             }
 
+            logger.info("waiting for matches");
             foreach (Task t in matchTasks)
             {
                 await t;
             }
+            logger.info("matches complete");
 
             double maxScore = double.MinValue;
             string finalSample = "";
