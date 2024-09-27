@@ -12,16 +12,10 @@ using System.Xml.XPath;
 using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using static Java.Util.Jar.Attributes;
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
 #endif
-using Android.Renderscripts;
 using EnlightenMAUI.Common;
-using static Android.Widget.GridLayout;
-using Android.Content;
-using DeconvolutionMAUI;
-using Google.Android.Material.Color.Utilities;
 
 namespace EnlightenMAUI.Models
 {
