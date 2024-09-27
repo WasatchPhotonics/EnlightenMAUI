@@ -12,14 +12,10 @@ using System.Xml.XPath;
 using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using static Java.Util.Jar.Attributes;
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
 #endif
-using Android.Renderscripts;
 using EnlightenMAUI.Common;
-using static Android.Widget.GridLayout;
-using Android.Content;
 
 namespace EnlightenMAUI.Models
 {
@@ -205,7 +201,7 @@ namespace EnlightenMAUI.Models
             roiStart = spec.eeprom.ROIHorizStart;
             roiEnd = spec.eeprom.ROIHorizEnd;
 
-            libraryLoader = Task.Run(() => loadFiles(root));
+            libraryLoader = loadFiles(root);
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -306,7 +302,13 @@ namespace EnlightenMAUI.Models
 
 
 #if USE_DECON
-            await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+            if (PlatformUtil.transformerLoaded)
+            {
+                double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
+                await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
+            }
+            else
+                await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
 #endif
 
             logger.debug("finished prepping data for decon");
@@ -394,20 +396,38 @@ namespace EnlightenMAUI.Models
             }
             */
 
-            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
-            double airPLSLambda = 10000;
-            int airPLSMaxIter = 100;
-            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
-            double[] shortened = new double[updated.processed.Length];
-            Array.Copy(array, 0, shortened, roiStart, array.Length);
-            updated.raw = shortened;
-            updated.dark = null;
-
-            library.Add(name, updated);
+            if (PlatformUtil.transformerLoaded)
+            {
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                double[]  wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                Measurement updated = new Measurement();
+                updated.wavenumbers = wavenumbers;
+                updated.raw = smoothed;
+                library.Add(name, updated);
 
 #if USE_DECON
-            deconvolutionLibrary.library.Add(name, spec);
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
 #endif
+            }
+
+            else
+            {
+                Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+                double airPLSLambda = 10000;
+                int airPLSMaxIter = 100;
+                double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+                double[] shortened = new double[updated.processed.Length];
+                Array.Copy(array, 0, shortened, roiStart, array.Length);
+                updated.raw = shortened;
+                updated.dark = null;
+
+                library.Add(name, updated);
+
+#if USE_DECON
+                deconvolutionLibrary.library.Add(name, spec);
+#endif
+            }
 
             logger.info("finish loading library file from {0}", file.AbsolutePath);
         }
@@ -477,16 +497,35 @@ namespace EnlightenMAUI.Models
             originalRaws.Add(name, mOrig.raw);
             originalDarks.Add(name, mOrig.dark);
 
-            Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
-            double airPLSLambda = 10000;
-            int airPLSMaxIter = 100;
-            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
-            double[] shortened = new double[updated.processed.Length];
-            Array.Copy(array, 0, shortened, roiStart, array.Length);
-            updated.raw = shortened;
-            updated.dark = null;
 
-            library.Add(name, updated);
+            if (PlatformUtil.transformerLoaded)
+            {
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                Measurement updated = new Measurement();
+                updated.wavenumbers = wavenumbers;
+                updated.raw = smoothed;
+                library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+            }
+            else
+            {
+                Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
+                double airPLSLambda = 10000;
+                int airPLSMaxIter = 100;
+                double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+                double[] shortened = new double[updated.processed.Length];
+                Array.Copy(array, 0, shortened, roiStart, array.Length);
+                updated.raw = shortened;
+                updated.dark = null;
+
+                library.Add(name, updated);
+            }
+
             logger.info("finish loading library file from {0}", file.AbsolutePath);
         }
 
@@ -503,17 +542,21 @@ namespace EnlightenMAUI.Models
 
             foreach (string sample in library.Keys)
             {
+                logger.info($"trying to match {sample}");
                 matchTasks.Add(Task.Run(() =>
                 {
-                    double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample]);
+                    double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                    logger.info($"{sample} score: {score}");
                     scores[sample] = score;
                 }));
             }
 
+            logger.info("waiting for matches");
             foreach (Task t in matchTasks)
             {
                 await t;
             }
+            logger.info("matches complete");
 
             double maxScore = double.MinValue;
             string finalSample = "";
@@ -543,7 +586,7 @@ namespace EnlightenMAUI.Models
             Deconvolution.Spectrum spec = new Deconvolution.Spectrum(wavenumbers, intensities);
             Deconvolution.Matches matches = null;
 
-            matches = await deconvolutionLibrary.process(spec, 0.8);
+            matches = await deconvolutionLibrary.process(spec, 0.95);
 
             return matches;
         }

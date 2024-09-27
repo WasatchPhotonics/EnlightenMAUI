@@ -19,14 +19,14 @@ namespace EnlightenMAUI.Platforms;
 
 internal class ModelInput
 {
-    [ColumnName("serving_default_input_1:0")]
+    [ColumnName("input_1")]
     [VectorType(1, 2376, 1)]
     public float[] spectrum { get; set; }
 }
 
 internal class Prediction
 {
-    [ColumnName("StatefulPartitionedCall:0")]
+    [ColumnName("conv1d_18")]
     [VectorType(1, 2008, 1)]
     public float[] spectrum { get; set; }
 
@@ -202,7 +202,7 @@ internal class PlatformUtil
 
             var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
             logger.debug("building pipeline");
-            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "conv1d_18" }, inputColumnNames: new[] { "input_1" });
             logger.debug("building transformer");
             transformer = pipeline.Fit(data);
             var transCope = transformer;
@@ -231,7 +231,11 @@ internal class PlatformUtil
 
             double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
             double max = interpolatedCounts.Max();
-            interpolatedCounts = interpolatedCounts.Select(x => x / max).ToArray();
+
+            for (int i = 0; i < interpolatedCounts.Length; i++)
+            {
+                interpolatedCounts[i] = interpolatedCounts[i] / max;
+            }
 
             ModelInput modelInput = new ModelInput();
             modelInput.spectrum = new float[2376];

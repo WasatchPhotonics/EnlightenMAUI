@@ -67,12 +67,14 @@ public class LaserState
     // override these is.
     public byte[] serialize()
     {
-        byte[] data = new byte[4];
+        byte[] data = new byte[6];
 
         data[1] = (byte)type;
         data[0] = (byte)mode;
         data[2] = (byte)(enabled ? 1 : 0);
-        data[3] = watchdogSec;
+        data[3] = watchdogSec; 
+        data[4] = 0;
+        data[5] = 0;
         //data[4] = (byte)((laserDelayMS >> 8) & 0xff);
         //data[5] = (byte)( laserDelayMS       & 0xff);
 

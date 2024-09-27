@@ -47,7 +47,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        PlatformUtil.loadONNXModel("background_model.onnx");
+        Task loader = PlatformUtil.loadONNXModel("background_model.onnx");
+        loader.Wait();
         //Thread.Sleep(100);
 
         if (spec != null && spec.paired)
@@ -61,6 +62,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress; 
         spec.measurement.PropertyChanged += handleSpectrometerChange;
+
+        spec.laserWatchdogSec = 0;
+        spec.laserWarningDelaySec = 0;
 
         // bind ScopePage Commands
         laserCmd   = new Command(() => { _ = doLaser       (); }); 
@@ -78,6 +82,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Pixel");
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
+
+        integrationTimeMS = 2000;
+        gainDb = 24;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(gainDb)));
 
         logger.debug("SVM.ctor: updating chart");
         updateChart();
@@ -241,6 +250,28 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
     private bool _useBackgroundRemoval = false;
+    
+    public bool performMatch
+    {
+        get => _performMatch;
+        set
+        {
+            _performMatch = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
+        }
+    }
+    private bool _performMatch = false;
+    
+    public bool performDeconvolution
+    {
+        get => _performDeconvolution;
+        set
+        {
+            _performDeconvolution = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
+        }
+    }
+    private bool _performDeconvolution = false;
 
 
     public string note
@@ -525,7 +556,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        doMatchAsync();
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && performMatch && spec.dark != null)
+            doMatchAsync();
 
         return ok;
     }
@@ -856,49 +888,51 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
 
-
+        if (performDeconvolution)
+        {
 #if USE_DECON
-        var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
-        string matched = "";
-        string deconS = "";
-        string alts = "";
-        logger.info("finished deconvolution match, setting match result string");
-        foreach (double match_concentrations in matched_spectra.compounds.Keys)
-        {
-            string[] matches = matched_spectra.compounds[match_concentrations].ToArray();
-            matched += match_concentrations.ToString("F1") + "%: ";
-            deconS += match_concentrations.ToString("F1") + "%: ";
-            logger.info($"match value of {match_concentrations}");
-            foreach (string match in matches)
+            var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
+            string matched = "";
+            string deconS = "";
+            string alts = "";
+            logger.info("finished deconvolution match, setting match result string");
+            foreach (double match_concentrations in matched_spectra.compounds.Keys)
             {
-                matched += match + " ";
-                deconS += match + " ";
-                logger.info($"For this matched {match}");
+                string[] matches = matched_spectra.compounds[match_concentrations].ToArray();
+                matched += match_concentrations.ToString("F1") + "%: ";
+                deconS += match_concentrations.ToString("F1") + "%: ";
+                logger.info($"match value of {match_concentrations}");
+                foreach (string match in matches)
+                {
+                    matched += match + " ";
+                    deconS += match + " ";
+                    logger.info($"For this matched {match}");
+                }
+                matched += "\n";
             }
-            matched += "\n";
-        }
-        foreach (string alternate in matched_spectra.alternatives)
-        {
-            alts += alternate + " ";
-        }
-        logger.info("combining results string");
-        string decon = $"Matches: \n{(matched == "" ? "None\n" : matched)}Alternative: \n{alts}";
-        logger.info("deconvolution results: {0}", decon);
+            foreach (string alternate in matched_spectra.alternatives)
+            {
+                alts += alternate + " ";
+            }
+            logger.info("combining results string");
+            string decon = $"Matches: \n{(matched == "" ? "None\n" : matched)}Alternative: \n{alts}";
+            logger.info("deconvolution results: {0}", decon);
 
-        if (matched != "")
-        {
-            deconResult = deconS;
-            hasDecon = true;
-            logger.info("deconvolution matches: {0}", deconResult);
-        }
-        else
-        {
-            hasDecon = false;
-        }
+            if (matched != "")
+            {
+                deconResult = deconS;
+                hasDecon = true;
+                logger.info("deconvolution matches: {0}", deconResult);
+            }
+            else
+            {
+                hasDecon = false;
+            }
 
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasDecon)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deconResult)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasDecon)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deconResult)));
 #endif
+        }
 
         waitingForMatch = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
