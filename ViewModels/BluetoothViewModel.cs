@@ -884,7 +884,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
             //subscribeToUpdates();
             // start notifications
-            
             foreach (var pair in characteristicsByName)
             {
                 var name = pair.Key;
@@ -901,7 +900,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     await c.StartUpdatesAsync();
                 }
             }
-            
 
             ////////////////////////////////////////////////////////////////////
             // all done
