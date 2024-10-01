@@ -373,6 +373,13 @@ namespace EnlightenMAUI.Models
             laserState.parse(data);
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("laserState"));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWatchdogSec)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserDelayMS)));
+            //type = newType;
+            //enabled = newEnabled laserEnabled;
+            //watchdogSec = newWatchdog; laserWatchdogSec
+            //laserDelayMS = newLaserDelayMS;  laserDelayMS
 
             sem.Release();
         }

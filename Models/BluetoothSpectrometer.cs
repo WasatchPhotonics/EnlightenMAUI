@@ -2,6 +2,7 @@
 using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
+using Plugin.BLE.Abstractions.EventArgs;
 
 namespace EnlightenMAUI.Models;
 
@@ -943,4 +944,16 @@ public class BluetoothSpectrometer : Spectrometer
         return spectrum;
     }
 
+    public void receiveSpectralUpdate(
+            object sender,
+            CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
+    {
+        logger.debug($"BVM.receiveSpectralUpdate: start");
+        var c = characteristicUpdatedEventArgs.Characteristic;
+
+        byte[] data = c.Value;
+
+
+        //characteristicUpdatedEventArgs.Characteristic.
+    }
 }
