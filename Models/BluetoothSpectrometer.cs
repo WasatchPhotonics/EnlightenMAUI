@@ -149,8 +149,8 @@ public class BluetoothSpectrometer : Spectrometer
         // for now, ignore EEPROM configuration and hardcode
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
-        integrationTimeMS = 2000;
-        gainDb = 24;
+        integrationTimeMS = 400;
+        gainDb = 8;
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];

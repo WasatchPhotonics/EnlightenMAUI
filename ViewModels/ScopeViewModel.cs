@@ -82,12 +82,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Pixel");
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
-
-        integrationTimeMS = 2000;
-        gainDb = 24;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(gainDb)));
-
+        
         logger.debug("SVM.ctor: updating chart");
         updateChart();
         
