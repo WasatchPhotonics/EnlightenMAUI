@@ -3,6 +3,7 @@ using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
 using Plugin.BLE.Abstractions.EventArgs;
+using System.Diagnostics;
 
 namespace EnlightenMAUI.Models;
 
@@ -30,6 +31,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
+    double[] spectrum;
 
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle 
@@ -770,19 +772,9 @@ public class BluetoothSpectrometer : Spectrometer
             return null;
         }
 
-        var spectrumRequestChar = characteristicsByName["spectrumRequest"];
-        if (spectrumRequestChar is null)
-        {
-            logger.error("can't find characteristic spectrumRequest");
-            return null;
-        }
-
-        var spectrumChar = characteristicsByName["readSpectrum"];
-        if (spectrumChar is null)
-        {
-            logger.error("can't find characteristic spectrum");
-            return null;
-        }
+        spectrum = new double[pixels];
+        totalPixelsRead = 0;
+        totalPixelsToRead = pixels;
 
         // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
@@ -793,142 +785,13 @@ public class BluetoothSpectrometer : Spectrometer
             return null;
         }
 
-        // wait for acquisition to complete
-        logger.debug($"takeOneAsync: waiting {integrationTimeMS}ms");
-
-        int waitTime = (int)integrationTimeMS;
-        if (laserState.mode == LaserMode.AUTO_DARK)
-            waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
-
-        await Task.Delay(waitTime);
-
-        var spectrum = new double[pixels];
-        UInt16 pixelsRead = 0;
-        var retryCount = 0;
-        bool requestRetry = false;
-        bool haveDisabledLaser = false;
-
-        while (pixelsRead < pixels)
+        logger.debug("waiting for spectral data");
+        bool ok = await monitorSpectrumAcquire();
+        if (!ok)
         {
-            if (requestRetry)
-            {
-                retryCount++;
-                if (retryCount > MAX_RETRIES)
-                {
-                    logger.error($"giving up after {MAX_RETRIES} retries");
-                    return null;
-                }
-
-                int delayMS = (int)Math.Pow(5, retryCount);
-
-                // if this is the first retry, assume that the sensor was
-                // powered-down, and we need to wait for some throwaway
-                // spectra 
-                if (retryCount == 1)
-                    delayMS = (int)(integrationTimeMS * THROWAWAY_SPECTRA);
-
-                logger.error($"Retry requested, so waiting for {delayMS}ms");
-                await Task.Delay(delayMS);
-
-                requestRetry = false;
-            }
-
-            logger.debug($"takeOneAsync: requesting spectrum packet starting at pixel {pixelsRead}");
-            request = ToBLEData.convert(pixelsRead, len: 2);
-            if (0 != await spectrumRequestChar.WriteAsync(request))
-            {
-                logger.error($"failed to write spectrum request for pixel {pixelsRead}");
-                return null;
-            }
-
-            logger.debug($"reading spectrumChar (pixelsRead {pixelsRead})");
-            var response = await spectrumChar.ReadAsync();
-
-            // make sure response length is even, and has both header and at least one pixel of data
-            var responseLen = response.data.Length;
-
-            if (responseLen == 3)
-            {
-                if (response.data[2] != 0)
-                {
-                    logger.error("attempted spectrum read returned error code 0x{0:x2},0x{1:x2},0x{2:x2}", response.data[0], response.data[1], response.data[2]);
-                    return null;
-                }
-                else
-                {
-                    requestRetry = true;
-                    continue;
-                }
-
-            }
-            else if (responseLen < headerLen || responseLen % 2 != 0)
-            {
-                logger.error($"received invalid response of {responseLen} bytes");
-                requestRetry = true;
-                continue;
-            }
-
-            // firstPixel is a big-endian UInt16
-            short firstPixel = (short)((response.data[0] << 8) | response.data[1]);
-            if (firstPixel > 2048 || firstPixel < 0)
-            {
-                logger.error($"received NACK (firstPixel {firstPixel}, retrying)");
-                requestRetry = true;
-                continue;
-            }
-
-            var pixelsInPacket = (responseLen - headerLen) / 2;
-
-            logger.debug($"received spectrum packet starting at pixel {firstPixel} with {pixelsInPacket} pixels");
-            // logger.hexdump(response);
-
-            var crc = Crc16.checksum(response.data);
-            if (crc == lastCRC)
-            {
-                logger.error($"received duplicate CRC 0x{crc:x4}, retrying");
-                requestRetry = true;
-                continue;
-            }
-
-            lastCRC = crc;
-
-            for (int i = 0; i < pixelsInPacket; i++)
-            {
-                // pixel intensities are little-endian UInt16
-                var offset = headerLen + i * 2;
-                ushort intensity = (ushort)((response.data[offset+1] << 8) | response.data[offset]);
-                spectrum[pixelsRead] = intensity;
-
-                pixelsRead++;
-                totalPixelsRead++;
-
-                if (pixelsRead == pixels)
-                {
-                    logger.debug("read complete spectrum");
-                    if (i + 1 != pixelsInPacket)
-                        logger.error($"ignoring {pixelsInPacket - (i + 1)} trailing pixels");
-                    break;
-                }
-            }
-            // response = null;
-
-            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+            logger.debug("spectrum collection timed out");
+            return null;
         }
-
-        // YOU ARE HERE: kludge at end
-        if (disableLaserAfterFirstPacket && !haveDisabledLaser)
-        {
-            logger.debug("disabling laser after complete spectrum received");
-            laserEnabled = false;
-            logger.debug("continuing end-of-spectrum processing after triggering laser disable");
-        }
-
-        // kludge: first four pixels are zero, so overwrite from 5th
-        for (int i = 0; i < 4; i++)
-            spectrum[i] = spectrum[4];
-
-        // kludge: last pixel seems to be 0xff, so re-write from previous
-        spectrum[pixels-1] = spectrum[pixels-2];
 
         // apply 2x2 binning
         if (eeprom.featureMask.bin2x2)
@@ -944,6 +807,29 @@ public class BluetoothSpectrometer : Spectrometer
         return spectrum;
     }
 
+    public async Task<bool> monitorSpectrumAcquire()
+    {
+        int waitTime = (int)integrationTimeMS;
+        if (laserState.mode == LaserMode.AUTO_DARK)
+            waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+
+        int timeout = waitTime * 2;
+
+        Stopwatch sw = Stopwatch.StartNew();
+        sw.Start();
+
+        while (sw.ElapsedMilliseconds <= timeout)
+        {
+            await Task.Delay(33);
+
+            if (totalPixelsRead == totalPixelsToRead)
+                return true;
+        }
+
+        return false;
+    }
+
+
     public void receiveSpectralUpdate(
             object sender,
             CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
@@ -952,8 +838,10 @@ public class BluetoothSpectrometer : Spectrometer
         var c = characteristicUpdatedEventArgs.Characteristic;
 
         byte[] data = c.Value;
+        Array.Copy(data, 0, spectrum, totalPixelsRead, data.Length);
+        totalPixelsRead += (uint)data.Length;
 
-
+        logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
         //characteristicUpdatedEventArgs.Characteristic.
     }
 }
