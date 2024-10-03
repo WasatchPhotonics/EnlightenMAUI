@@ -164,9 +164,6 @@
 	  <None Update="CHANGELOG.md">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </None>
-	  <None Update="dist\background_model.tflite">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </None>
 	  <None Update="README.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
