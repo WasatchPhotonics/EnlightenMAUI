@@ -573,7 +573,10 @@ namespace EnlightenMAUI.Models
 
             logger.info($"best match {finalSample} with score {maxScore}");
 
-            return new Tuple<string, double>(finalSample, maxScore);
+            if (finalSample != "")
+                return new Tuple<string, double>(finalSample, maxScore);
+            else 
+                return null;
         }
 
 

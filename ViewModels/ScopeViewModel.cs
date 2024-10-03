@@ -244,7 +244,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
         }
     }
-    private bool _useBackgroundRemoval = false;
+    private bool _useBackgroundRemoval = true;
     
     public bool performMatch
     {
@@ -255,7 +255,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
         }
     }
-    private bool _performMatch = false;
+    private bool _performMatch = true;
     
     public bool performDeconvolution
     {
@@ -876,12 +876,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
         var result = await library.findMatch(spec.measurement);
 
-        logger.info("returned from library match function with result {0}", result);
-        
-        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
-        hasMatch = true;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+        if (result != null)
+        {
+            logger.info("returned from library match function with result {0}", result);
+
+            matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
+            hasMatch = true;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+        }
+        else
+        {
+            hasMatch = false;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+        }
 
         if (performDeconvolution)
         {
