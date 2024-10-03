@@ -61,6 +61,7 @@
                       ItemsSource="{Binding bleDeviceList}"
                       IsVisible="{Binding usingBluetooth}"
                       ItemSelected="listView_ItemSelected"
+                      VerticalScrollBarVisibility="Never"
                       SeparatorColor="#555" 
                       BackgroundColor="#333" 
                       VerticalOptions="StartAndExpand"
@@ -70,12 +71,8 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <ViewCell x:DataType="local:Models.BLEDevice">
-                                <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
-                                    <StackLayout Orientation="Horizontal">
-                                        <Label TextColor="#27c0a1" Text="{Binding rssi, StringFormat='RSSI: {0}'}" FontSize="Large" Padding="0, 0, 20, 0"/>
-                                        <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
-                                    </StackLayout>
-                                    <Label TextColor="#cccccc" Text="{Binding id}"/>
+                                <StackLayout Orientation="Horizontal" BackgroundColor="{Binding backgroundColor}">
+                                    <Label TextColor="#2994d3" Margin="5, 10, 0, 10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Large"/>
                                 </StackLayout>
                             </ViewCell>
                         </DataTemplate>
@@ -87,6 +84,7 @@
                       ItemsSource="{Binding usbDeviceList}"
                       IsVisible="{Binding usingUSB}"
                       ItemSelected="listViewUSB_ItemSelected"
+                      VerticalScrollBarVisibility="Never"
                       SeparatorColor="#555" 
                       BackgroundColor="#333" 
                       Margin="20, 0, 20, 0" 
@@ -95,12 +93,7 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <ViewCell x:DataType="local:Models.USBViewDevice">
-                                <StackLayout Orientation="Vertical" MinimumHeightRequest="100" BackgroundColor="{Binding backgroundColor}">
-                                    <StackLayout Orientation="Horizontal">
-                                        <Label TextColor="#2994d3" Text="{Binding name}" FontSize="Large"/>
-                                    </StackLayout>
-                                    <Label TextColor="#cccccc" Text="{Binding pid}"/>
-                                </StackLayout>
+                                <Label TextColor="#2994d3" VerticalOptions="Center" Text="{Binding name}" FontSize="Large"/>
                             </ViewCell>
                         </DataTemplate>
                     </ListView.ItemTemplate>

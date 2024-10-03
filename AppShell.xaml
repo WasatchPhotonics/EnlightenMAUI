@@ -18,7 +18,7 @@
         <ShellContent x:Name="AboutTab" Title="About" Icon="Images/ico_info.png" ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
 
         <!-- Bluetooth -->
-        <ShellContent x:Name="BluetoothTab" Title="BLE" Icon="IMages/ico_bluetooth.png" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
+        <ShellContent x:Name="BluetoothTab" Title="Pair" Icon="IMages/ico_bluetooth.png" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
 
         <!-- Scope -->
         <ShellContent x:Name="ScopeTab" Title="Scope" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
@@ -28,14 +28,17 @@
         <ShellContent x:Name="ClipboardTab" Title="Clipboard" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:ClipboardPage}" Route="ClipboardPage"/> 
         -->
 
-        <!-- Hardware -->
-        <ShellContent x:Name="HardwareTab" Title="Hardware" Icon="Images/ico_xs.png" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
+        <Tab Title="Settings" Icon="Images/ico_gear.png">
+            <!-- Hardware -->
+            <ShellContent x:Name="HardwareTab" Title="Hardware" Icon="Images/ico_xs.png" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
 
-        <!-- Application Settings -->
-        <ShellContent x:Name="SettingsTab" Title="Settings" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
+            <!-- Application Settings -->
+            <ShellContent x:Name="SettingsTab" Title="Settings" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
 
-        <!-- Log -->
-        <ShellContent x:Name="LogTab" Title="Log" Icon="Images/ico_page.png" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
+            <!-- Log -->
+            <ShellContent x:Name="LogTab" Title="Log" Icon="Images/ico_page.png" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
+        </Tab>
     </TabBar>
+        
 
 </Shell>

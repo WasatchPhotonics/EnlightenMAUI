@@ -12,228 +12,278 @@
         <local:ViewModels.ScopeViewModel/>
     </ContentPage.BindingContext>
 
-    <ScrollView>
-        <VerticalStackLayout Padding="0" Spacing="0">
+    <VerticalStackLayout Padding="0" Spacing="0">
 
-            <!-- Page header -->
-            <Image Source="enlighten_logo.png" WidthRequest="300"/>
+        <!-- Page header -->
+        <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <!-- ======================================================= -->
-            <!-- The all-important spectral chart                        -->
-            <!-- ======================================================= -->
+        <!-- ======================================================= -->
+        <!-- The all-important spectral chart                        -->
+        <!-- ======================================================= -->
 
-            <telerik:RadCartesianChart x:Name="chart"
-                                       HorizontalOptions="FillAndExpand"
-                                       VerticalOptions="FillAndExpand"
-                                       MinimumHeightRequest="100"
-                                       HeightRequest="400"
-                                       BackgroundColor="#000"
-                                       Margin="0">
+        <telerik:RadCartesianChart x:Name="chart"
+                                    HorizontalOptions="FillAndExpand"
+                                    VerticalOptions="FillAndExpand"
+                                       MinimumHeightRequest="400"
+                                       MaximumHeightRequest="500"
+                                    BackgroundColor="#000"
+                                    Margin="0">
 
-                <!-- axes -->
-                <telerik:RadCartesianChart.HorizontalAxis>
-                    <telerik:NumericalAxis ShowLabels="True"
+            <!-- axes -->
+            <telerik:RadCartesianChart.HorizontalAxis>
+                <telerik:NumericalAxis ShowLabels="True"
                                            LabelFitMode="MultiLine"
                                            LabelTextColor="#999"
                                            LabelFormat="{Binding xAxisLabelFormat}"
                                            Minimum="{Binding xAxisMinimum}"
                                            Maximum="{Binding xAxisMaximum}" />
-                </telerik:RadCartesianChart.HorizontalAxis>
-                <telerik:RadCartesianChart.VerticalAxis>
-                    <telerik:NumericalAxis ShowLabels="True"
+            </telerik:RadCartesianChart.HorizontalAxis>
+            <telerik:RadCartesianChart.VerticalAxis>
+                <telerik:NumericalAxis ShowLabels="False"
                                            LabelFitMode="MultiLine"
                                            LabelTextColor="#999"/>
-                </telerik:RadCartesianChart.VerticalAxis>
+            </telerik:RadCartesianChart.VerticalAxis>
 
-                <!-- series data -->
-                <telerik:RadCartesianChart.Series>
-                    <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
-                    <telerik:ScatterLineSeries XValueBinding="xValue"
+            <!-- series data -->
+            <telerik:RadCartesianChart.Series>
+                <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
+                <telerik:ScatterLineSeries XValueBinding="xValue"
                                                YValueBinding="intensity"
                                                Stroke="#27c0a1"
                                                DisplayName="Live"
                                                x:DataType="local:ViewModels.ScopeViewModel"
                                                ItemsSource="{Binding chartData}" />
 
-                    <!-- I couldn't find a way to add these programmatically at runtime (and appear on the graph) -->
-                    <telerik:ScatterLineSeries DisplayName="Trace #0" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #1" Stroke="#6758c5" ItemsSource="{Binding trace1}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #2" Stroke="#f7e842" ItemsSource="{Binding trace2}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #3" Stroke="#4a5da9" ItemsSource="{Binding trace3}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #4" Stroke="#f79a1c" ItemsSource="{Binding trace4}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #5" Stroke="#60b34e" ItemsSource="{Binding trace5}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #6" Stroke="#cd242b" ItemsSource="{Binding trace6}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                    <telerik:ScatterLineSeries DisplayName="Trace #7" Stroke="#2994d3" ItemsSource="{Binding trace7}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
-                </telerik:RadCartesianChart.Series>
+                <!-- I couldn't find a way to add these programmatically at runtime (and appear on the graph) -->
+                <telerik:ScatterLineSeries DisplayName="Trace #0" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #1" Stroke="#6758c5" ItemsSource="{Binding trace1}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #2" Stroke="#f7e842" ItemsSource="{Binding trace2}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #3" Stroke="#4a5da9" ItemsSource="{Binding trace3}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #4" Stroke="#f79a1c" ItemsSource="{Binding trace4}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #5" Stroke="#60b34e" ItemsSource="{Binding trace5}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #6" Stroke="#cd242b" ItemsSource="{Binding trace6}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="Trace #7" Stroke="#2994d3" ItemsSource="{Binding trace7}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+            </telerik:RadCartesianChart.Series>
 
-                <!-- pan and zoom -->
-                <telerik:RadCartesianChart.ChartBehaviors>
-                    <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
+            <!-- pan and zoom -->
+            <telerik:RadCartesianChart.ChartBehaviors>
+                <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
                                                      PanMode="Both" 
                                                      HandleDoubleTap="True"/>
-                    <telerik:ChartTooltipBehavior TriggerMode="Tap" />
-                </telerik:RadCartesianChart.ChartBehaviors>
-            </telerik:RadCartesianChart>
+                <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+            </telerik:RadCartesianChart.ChartBehaviors>
+        </telerik:RadCartesianChart>
 
-            <Picker TextColor="#eee" ItemsSource="{Binding xAxisNames}" SelectedItem="{Binding xAxisName}" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
+        <Grid HorizontalOptions="FillAndExpand" VerticalOptions="End" IsEnabled="{Binding paired}">
 
-            <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" IsEnabled="{Binding paired}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!--      ProgressBar       -->
+                <RowDefinition Height="Auto"/>
+                <!--      Match Result      -->
+                <RowDefinition Height="Auto"/>
+                <!--  Laser Acquire Dark    -->
+                <RowDefinition Height="Auto"/>
+                <!-- Save Upload Add Clear  -->
+                <RowDefinition Height="Auto"/>
+                <!-- Acquisition Parameters -->
+                <RowDefinition Height="Auto"/>
+                <!--         Flags          -->
+            </Grid.RowDefinitions>
 
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/> <!--      ProgressBar       -->
-                    <RowDefinition Height="Auto"/> <!--      Match Result      -->
-                    <RowDefinition Height="Auto"/> <!--  Laser Acquire Dark    -->
-                    <RowDefinition Height="Auto"/> <!-- Save Upload Add Clear  -->
-                    <RowDefinition Height="Auto"/> <!-- Acquisition Parameters -->
-                    <RowDefinition Height="Auto"/> <!--         Flags          -->
-                </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <!-- Acquisition ProgressBar -->
+            <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/>
+            <!-- ProgressColor="#2994d3"/> -->
 
-                <!-- Acquisition ProgressBar -->
-                <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/> <!-- ProgressColor="#2994d3"/> -->
-                
-                <!-- Match Result -->
-                <StackLayout Grid.Row="1" HorizontalOptions="CenterAndExpand" Spacing="10" Padding="10" Orientation="Vertical">
-                    <ActivityIndicator IsVisible="{Binding waitingForMatch}" Color="#27c0a1" IsRunning="{Binding waitingForMatch}"/>
-                    <Label TextColor="#ccc" Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
-                    <Label TextColor="#ccc" Text="{Binding deconResult}" IsVisible="{Binding hasDecon}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
-                </StackLayout>
-                
-                <!-- Command buttons -->
-                <StackLayout Grid.Row="2" Grid.Column="0" Margin="2">
-                    <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
+            <!-- Match Result -->
+            <StackLayout Grid.Row="1" HorizontalOptions="CenterAndExpand" Spacing="10" Margin="5"  Orientation="Vertical">
+                <ActivityIndicator IsVisible="{Binding waitingForMatch}" Color="#27c0a1" IsRunning="{Binding waitingForMatch}"/>
+                <Label TextColor="#ccc" Text="{Binding matchResult}" IsVisible="{Binding hasMatch}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+                <Label TextColor="#ccc" Text="{Binding deconResult}" IsVisible="{Binding hasDecon}" HorizontalTextAlignment="Center" HorizontalOptions="CenterAndExpand"/>
+            </StackLayout>
 
-                        <!-- Laser -->
-                        <Button Margin="2" 
-                                Padding="6" 
+            <!-- Command buttons -->
+            <StackLayout Grid.Row="2" Grid.Column="0" Margin="10, 0, 10, 10">
+                <FlexLayout Wrap="Wrap" AlignItems="Stretch"  VerticalOptions="Start" JustifyContent="SpaceBetween">
+
+                    <!-- Laser -->
+                    <ImageButton Margin="2" 
+                                Padding="20" 
+                                    CornerRadius="10"
                                 HorizontalOptions="StartAndExpand" 
+                                WidthRequest="50"
+                                HeightRequest="50"
                                 Command="{Binding laserCmd}"
-                                Text="{Binding laserButtonText}" 
-                                TextColor="{Binding laserButtonForegroundColor}" 
+                                Source="Images/laser.svg"
                                 BackgroundColor="{Binding laserButtonBackgroundColor}" />
 
-                        <!-- Acquire -->
-                        <Button Margin="2" 
-                                Text="Acquire" 
+
+                    <!-- Acquire -->
+                    <ImageButton Margin="2" 
+                                Padding="20" 
+                                    CornerRadius="10"
+                                HorizontalOptions="StartAndExpand" 
+                                WidthRequest="50"
+                                HeightRequest="50"
                                 Command="{Binding acquireCmd}"
-                                TextColor="{Binding acquireButtonTextColor}" 
+                                Source="Images/apeture.svg"
                                 BackgroundColor="{Binding acquireButtonBackgroundColor}" />
 
-                        <!-- Dark -->
-                        <Button Margin="2" 
-                                Text="Dark" 
+                    <!-- Dark -->
+                    <ImageButton Margin="2" 
+                                Padding="20" 
+                                    CornerRadius="10"
+                                HorizontalOptions="StartAndExpand" 
+                                WidthRequest="50"
+                                HeightRequest="50"
                                 Command="{Binding darkCmd}"
-                                TextColor="{Binding darkButtonForegroundColor}"
+                                Source="Images/bulb_dark.svg"
                                 BackgroundColor="{Binding darkButtonBackgroundColor}" />
-                    </FlexLayout>
-                </StackLayout>
+                    <!-- Save -->
+                    <ImageButton    Margin="2" 
+                Padding="20" 
+                CornerRadius="10"
+                HorizontalOptions="StartAndExpand" 
+                WidthRequest="50"
+                HeightRequest="50"
+                Command="{Binding saveCmd}"
+                IsEnabled="{Binding hasSpectrum}"
+                Source="Images/triangle_down_underline.svg"
+                BackgroundColor="#515151"/>
 
-                <StackLayout Grid.Row="3" Grid.Column="0" Margin="2">
-                    <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
-                        <!-- Save -->
-                        <Button Margin="2" Text="Save"  Command="{Binding saveCmd}" IsEnabled="{Binding hasSpectrum}"/> 
+                    <!-- Add -->
+                    <ImageButton    Margin="2" 
+                Padding="20" 
+                CornerRadius="10"
+                HorizontalOptions="StartAndExpand" 
+                WidthRequest="50"
+                HeightRequest="50"
+                Command="{Binding addCmd}" 
+                IsEnabled="{Binding hasSpectrum}"
+                Source="Images/eye.svg" 
+                BackgroundColor="#515151"/>
 
-                        <!-- Upload -->
-                        <Button Margin="2" Text="Upload" Command="{Binding uploadCmd}" IsEnabled="{Binding hasSpectrum}"/> 
+                    <!-- Clear -->
+                    <ImageButton    Margin="2" 
+                Padding="20" 
+                CornerRadius="10"
+                HorizontalOptions="StartAndExpand" 
+                WidthRequest="50"
+                HeightRequest="50"
+                Command="{Binding clearCmd}"
+                IsEnabled="{Binding hasTraces}"
+                Source="Images/eraser.svg" 
+                BackgroundColor="#515151"/>
 
-                        <!-- Add -->
-                        <Button Margin="2" Text="Add" Command="{Binding addCmd}" IsEnabled="{Binding hasSpectrum}"/> 
 
-                        <!-- Clear -->
-                        <Button Margin="2" Text="Clear" Command="{Binding clearCmd}" IsEnabled="{Binding hasTraces}"/> 
+                </FlexLayout>
+            </StackLayout>
 
-                        <!-- Match -->
-                        <Button Margin="2" Text="Match" Command="{Binding matchCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="{Binding hasMatchingLibrary}"/> 
+            <StackLayout Grid.Row="3" Grid.Column="0" Margin="2">
+                <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
-                        <!-- <Button Margin="2" Text="QR" Clicked="qrScan" /> -->
-                        <!-- <Button Margin="2" Text="Photo" Clicked="photoCapture" /> -->
-                    </FlexLayout>
-                </StackLayout>
 
-                <!-- Acquisition Parameters -->
-                <StackLayout Grid.Row="4" Grid.Column="0" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                    <!-- Upload -->
+                    <Button Margin="2" Text="Upload" Command="{Binding uploadCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="False"/>
 
-                    <!-- integration time -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Integration Time (ms)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
+                    <!-- Match -->
+                    <Button Margin="2" Text="Match" Command="{Binding matchCmd}" IsEnabled="{Binding hasSpectrum}" IsVisible="{Binding hasMatchingLibrary}"/>
+
+                    <!-- <Button Margin="2" Text="QR" Clicked="qrScan" /> -->
+                    <!-- <Button Margin="2" Text="Photo" Clicked="photoCapture" /> -->
+                </FlexLayout>
+            </StackLayout>
+
+            <!-- Acquisition Parameters -->
+            <StackLayout IsVisible="False" Grid.Row="4" Grid.Column="0" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+
+                <!-- integration time -->
+                <StackLayout Orientation="Horizontal">
+                    <Label Text="Integration Time (ms)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                    <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
                                                  Value="{Binding integrationTimeMS}" 
                                                  Minimum="1" Maximum="5000"
                                                  HorizontalOptions="EndAndExpand"/>
-                    </StackLayout>
+                </StackLayout>
 
-                    <!-- gain -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Gain (dB)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="gainDb" 
+                <!-- gain -->
+                <StackLayout Orientation="Horizontal">
+                    <Label Text="Gain (dB)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                    <telerik:RadNumericInput x:Name="gainDb" 
                                                  Value="{Binding gainDb}" 
                                                  StringFormat="{}{0:f1}"
                                                  Minimum="0" Maximum="32" Step="0.1"
                                                  HorizontalOptions="EndAndExpand"/>
-                    </StackLayout>
+                </StackLayout>
 
-                    <!-- scansToAverage -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Scan Averaging" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="scansToAverage" 
+                <!-- scansToAverage -->
+                <StackLayout Orientation="Horizontal">
+                    <Label Text="Scan Averaging" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                    <telerik:RadNumericInput x:Name="scansToAverage" 
                                                  Value="{Binding scansToAverage}" 
                                                  Minimum="1" Maximum="100"
                                                  HorizontalOptions="EndAndExpand"/>
-                    </StackLayout>
-
                 </StackLayout>
 
-                <StackLayout Grid.Row="5" Grid.Column="0" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
-                    <Grid HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/> <!-- Horizontal ROI             -->
-                            <RowDefinition Height="Auto"/> <!-- Raman Intensity Correction -->
-                            <RowDefinition Height="Auto"/> <!-- Auto-Dark Mode             -->
-                            <RowDefinition Height="Auto"/> <!-- Background Removal         -->
-                            <RowDefinition Height="Auto"/> <!-- Perform Match              -->
-                            <RowDefinition Height="Auto"/> <!-- Perform Deconvolution      -->
-                        </Grid.RowDefinitions>
+            </StackLayout>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+            <StackLayout IsVisible="False" Grid.Row="5" Grid.Column="0" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Horizontal ROI             -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Raman Intensity Correction -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Auto-Dark Mode             -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Background Removal         -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Perform Match              -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Perform Deconvolution      -->
+                    </Grid.RowDefinitions>
 
-                        <Switch Grid.Row="0" VerticalOptions="Center" Grid.Column="1" IsEnabled="False" IsToggled="{Binding useHorizontalROI}" />
-                        <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Horizontal ROI" TextColor="#eee" />
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                        <Switch Grid.Row="1" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label Grid.Row="1" VerticalOptions="Center" Grid.Column="0" Text="Raman Intensity Correction" TextColor="#eee" />
+                    <Switch Grid.Row="0" VerticalOptions="Center" Grid.Column="1" IsEnabled="False" IsToggled="{Binding useHorizontalROI}" />
+                    <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Horizontal ROI" TextColor="#eee" />
 
-                        <Switch Grid.Row="2" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding autoDarkEnabled}" />
-                        <Label Grid.Row="2" VerticalOptions="Center" Grid.Column="0" Text="Auto-Dark Mode" TextColor="#eee" />
-                        
-                        <Switch Grid.Row="3" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useBackgroundRemoval}" />
-                        <Label Grid.Row="3" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
+                    <Switch Grid.Row="1" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useRamanIntensityCorrection}" />
+                    <Label Grid.Row="1" VerticalOptions="Center" Grid.Column="0" Text="Raman Intensity Correction" TextColor="#eee" />
 
-                        <Switch Grid.Row="4" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding performMatch}" />
-                        <Label Grid.Row="4" VerticalOptions="Center" Grid.Column="0" Text="Library Matching" TextColor="#eee" />
+                    <Switch Grid.Row="2" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding autoDarkEnabled}" />
+                    <Label Grid.Row="2" VerticalOptions="Center" Grid.Column="0" Text="Auto-Dark Mode" TextColor="#eee" />
 
-                        <Switch Grid.Row="5" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding performDeconvolution}" />
-                        <Label Grid.Row="5" VerticalOptions="Center" Grid.Column="0" Text="Deconvolution Matching" TextColor="#eee" />
-                    </Grid>
+                    <Switch Grid.Row="3" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding useBackgroundRemoval}" />
+                    <Label Grid.Row="3" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
+
+                    <Switch Grid.Row="4" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding performMatch}" />
+                    <Label Grid.Row="4" VerticalOptions="Center" Grid.Column="0" Text="Library Matching" TextColor="#eee" />
+
+                    <Switch Grid.Row="5" VerticalOptions="Center" Grid.Column="1" IsToggled="{Binding performDeconvolution}" />
+                    <Label Grid.Row="5" VerticalOptions="Center" Grid.Column="0" Text="Deconvolution Matching" TextColor="#eee" />
+                </Grid>
+            </StackLayout>
+        </Grid>
+
+        <!-- StatusBar -->
+        <Frame CornerRadius="10" VerticalOptions="End" BackgroundColor="#666" Padding="2">
+            <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
+                <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
+                    <Label TextColor="#eee" Text="Battery"/>
+                    <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}"/>
                 </StackLayout>
-            </Grid>
-
-            <!-- StatusBar -->
-            <Frame CornerRadius="10" BackgroundColor="#666" Padding="2">
-                <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
-                    <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
-                        <Label TextColor="#eee" Text="Battery"/>
-                        <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}"/>
-                    </StackLayout>
-                </Frame>
             </Frame>
+        </Frame>
 
-        </VerticalStackLayout>
-    </ScrollView>
+    </VerticalStackLayout>
 </ContentPage>

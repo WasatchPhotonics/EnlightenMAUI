@@ -79,7 +79,11 @@
 
 	<ItemGroup>
 	  <None Remove="Resources\AppIcon\appicon.svg" />
+	  <None Remove="Resources\Images\apeture.svg" />
+	  <None Remove="Resources\Images\bulb_dark.svg" />
 	  <None Remove="Resources\Images\enlighten_logo.png" />
+	  <None Remove="Resources\Images\eraser.svg" />
+	  <None Remove="Resources\Images\eye.svg" />
 	  <None Remove="Resources\Images\ico_bluetooth.png" />
 	  <None Remove="Resources\Images\ico_clipboard.png" />
 	  <None Remove="Resources\Images\ico_gear.png" />
@@ -87,6 +91,8 @@
 	  <None Remove="Resources\Images\ico_page.png" />
 	  <None Remove="Resources\Images\ico_spectra.png" />
 	  <None Remove="Resources\Images\ico_xs.png" />
+	  <None Remove="Resources\Images\laser.svg" />
+	  <None Remove="Resources\Images\triangle_down_underline.svg" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
 	</ItemGroup>
 

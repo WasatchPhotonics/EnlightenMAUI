@@ -142,7 +142,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public string xAxisLabelFormat
     {
-        get => xAxisName == "Pixel" ? "F0" : "F2";
+        get => "F0";
     }
 
     ////////////////////////////////////////////////////////////////////////
