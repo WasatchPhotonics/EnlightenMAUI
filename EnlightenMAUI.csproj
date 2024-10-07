@@ -97,9 +97,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	</ItemGroup>
-
-	<ItemGroup>
 	  <MauiIcon Include="Resources\AppIcon\appicon.svg" />
 	</ItemGroup>
 
@@ -149,6 +146,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Popups\SaveSpectrumPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\DataPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

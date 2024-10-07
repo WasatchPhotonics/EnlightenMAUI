@@ -6,12 +6,16 @@ using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Views;
+using EnlightenMAUI.Popups;
 
 namespace EnlightenMAUI.ViewModels;
 
 // This class provides all the business logic controlling the ScopeView. 
 public class ScopeViewModel : INotifyPropertyChanged
 {
+    //private readonly IPopupService popupService;
     public event PropertyChangedEventHandler PropertyChanged;
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
@@ -41,6 +45,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public ScopeViewModel()
     {
+        //this.popupService = popupService;
         logger.debug("SVM.ctor: start");
 
         spec = BluetoothSpectrometer.getInstance();
@@ -812,8 +817,20 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         var ok = await spec.measurement.saveAsync();
         if (ok)
+        {
             notifyToast?.Invoke($"saved {spec.measurement.filename}");
+            DisplayPopup();
+        }
+
         return ok;
+    }
+
+    public void DisplayPopup()
+    {
+        //this.popupService.ShowPopup<SaveSpectrumPopupViewModel>();
+        SaveSpectrumPopupViewModel viewModel = new SaveSpectrumPopupViewModel();
+        SaveSpectrumPopup popup = new SaveSpectrumPopup(viewModel);
+        Shell.Current.ShowPopup<SaveSpectrumPopup>(popup);
     }
 
     // This is required, but I don't remember how / why
@@ -880,7 +897,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             logger.info("returned from library match function with result {0}", result);
 
-            matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
+            matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
             hasMatch = true;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
