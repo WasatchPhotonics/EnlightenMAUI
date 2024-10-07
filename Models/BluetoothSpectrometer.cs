@@ -4,6 +4,7 @@ using Plugin.BLE.Abstractions.Contracts;
 using EnlightenMAUI.Common;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
+using Xamarin.Google.Crypto.Tink.Prf;
 
 namespace EnlightenMAUI.Models;
 
@@ -809,7 +810,9 @@ public class BluetoothSpectrometer : Spectrometer
 
     public async Task<bool> monitorSpectrumAcquire()
     {
-        int waitTime = (int)integrationTimeMS;
+        int bufferTime = 10000;
+
+        int waitTime = (int)integrationTimeMS + bufferTime;
         if (laserState.mode == LaserMode.AUTO_DARK)
             waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
 
@@ -838,9 +841,20 @@ public class BluetoothSpectrometer : Spectrometer
         var c = characteristicUpdatedEventArgs.Characteristic;
 
         byte[] data = c.Value;
-        Array.Copy(data, 0, spectrum, totalPixelsRead, data.Length);
-        totalPixelsRead += (uint)data.Length;
+        int pixelsInPacket = (int)data.Length / 2 - 1;
+        logger.debug("reading {0} pixels", pixelsInPacket);
+        for (int i = 1; i <= pixelsInPacket; i++)
+        {
+            var offset = i * 2;
+            ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
+            if (totalPixelsRead > spectrum.Length)
+                logger.error("more received data than expected...");
+            else
+                spectrum[totalPixelsRead] = intensity;
+            totalPixelsRead += 1;
+        }
 
+        raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
         logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
         //characteristicUpdatedEventArgs.Characteristic.
     }
