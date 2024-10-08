@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             x:Class="EnlightenMAUI.Popups.OverlaysPopup"
+             HorizontalOptions="Fill"
+             Color="Transparent">
+    <Border  BackgroundColor="#666" 
+          Padding="2" 
+          HorizontalOptions="Fill">
+
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="10,10,10,10" />
+        </Border.StrokeShape>
+        <ListView ItemsSource="{Binding overlays}"
+                        VerticalScrollBarVisibility="Never"
+                  MaximumHeightRequest="300"
+                          SeparatorColor="#555" 
+                          BackgroundColor="Transparent" 
+                          VerticalOptions="StartAndExpand"
+                          HorizontalOptions="Fill"
+                          Margin="0, 0, 0, 10">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell x:DataType="local:Models.SpectrumOverlayMetadata">
+                        <StackLayout Orientation="Horizontal">
+                            <CheckBox Margin="10" VerticalOptions="Center" IsChecked="{Binding selected}"/>
+                            <Label TextColor="WhiteSmoke" Margin="10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Medium"/>
+                        </StackLayout>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Border>
+</toolkit:Popup>

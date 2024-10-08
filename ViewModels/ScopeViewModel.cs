@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 using Telerik.Maui.Controls.Compatibility.Chart;
 
@@ -9,6 +10,8 @@ using EnlightenMAUI.Platforms;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Popups;
+using static Android.Provider.DocumentsContract;
+using static Java.Util.Jar.Attributes;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -20,6 +23,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     SaveSpectrumPopupViewModel saveViewModel;
     OverlaysPopupViewModel overlaysViewModel;
     SaveSpectrumPopup savePopup;
+    SortedDictionary<string, bool> fullLibraryOverlayStatus = new SortedDictionary<string, bool>();
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
     // This probably could be done using notifications, but I'm not sure I
@@ -64,7 +68,14 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() => library = new Library("library", spec));
         }
 
+        libraryLoader.Wait();
+        library.LoadFinished += Library_LoadFinished;
+
+        Task.Run(() => findUserFiles());
+
+        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
         settings = Settings.getInstance();
+        string savePath = settings.getSavePath();
 
         settings.PropertyChanged += handleSettingsChange;
         spec.PropertyChanged += handleSpectrometerChange;
@@ -95,6 +106,89 @@ public class ScopeViewModel : INotifyPropertyChanged
         updateChart();
         
         logger.debug("SVM.ctor: done");
+    }
+
+    private void Library_LoadFinished(object sender, Library e)
+    {
+        foreach (string sample in library.samples)
+        {
+            if (!fullLibraryOverlayStatus.ContainsKey(sample))
+            {
+                fullLibraryOverlayStatus.Add(sample, false);
+                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(sample, false));
+            }
+        }
+    }
+
+    private async Task findUserFiles()
+    {
+        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        Java.IO.File libraryFolder = null;
+        foreach (var cDir in cacheDirs)
+        {
+            var subs = await cDir.ListFilesAsync();
+            foreach (var sub in subs)
+            {
+                if (sub.AbsolutePath.Split('/').Last() == "Documents")
+                {
+                    libraryFolder = sub;
+                    break;
+                }
+            }
+        }
+
+        if (libraryFolder == null)
+            return;
+
+        Regex csvReg = new Regex(@".*\.csv$");
+
+        var libraryFiles = libraryFolder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.IsDirectory)
+            {
+                findUserFilesDeeper(libraryFile);
+            }
+            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+            {
+                try
+                {
+                    await addUserFile(libraryFile);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                }
+            }
+        }
+    }
+    
+    async Task findUserFilesDeeper(Java.IO.File folder)
+    {
+        var libraryFiles = folder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.IsDirectory)
+            {
+                findUserFilesDeeper(libraryFile);
+            }
+            else
+            {
+                addUserFile(libraryFile);
+            }
+        }
+    }
+
+    async Task addUserFile(Java.IO.File file)
+    {
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        if (!fullLibraryOverlayStatus.ContainsKey(name))
+        {
+            fullLibraryOverlayStatus.Add(name, false);
+            overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(name, false));
+        }
     }
 
     public ObservableCollection<string> xAxisNames { get; set; }
@@ -801,27 +895,29 @@ public class ScopeViewModel : INotifyPropertyChanged
         //saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
         //savePopup = new SaveSpectrumPopup(saveViewModel);
         //Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
-        List<SpectrumOverlayMetadata> list = new List<SpectrumOverlayMetadata>();
-        list.Add(new SpectrumOverlayMetadata("acetaminophen", false));
-        list.Add(new SpectrumOverlayMetadata("acetone", false));
-        list.Add(new SpectrumOverlayMetadata("adonitol", true));
-        list.Add(new SpectrumOverlayMetadata("bmsb", false));
-        list.Add(new SpectrumOverlayMetadata("coconut oil", true));
-        list.Add(new SpectrumOverlayMetadata("ethanol", true));
-        list.Add(new SpectrumOverlayMetadata("methanol", true));
-        list.Add(new SpectrumOverlayMetadata("fructose", true));
-        list.Add(new SpectrumOverlayMetadata("glucose", false));
-        list.Add(new SpectrumOverlayMetadata("lactose", false));
-        list.Add(new SpectrumOverlayMetadata("sucrose", false));
-
-        overlaysViewModel = new OverlaysPopupViewModel(list);
+       
         OverlaysPopup op = new OverlaysPopup(overlaysViewModel);
-        Shell.Current.ShowPopup<OverlaysPopup>(op);
+        op.Closed += Op_Closed;
+        Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
 
 
         return true;
 
 
+    }
+
+    private void Op_Closed(object sender, PopupClosedEventArgs e)
+    {
+        foreach (SpectrumOverlayMetadata omd in overlaysViewModel.overlays)
+        {
+            bool wasDisplayed = fullLibraryOverlayStatus[omd.name];
+            fullLibraryOverlayStatus[omd.name] = omd.selected;
+
+            if (wasDisplayed != omd.selected)
+            {
+
+            }
+        }
     }
 
     bool doClear()

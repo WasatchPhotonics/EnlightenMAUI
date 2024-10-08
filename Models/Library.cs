@@ -182,6 +182,7 @@ namespace EnlightenMAUI.Models
         Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
+        public event EventHandler<Library> LoadFinished;
 
         Logger logger = Logger.getInstance();
         Task libraryLoader;
@@ -245,6 +246,8 @@ namespace EnlightenMAUI.Models
 
         }
 
+        public List<string> samples => library.Keys.ToList();
+
         async Task loadFiles(string root)
         {
 
@@ -296,7 +299,8 @@ namespace EnlightenMAUI.Models
                     }
                 }
             }
-            logger.debug("finished loading library files");
+            logger.debug("finished loading library files"); 
+            LoadFinished.Invoke(this, this);
 
             logger.debug("prepping data for decon");
 
