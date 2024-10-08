@@ -18,6 +18,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     //private readonly IPopupService popupService;
     public event PropertyChangedEventHandler PropertyChanged;
     SaveSpectrumPopupViewModel saveViewModel;
+    OverlaysPopupViewModel overlaysViewModel;
     SaveSpectrumPopup savePopup;
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
@@ -782,6 +783,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     bool doAdd()
     {
+        /*
         logger.debug("Add button pressed");
         var name = getTraceName(nextTrace);
         logger.debug($"Populating trace {name}");
@@ -792,7 +794,34 @@ public class ScopeViewModel : INotifyPropertyChanged
         updateTrace(nextTrace);
         nextTrace = (nextTrace + 1) % MAX_TRACES;
         hasTraces = true;
-        return true; 
+        return true; */
+        
+        
+        //saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
+        //saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
+        //savePopup = new SaveSpectrumPopup(saveViewModel);
+        //Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
+        List<SpectrumOverlayMetadata> list = new List<SpectrumOverlayMetadata>();
+        list.Add(new SpectrumOverlayMetadata("acetaminophen", false));
+        list.Add(new SpectrumOverlayMetadata("acetone", false));
+        list.Add(new SpectrumOverlayMetadata("adonitol", true));
+        list.Add(new SpectrumOverlayMetadata("bmsb", false));
+        list.Add(new SpectrumOverlayMetadata("coconut oil", true));
+        list.Add(new SpectrumOverlayMetadata("ethanol", true));
+        list.Add(new SpectrumOverlayMetadata("methanol", true));
+        list.Add(new SpectrumOverlayMetadata("fructose", true));
+        list.Add(new SpectrumOverlayMetadata("glucose", false));
+        list.Add(new SpectrumOverlayMetadata("lactose", false));
+        list.Add(new SpectrumOverlayMetadata("sucrose", false));
+
+        overlaysViewModel = new OverlaysPopupViewModel(list);
+        OverlaysPopup op = new OverlaysPopup(overlaysViewModel);
+        Shell.Current.ShowPopup<OverlaysPopup>(op);
+
+
+        return true;
+
+
     }
 
     bool doClear()

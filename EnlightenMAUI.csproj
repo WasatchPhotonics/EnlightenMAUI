@@ -146,6 +146,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Popups\OverlaysPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Popups\SaveSpectrumPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
