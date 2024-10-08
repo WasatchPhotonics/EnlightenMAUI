@@ -837,6 +837,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (saveViewModel.toBeSaved)
             {
                 spec.measurement.filename = saveViewModel.saveName + ".csv";
+                spec.measurement.notes = saveViewModel.notes;
                 var ok = await spec.measurement.saveAsync();
                 if (ok)
                 {

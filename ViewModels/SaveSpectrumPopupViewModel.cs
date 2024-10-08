@@ -31,6 +31,17 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         string _saveName;
+        
+        public string notes
+        {
+            get { return _notes; }
+            set
+            {
+                _notes = value; 
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(notes)));
+            }
+        }
+        string _notes;
 
         public bool toBeSaved
         {
@@ -43,6 +54,16 @@ namespace EnlightenMAUI.ViewModels
         }
         bool _toBeSaved = false;
 
+        public bool addToDisplay
+        {
+            get { return _addToDisplay; }
+            set
+            {
+                _addToDisplay = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(addToDisplay)));
+            }
+        }
+        bool _addToDisplay;
 
 
     }

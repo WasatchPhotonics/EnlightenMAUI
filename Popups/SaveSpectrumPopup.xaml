@@ -28,6 +28,32 @@
                    MaxLength="50"
                    Text="{Binding saveName}"
                    Focused="saveEntry_Focused"/>
+            <Label HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   Margin="5"
+                   Text="Notes"/>
+            <Editor x:Name="notes"
+                   HorizontalOptions="FillAndExpand"
+                    HeightRequest="60"
+                   Margin="5"
+                   TextColor="Black"
+                   VerticalOptions="Center"
+                   Text="{Binding notes}"/>
+
+            <HorizontalStackLayout Margin="5"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Center">
+                
+                <Label HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       Margin="3" Text="Add To Display"/>
+                <CheckBox HorizontalOptions="Center"
+                          VerticalOptions="Center"
+                          Margin="3"
+                          IsChecked="{Binding addToDisplay}"/>
+                
+            </HorizontalStackLayout>
+            
             <FlexLayout Wrap="Wrap" AlignItems="Stretch"  
                         VerticalOptions="FillAndExpand"
                         Margin="5"
