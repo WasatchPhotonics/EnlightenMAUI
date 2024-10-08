@@ -463,8 +463,9 @@ public class Measurement : INotifyPropertyChanged
         measurementID = string.Format("enlighten-{0}-{1}",
             timestamp.ToString("yyyyMMdd-HHmmss-ffffff"),
             serialNumber);
-        filename = measurementID + ".csv";
-
+        filename = string.Format("enlighten-{0}-{1}.csv",
+            timestamp.ToString("yyyyMMdd-HHmmss"),
+            serialNumber);
         // location = WhereAmI.getInstance().location;
     }
 

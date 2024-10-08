@@ -14,7 +14,12 @@ namespace EnlightenMAUI.ViewModels
         public SaveSpectrumPopupViewModel(string saveName)
         {
             this.saveName = saveName;
+            saveCmd = new Command(() => { _ = toBeSaved = true; });
+            cancelCmd = new Command(() => { _ = toBeSaved = false; });
         }
+
+        public Command saveCmd { get; }
+        public Command cancelCmd { get; }
 
         public string saveName
         {
@@ -22,10 +27,22 @@ namespace EnlightenMAUI.ViewModels
             set
             {
                 _saveName = value; 
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveName));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveName)));
             }
         }
-         string _saveName;
+        string _saveName;
+
+        public bool toBeSaved
+        {
+            get { return _toBeSaved; }
+            set 
+            {
+                _toBeSaved = value; 
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(toBeSaved)));
+            }
+        }
+        bool _toBeSaved = false;
+
 
 
     }

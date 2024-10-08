@@ -17,7 +17,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 {
     //private readonly IPopupService popupService;
     public event PropertyChangedEventHandler PropertyChanged;
-    SaveSpectrumPopupViewModel saveViewModel; 
+    SaveSpectrumPopupViewModel saveViewModel;
+    SaveSpectrumPopup savePopup;
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
     // This probably could be done using notifications, but I'm not sure I
@@ -823,21 +824,31 @@ public class ScopeViewModel : INotifyPropertyChanged
     public void DisplayPopup()
     {
         //this.popupService.ShowPopup<SaveSpectrumPopupViewModel>();
-        saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename);
+        saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
         saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
-        SaveSpectrumPopup popup = new SaveSpectrumPopup(saveViewModel);
-        Shell.Current.ShowPopup<SaveSpectrumPopup>(popup);
+        savePopup = new SaveSpectrumPopup(saveViewModel);
+        Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
     }
 
     private async void SaveViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        var ok = await spec.measurement.saveAsync();
-        if (ok)
+        if (saveViewModel != null)
         {
-            notifyToast?.Invoke($"saved {spec.measurement.filename}");
-
+            if (saveViewModel.toBeSaved)
+            {
+                spec.measurement.filename = saveViewModel.saveName + ".csv";
+                var ok = await spec.measurement.saveAsync();
+                if (ok)
+                {
+                    notifyToast?.Invoke($"saved {spec.measurement.filename}");
+                }
+            }
         }
 
+        if (e.PropertyName == nameof(saveViewModel.toBeSaved))
+        {
+            await savePopup.CloseAsync();
+        }
     }
 
     // This is required, but I don't remember how / why

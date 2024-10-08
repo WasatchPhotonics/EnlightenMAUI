@@ -103,6 +103,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.ctor: grabbing adapter handle");
         adapter = CrossBluetoothLE.Current.Adapter;
 
+        adapter.ScanMode = ScanMode.LowLatency;
+        adapter.ScanTimeout = 20000;
+
         logger.debug("BVM.ctor: adding DeviceDiscovered handler");
         adapter.DeviceDiscovered += _bleAdapterDeviceDiscovered;
         logger.debug("BVM.ctor: adding ScanTimeoutElapsed handler");
