@@ -2,6 +2,7 @@
 using System.Threading;
 using EnlightenMAUI.ViewModels;
 using EnlightenMAUI.Common;
+using Telerik.Maui.Controls.Compatibility.Chart;
 // using ZXing.Net.Mobile.Forms; // for QR codes
 
 namespace EnlightenMAUI;
@@ -29,7 +30,68 @@ public partial class ScopePage : ContentPage
         // https://stackoverflow.com/a/26038700/11615696
         svm.notifyToast += (string msg) => Util.toast(msg); // MZ: iOS needs View
 
-        svm.theChart = chart; 
+        svm.theChart = chart;
+        svm.OverlaysChanged += Svm_OverlaysChanged;
+        svm.WipeOverlays += Svm_WipeOverlays;
+    }
+
+
+    private void Svm_OverlaysChanged(object sender, ScopeViewModel e)
+    {
+        List<CartesianSeries> removeMe = new List<CartesianSeries>();
+        foreach (var series in chart.Series)
+        {
+            if (series.DisplayName != "Live" && !svm.DataOverlays.ContainsKey(series.DisplayName))
+                removeMe.Add(series);
+
+        }
+
+        foreach (var series in removeMe) 
+            chart.Series.Remove(series);
+
+
+        foreach (string name in svm.fullLibraryOverlayStatus.Keys)
+        {
+            bool found = false;
+            if (!svm.fullLibraryOverlayStatus[name])
+                continue;
+
+            foreach (var series in chart.Series)
+            {
+                if (series.DisplayName == name)
+                    found = true;
+            }
+            if (!found)
+            {
+                var series = new ScatterLineSeries
+                {
+                    Stroke = Color.FromUint(ScopeViewModel.colors[chart.Series.Count - 1 % ScopeViewModel.colors.Length]),
+                    DisplayName = name,
+                    XValueBinding = new PropertyNameDataPointBinding("xValue"),
+                    YValueBinding = new PropertyNameDataPointBinding("intensity"),
+                    ItemsSource = svm.DataOverlays[name]
+                };
+
+                chart.Series.Add(series);
+            }
+
+        }
+
+        if (chart.Series.Count > 1) 
+            svm.hasTraces = true;
+    }
+
+    private void Svm_WipeOverlays(object sender, ScopeViewModel e)
+    {
+        List<CartesianSeries> removeMe = new List<CartesianSeries>();
+        foreach (var series in chart.Series)
+        {
+            if (series.DisplayName != "Live")
+                removeMe.Add(series);
+        }
+
+        foreach (var series in removeMe)
+            chart.Series.Remove(series);
     }
 
     async void notifyUserAsync(string title, string message, string button) =>

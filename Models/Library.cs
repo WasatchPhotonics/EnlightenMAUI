@@ -248,6 +248,14 @@ namespace EnlightenMAUI.Models
 
         public List<string> samples => library.Keys.ToList();
 
+        public Measurement getSample(string name)
+        {
+            if (library.ContainsKey(name))
+                return library[name];
+            else 
+                return null;
+        }
+
         async Task loadFiles(string root)
         {
 

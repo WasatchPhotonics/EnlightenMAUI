@@ -31,6 +31,7 @@ namespace EnlightenMAUI.Models
         }
         string _name = "";
         
+        /*
         public string backgroundColor
         {
             get
@@ -44,6 +45,7 @@ namespace EnlightenMAUI.Models
             }
         }
         string _backgroundColor = "#afafaf";
+        */
 
         public bool selected
         {

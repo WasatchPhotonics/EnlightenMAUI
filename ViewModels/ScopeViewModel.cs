@@ -12,18 +12,51 @@ using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Popups;
 using static Android.Provider.DocumentsContract;
 using static Java.Util.Jar.Attributes;
+#if USE_DECON
+using Deconvolution = DeconvolutionMAUI;
+#endif
+using EnlightenMAUI.Common;
+using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
+using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 
 namespace EnlightenMAUI.ViewModels;
 
 // This class provides all the business logic controlling the ScopeView. 
 public class ScopeViewModel : INotifyPropertyChanged
 {
+    public static UInt32[] colors =
+    {
+        0xffe6194b,
+        0xff3cb44b,
+        0xffffe119,
+        0xff4363d8,
+        0xfff58231,
+        0xff911eb4,
+        0xff46f0f0,
+        0xfff032e6,
+        0xffbcf60c,
+        0xfffabebe,
+        0xff008080,
+        0xffe6beff,
+        0xff9a6324,
+        0xfffffac8,
+        0xff800000,
+        0xffaaffc3,
+        0xff808000,
+        0xffffd8b1,
+        0xff000075,
+        0xff808080
+    };
+
     //private readonly IPopupService popupService;
     public event PropertyChangedEventHandler PropertyChanged;
+    public event EventHandler<ScopeViewModel> OverlaysChanged;
+    public event EventHandler<ScopeViewModel> WipeOverlays;
     SaveSpectrumPopupViewModel saveViewModel;
     OverlaysPopupViewModel overlaysViewModel;
     SaveSpectrumPopup savePopup;
-    SortedDictionary<string, bool> fullLibraryOverlayStatus = new SortedDictionary<string, bool>();
+    public Dictionary<string, bool> fullLibraryOverlayStatus = new Dictionary<string, bool>();
+    Dictionary<string, Measurement> userDataLibrary = new Dictionary<string, Measurement>();
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
     // This probably could be done using notifications, but I'm not sure I
@@ -176,20 +209,81 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
             else
             {
-                addUserFile(libraryFile);
+                await addUserFile(libraryFile, true);
             }
         }
     }
 
-    async Task addUserFile(Java.IO.File file)
+    async Task addUserFile(Java.IO.File file, bool addToLibrary = false)
     {
         string name = file.AbsolutePath.Split('/').Last().Split('.').First();
         if (!fullLibraryOverlayStatus.ContainsKey(name))
         {
+            if (addToLibrary)
+                await loadCSV(file);
+
             fullLibraryOverlayStatus.Add(name, false);
             overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(name, false));
         }
     }
+
+    async Task loadCSV(Java.IO.File file)
+    {
+        logger.info("start loading library file from {0}", file.AbsolutePath);
+
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = File.OpenRead(file.AbsolutePath);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+        Wavecal wavecal = new Wavecal(spec.pixels);
+        wavecal.coeffs = spec.eeprom.wavecalCoeffs;
+        wavecal.excitationNM = spec.laserExcitationNM;
+
+        Measurement mOrig = m.copy();
+
+        /*
+        double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+        while (smoothedSpec == null || smoothedSpec.Length == 0)
+        {
+            smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            await Task.Delay(50);
+        }
+        */
+
+        if (PlatformUtil.transformerLoaded)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            userDataLibrary.Add(name, updated);
+        }
+
+        else
+        {
+            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)spec.eeprom.ROIHorizStart, (int)spec.eeprom.ROIHorizEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, spec.eeprom.ROIHorizStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+
+            userDataLibrary.Add(name, updated);
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsolutePath);
+    }
+
 
     public ObservableCollection<string> xAxisNames { get; set; }
     public string xAxisName 
@@ -711,6 +805,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public RadCartesianChart theChart;
 
     public ObservableCollection<ChartDataPoint> chartData { get; set; } = new ObservableCollection<ChartDataPoint>();
+    public Dictionary<string, ObservableCollection<ChartDataPoint>> DataOverlays { get; set; } = new Dictionary<string, ObservableCollection<ChartDataPoint>>();
 
     // declare statically for now; these are individual Properties because 
     // I don't think I can use databinding against array elements
@@ -908,28 +1003,60 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     private void Op_Closed(object sender, PopupClosedEventArgs e)
     {
+        bool somethingChanged = false;
+
         foreach (SpectrumOverlayMetadata omd in overlaysViewModel.overlays)
         {
             bool wasDisplayed = fullLibraryOverlayStatus[omd.name];
+
             fullLibraryOverlayStatus[omd.name] = omd.selected;
 
             if (wasDisplayed != omd.selected)
             {
+                somethingChanged = true;
+                if (!wasDisplayed)
+                {
+                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    Measurement m = library.getSample(omd.name);
+                    if (m == null && userDataLibrary.ContainsKey(omd.name))
+                    {
+                       m = userDataLibrary[omd.name];
+
+                    }
+
+                    if (m != null)
+                    {
+                        for (int i = 0; i < m.wavenumbers.Length; i++) 
+                        newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(omd.name)) 
+                            DataOverlays[omd.name] = newOverlay;
+                        else
+                            DataOverlays.Add(omd.name, newOverlay);
+                    }
+                }
 
             }
         }
+
+        if (somethingChanged)
+            OverlaysChanged.Invoke(this, this);
     }
 
     bool doClear()
     {
-        logger.debug("Clear button pressed");
-        for (int i = 0; i < MAX_TRACES; i++)
-        {
-            getTraceData(i).Clear();
-            updateTrace(i);
-        }
-        nextTrace = 0;
         hasTraces = false;
+
+        WipeOverlays.Invoke(this, this);
+
+        foreach (var overlay in overlaysViewModel.overlays)
+        {
+            overlay.selected = false;
+        }
+        foreach (string overlayName in fullLibraryOverlayStatus.Keys)
+        {
+            fullLibraryOverlayStatus[overlayName] = false;
+        }
+
         return true;
     }
 

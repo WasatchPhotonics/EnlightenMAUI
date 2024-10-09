@@ -19,12 +19,13 @@
                           SeparatorColor="#555" 
                           BackgroundColor="Transparent" 
                           VerticalOptions="StartAndExpand"
+                          x:DataType="local:ViewModels.OverlaysPopupViewModel"
                           HorizontalOptions="Fill"
                           Margin="0, 0, 0, 10">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <ViewCell x:DataType="local:Models.SpectrumOverlayMetadata">
-                        <StackLayout Orientation="Horizontal">
+                        <StackLayout Orientation="Horizontal" BackgroundColor="Transparent">
                             <CheckBox Margin="10" VerticalOptions="Center" IsChecked="{Binding selected}"/>
                             <Label TextColor="WhiteSmoke" Margin="10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Medium"/>
                         </StackLayout>
