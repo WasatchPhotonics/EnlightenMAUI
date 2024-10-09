@@ -50,12 +50,14 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     //private readonly IPopupService popupService;
     public event PropertyChangedEventHandler PropertyChanged;
-    public event EventHandler<ScopeViewModel> OverlaysChanged;
-    public event EventHandler<ScopeViewModel> WipeOverlays;
+    //public event EventHandler<ScopeViewModel> OverlaysChanged;
+    //public event EventHandler<ScopeViewModel> WipeOverlays;
     SaveSpectrumPopupViewModel saveViewModel;
     OverlaysPopupViewModel overlaysViewModel;
     SaveSpectrumPopup savePopup;
-    public Dictionary<string, bool> fullLibraryOverlayStatus = new Dictionary<string, bool>();
+    Dictionary<string, bool> fullLibraryOverlayStatus = new Dictionary<string, bool>();
+    List<SpectrumOverlayMetadata> overlayMetadata = new List<SpectrumOverlayMetadata>();
+    Dictionary<string, int> overlayMap = new Dictionary<string, int>();
     Dictionary<string, Measurement> userDataLibrary = new Dictionary<string, Measurement>();
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
@@ -148,7 +150,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (!fullLibraryOverlayStatus.ContainsKey(sample))
             {
                 fullLibraryOverlayStatus.Add(sample, false);
-                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(sample, false));
+                overlayMetadata.Add(new SpectrumOverlayMetadata(sample, false));
             }
         }
     }
@@ -223,7 +225,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 await loadCSV(file);
 
             fullLibraryOverlayStatus.Add(name, false);
-            overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(name, false));
+            overlayMetadata.Add(new SpectrumOverlayMetadata(name, false));
         }
     }
 
@@ -805,7 +807,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public RadCartesianChart theChart;
 
     public ObservableCollection<ChartDataPoint> chartData { get; set; } = new ObservableCollection<ChartDataPoint>();
-    public Dictionary<string, ObservableCollection<ChartDataPoint>> DataOverlays { get; set; } = new Dictionary<string, ObservableCollection<ChartDataPoint>>();
+    //public Dictionary<string, ObservableCollection<ChartDataPoint>> DataOverlays { get; set; } = new Dictionary<string, ObservableCollection<ChartDataPoint>>();
 
     // declare statically for now; these are individual Properties because 
     // I don't think I can use databinding against array elements
@@ -817,6 +819,87 @@ public class ScopeViewModel : INotifyPropertyChanged
     public ObservableCollection<ChartDataPoint> trace5 { get; set; } = new ObservableCollection<ChartDataPoint>();
     public ObservableCollection<ChartDataPoint> trace6 { get; set; } = new ObservableCollection<ChartDataPoint>();
     public ObservableCollection<ChartDataPoint> trace7 { get; set; } = new ObservableCollection<ChartDataPoint>();
+
+    public string traceName0
+    {
+        get { return _traceName0; }
+        set
+        {
+            _traceName0 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName0)));
+        }
+    }
+    string _traceName0 = "";
+    public string traceName1
+    {
+        get { return _traceName1; }
+        set
+        {
+            _traceName1 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName1)));
+        }
+    }
+    string _traceName1 = "";
+    public string traceName2
+    {
+        get { return _traceName2; }
+        set
+        {
+            _traceName2 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName2)));
+        }
+    }
+    string _traceName2 = "";
+    public string traceName3
+    {
+        get { return _traceName3; }
+        set
+        {
+            _traceName3 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName3)));
+        }
+    }
+    string _traceName3 = "";
+    public string traceName4
+    {
+        get { return _traceName4; }
+        set
+        {
+            _traceName4 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName4)));
+        }
+    }
+    string _traceName4 = "";
+    public string traceName5
+    {
+        get { return _traceName5; }
+        set
+        {
+            _traceName5 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName5)));
+        }
+    }
+    string _traceName5 = "";
+    public string traceName6
+    {
+        get { return _traceName6; }
+        set
+        {
+            _traceName6 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName6)));
+        }
+    }
+    string _traceName6 = "";
+    public string traceName7
+    {
+        get { return _traceName7; }
+        set
+        {
+            _traceName7 = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(traceName7)));
+        }
+    }
+    string _traceName7 = "";
 
     const int MAX_TRACES = 8;
     double[] xAxis;
@@ -867,16 +950,30 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         switch(trace)
         {
-            case 0: return nameof(trace0);
-            case 1: return nameof(trace1);
-            case 2: return nameof(trace2); 
-            case 3: return nameof(trace3); 
-            case 4: return nameof(trace4); 
-            case 5: return nameof(trace5); 
-            case 6: return nameof(trace6); 
-            case 7: return nameof(trace7); 
+            case 0: return traceName0;
+            case 1: return traceName1;
+            case 2: return traceName2; 
+            case 3: return traceName3; 
+            case 4: return traceName4; 
+            case 5: return traceName5; 
+            case 6: return traceName6; 
+            case 7: return traceName7; 
         }
         return nameof(trace0);
+    }
+    void setTraceName(int trace, string name)
+    {
+        switch(trace)
+        {
+            case 0: traceName0 = name; break;
+            case 1: traceName1 = name; break;
+            case 2: traceName2 = name; break;
+            case 3: traceName3 = name; break;
+            case 4: traceName4 = name; break;
+            case 5: traceName5 = name; break;
+            case 6: traceName6 = name; break;
+            case 7: traceName7 = name; break;
+        }
     }
 
     void updateChart()
@@ -984,13 +1081,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         nextTrace = (nextTrace + 1) % MAX_TRACES;
         hasTraces = true;
         return true; */
-        
-        
+
+
         //saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
         //saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
         //savePopup = new SaveSpectrumPopup(saveViewModel);
         //Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
-       
+
+        overlaysViewModel = new OverlaysPopupViewModel(overlayMetadata);
         OverlaysPopup op = new OverlaysPopup(overlaysViewModel);
         op.Closed += Op_Closed;
         Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
@@ -1005,6 +1103,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         bool somethingChanged = false;
 
+        overlayMetadata = new List<SpectrumOverlayMetadata>(overlaysViewModel.overlays);
+
         foreach (SpectrumOverlayMetadata omd in overlaysViewModel.overlays)
         {
             bool wasDisplayed = fullLibraryOverlayStatus[omd.name];
@@ -1014,44 +1114,78 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (wasDisplayed != omd.selected)
             {
                 somethingChanged = true;
-                if (!wasDisplayed)
+                if (wasDisplayed)
                 {
-                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
-                    Measurement m = library.getSample(omd.name);
-                    if (m == null && userDataLibrary.ContainsKey(omd.name))
+                    int traceNum = overlayMap[omd.name];
+                    var newOverlay = getTraceData(traceNum);
+                    newOverlay.Clear();
+                    overlayMap.Remove(omd.name);
+                }
+                else
+                {
+                    hasTraces = true;
+                    //ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    if (overlayMap.Count < 8)
                     {
-                       m = userDataLibrary[omd.name];
+                        Measurement m = library.getSample(omd.name);
+                        if (m == null && userDataLibrary.ContainsKey(omd.name))
+                        {
+                            m = userDataLibrary[omd.name];
+                            notifyToast?.Invoke($"saved {spec.measurement.filename}");
+                        }
 
+                        if (m != null)
+                        {
+                            if (getTraceName(overlayMap.Count) != omd.name)
+                            {
+                                var newOverlay = getTraceData(overlayMap.Count);
+                                newOverlay.Clear();
+                                setTraceName(overlayMap.Count, omd.name);
+
+                                for (int i = 0; i < m.wavenumbers.Length; i++)
+                                    newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+
+                                overlayMap.Add(omd.name, overlayMap.Count);
+
+                                //if (DataOverlays.ContainsKey(omd.name)) 
+                                //    DataOverlays[omd.name] = newOverlay;
+                                //else
+                                //    DataOverlays.Add(omd.name, newOverlay);
+                            }
+                        }
                     }
-
-                    if (m != null)
+                    else
                     {
-                        for (int i = 0; i < m.wavenumbers.Length; i++) 
-                        newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
-                        if (DataOverlays.ContainsKey(omd.name)) 
-                            DataOverlays[omd.name] = newOverlay;
-                        else
-                            DataOverlays.Add(omd.name, newOverlay);
+                        notifyToast?.Invoke($"only 8 overlays at maximum are permitted");
                     }
                 }
 
             }
         }
 
-        if (somethingChanged)
-            OverlaysChanged.Invoke(this, this);
+        //if (somethingChanged)
+            //OverlaysChanged.Invoke(this, this);
     }
 
     bool doClear()
     {
         hasTraces = false;
 
-        WipeOverlays.Invoke(this, this);
+        //WipeOverlays.Invoke(this, this);
+        overlayMap.Clear();
+        for (int i = 0; i < 8; ++i)
+        {
+            var newOverlay = getTraceData(i);
+            newOverlay.Clear();
+        }
 
-        foreach (var overlay in overlaysViewModel.overlays)
+        /*
+        foreach (var overlay in overlayMetadata)
         {
             overlay.selected = false;
         }
+        */
+
         foreach (string overlayName in fullLibraryOverlayStatus.Keys)
         {
             fullLibraryOverlayStatus[overlayName] = false;

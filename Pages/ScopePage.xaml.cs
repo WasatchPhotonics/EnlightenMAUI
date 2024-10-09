@@ -31,13 +31,14 @@ public partial class ScopePage : ContentPage
         svm.notifyToast += (string msg) => Util.toast(msg); // MZ: iOS needs View
 
         svm.theChart = chart;
-        svm.OverlaysChanged += Svm_OverlaysChanged;
-        svm.WipeOverlays += Svm_WipeOverlays;
+        //svm.OverlaysChanged += Svm_OverlaysChanged;
+        //svm.WipeOverlays += Svm_WipeOverlays;
     }
 
 
     private void Svm_OverlaysChanged(object sender, ScopeViewModel e)
     {
+        /*
         List<CartesianSeries> removeMe = new List<CartesianSeries>();
         foreach (var series in chart.Series)
         {
@@ -79,6 +80,7 @@ public partial class ScopePage : ContentPage
 
         if (chart.Series.Count > 1) 
             svm.hasTraces = true;
+        */
     }
 
     private void Svm_WipeOverlays(object sender, ScopeViewModel e)

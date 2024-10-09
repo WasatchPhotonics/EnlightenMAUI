@@ -52,11 +52,8 @@ namespace EnlightenMAUI.Models
             get => _selected;
             set
             {
-                if (_selected != value)
-                {
-                    _selected = value;
-                    //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(backgroundColor)));
-                }
+                _selected = value;
+                Logger.getInstance().info("select for {0} changing", name);
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(selected)));
             }
         }

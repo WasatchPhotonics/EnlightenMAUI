@@ -48,7 +48,15 @@
             <telerik:RadCartesianChart.Series>
                 <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
                 <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#27c0a1" DisplayName="Live" x:DataType="local:ViewModels.ScopeViewModel" ItemsSource="{Binding chartData}" />
-             </telerik:RadCartesianChart.Series>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName0}" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName1}" Stroke="#6758c5" ItemsSource="{Binding trace1}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName2}" Stroke="#f7e842" ItemsSource="{Binding trace2}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName3}" Stroke="#4a5da9" ItemsSource="{Binding trace3}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName4}" Stroke="#f79a1c" ItemsSource="{Binding trace4}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName5}" Stroke="#60b34e" ItemsSource="{Binding trace5}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName6}" Stroke="#cd242b" ItemsSource="{Binding trace6}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+                <telerik:ScatterLineSeries DisplayName="{Binding traceName7}" Stroke="#2994d3" ItemsSource="{Binding trace7}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
+            </telerik:RadCartesianChart.Series>
 
             <!-- pan and zoom -->
             <telerik:RadCartesianChart.ChartBehaviors>
