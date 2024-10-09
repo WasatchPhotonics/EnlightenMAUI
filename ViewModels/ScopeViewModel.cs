@@ -112,32 +112,32 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         settings.PropertyChanged += handleSettingsChange;
         spec.PropertyChanged += handleSpectrometerChange;
-        spec.showAcquisitionProgress += showAcquisitionProgress; 
+        spec.showAcquisitionProgress += showAcquisitionProgress;
         spec.measurement.PropertyChanged += handleSpectrometerChange;
 
         spec.laserWatchdogSec = 0;
         spec.laserWarningDelaySec = 0;
 
         // bind ScopePage Commands
-        laserCmd   = new Command(() => { _ = doLaser       (); }); 
+        laserCmd = new Command(() => { _ = doLaser(); });
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
-        refreshCmd = new Command(() => { _ = doAcquireAsync(); }); 
-        darkCmd    = new Command(() => { _ = doDark        (); });
+        refreshCmd = new Command(() => { _ = doAcquireAsync(); });
+        darkCmd = new Command(() => { _ = doDark(); });
 
-        saveCmd    = new Command(() => { _ = doSave        (); });
-        uploadCmd  = new Command(() => { _ = doUpload      (); });
-        addCmd     = new Command(() => { _ = doAdd         (); });
-        clearCmd   = new Command(() => { _ = doClear       (); });
+        saveCmd = new Command(() => { _ = doSave(); });
+        uploadCmd = new Command(() => { _ = doUpload(); });
+        addCmd = new Command(() => { _ = doAdd(); });
+        clearCmd = new Command(() => { _ = doClear(); });
         //matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
-        
+
         logger.debug("SVM.ctor: updating chart");
         updateChart();
-        
+
         logger.debug("SVM.ctor: done");
     }
 
@@ -196,7 +196,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
         }
     }
-    
+
     async Task findUserFilesDeeper(Java.IO.File folder)
     {
         var libraryFiles = folder.ListFiles();
@@ -286,9 +286,9 @@ public class ScopeViewModel : INotifyPropertyChanged
 
 
     public ObservableCollection<string> xAxisNames { get; set; }
-    public string xAxisName 
+    public string xAxisName
     {
-        get => _xAxisName; 
+        get => _xAxisName;
         set
         {
             _xAxisName = value;
@@ -320,7 +320,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _xAxisMinimum = value;
-           PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMinimum)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMinimum)));
         }
     }
     double _xAxisMinimum;
@@ -331,7 +331,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _xAxisMaximum = value;
-           PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMaximum)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMaximum)));
         }
     }
     double _xAxisMaximum;
@@ -410,8 +410,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useHorizontalROI 
-    { 
+    public bool useHorizontalROI
+    {
         get => _useHorizontalROI;
         set
         {
@@ -422,8 +422,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     private bool _useHorizontalROI = true;
 
     // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useRamanIntensityCorrection 
-    { 
+    public bool useRamanIntensityCorrection
+    {
         get => spec.useRamanIntensityCorrection;
         set => spec.useRamanIntensityCorrection = value;
     }
@@ -441,7 +441,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
     private bool _useBackgroundRemoval = true;
-    
+
     public bool performMatch
     {
         get => _performMatch;
@@ -452,7 +452,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
     private bool _performMatch = true;
-    
+
     public bool performDeconvolution
     {
         get => _performDeconvolution;
@@ -511,8 +511,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     public bool laserEnabled
     {
         get => spec.laserEnabled;
-        set 
-        { 
+        set
+        {
             if (spec.laserEnabled != value)
                 spec.laserEnabled = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
@@ -545,7 +545,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     public void updateLaserProperties()
-    { 
+    {
         logger.debug("SVM.updateLaserProperties: start");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
@@ -581,7 +581,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public bool isRefreshing
     {
         get => _isRefreshing;
-        set 
+        set
         {
             logger.debug($"SVM: isRefreshing -> {value}");
             _isRefreshing = value;
@@ -602,17 +602,17 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public string spectrumMax
-    { 
+    {
         get => string.Format("Max: {0:f2}", spec.measurement.max);
     }
 
-    public string batteryState 
-    { 
+    public string batteryState
+    {
         get => spec.battery.ToString();
     }
 
     public string batteryColor
-    { 
+    {
         get => spec.battery.level > 20 ? "#eee" : "#f33";
     }
 
@@ -721,6 +721,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("doAcquireAsync: Attempting to take one averaged reading");
         logger.debug("doAcquireAsync: =======================================");
 
+        if (displayMatch)
+        {
+            try
+            {
+                //DataOverlays.Remove(matchCompound);
+                //fullLibraryOverlayStatus[matchCompound] = false;
+                displayMatch = false;
+                await Task.Delay(1);
+            }
+            catch (Exception ex)
+            {
+                logger.error("ovelray removal failed out with exception {0}", ex.Message);
+            }
+        }
+
         // take a fresh Measurement
         var startTime = DateTime.Now;
         var ok = await spec.takeOneAveragedAsync();
@@ -753,14 +768,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         return ok;
     }
 
-    void showAcquisitionProgress(double progress) => acquisitionProgress = progress; 
+    void showAcquisitionProgress(double progress) => acquisitionProgress = progress;
 
     // this is a floating-point "percentage completion" backing the 
     // ProgressBar on the ScopeView
     public double acquisitionProgress
     {
         get => _acquisitionProgress;
-        set 
+        set
         {
             _acquisitionProgress = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(acquisitionProgress)));
@@ -774,11 +789,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (m is null || m.raw is null)
             return false;
 
-        var allZero = true;                
-        var allHigh = true;                
+        var allZero = true;
+        var allHigh = true;
         for (int i = 0; i < m.raw.Length; i++)
         {
-            if (m.raw[i] !=     0) allZero = false;
+            if (m.raw[i] != 0) allZero = false;
             if (m.raw[i] != 65535) allHigh = false;
 
             // no point checking beyond this point
@@ -822,7 +837,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     double[] xAxis;
     int nextTrace = 0;
 
-    public bool hasTraces 
+    public bool hasTraces
     {
         get => _hasTraces;
         set
@@ -849,7 +864,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
     ObservableCollection<ChartDataPoint> getTraceData(int trace)
     {
-        switch(trace)
+        switch (trace)
         {
             case 0: return trace0;
             case 1: return trace1;
@@ -865,16 +880,16 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     string getTraceName(int trace)
     {
-        switch(trace)
+        switch (trace)
         {
             case 0: return nameof(trace0);
             case 1: return nameof(trace1);
-            case 2: return nameof(trace2); 
-            case 3: return nameof(trace3); 
-            case 4: return nameof(trace4); 
-            case 5: return nameof(trace5); 
-            case 6: return nameof(trace6); 
-            case 7: return nameof(trace7); 
+            case 2: return nameof(trace2);
+            case 3: return nameof(trace3);
+            case 4: return nameof(trace4);
+            case 5: return nameof(trace5);
+            case 6: return nameof(trace6);
+            case 7: return nameof(trace7);
         }
         return nameof(trace0);
     }
@@ -889,7 +904,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("updateChart: done");
     }
 
-    void updateTrace(int trace) => 
+    void updateTrace(int trace) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(getTraceName(trace)));
 
     private void refreshChartData()
@@ -932,10 +947,10 @@ public class ScopeViewModel : INotifyPropertyChanged
             for (int i = 0; i < pixels; i++)
             {
                 if (!usingRemovalAxis &&
-                    useHorizontalROI && 
-                    spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd && 
+                    useHorizontalROI &&
+                    spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
-                        continue;
+                    continue;
 
                 updateChartData.Add(new ChartDataPoint() { intensity = intensities[i], xValue = xAxis[i] });
                 if (pxLo < 0)
@@ -956,7 +971,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 chartData.Add(chartDataPoint);
             }
-            
+
             //oldChartData.Clear();
 
             xAxisMinimum = xAxis[pxLo];
@@ -964,7 +979,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             logger.debug($"refreshChartData: pxLo {pxLo}, pxHi {pxHi}, xMin {xAxisMinimum:f2}, xMax {xAxisMaximum:f2}");
         }
         catch (Exception ex)
-        { 
+        {
             logger.debug($"refreshChartData: caught exception {ex}");
         }
         logger.debug("refreshChartData: done");
@@ -984,13 +999,13 @@ public class ScopeViewModel : INotifyPropertyChanged
         nextTrace = (nextTrace + 1) % MAX_TRACES;
         hasTraces = true;
         return true; */
-        
-        
+
+
         //saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
         //saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
         //savePopup = new SaveSpectrumPopup(saveViewModel);
         //Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
-       
+
         OverlaysPopup op = new OverlaysPopup(overlaysViewModel);
         op.Closed += Op_Closed;
         Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
@@ -1020,15 +1035,15 @@ public class ScopeViewModel : INotifyPropertyChanged
                     Measurement m = library.getSample(omd.name);
                     if (m == null && userDataLibrary.ContainsKey(omd.name))
                     {
-                       m = userDataLibrary[omd.name];
+                        m = userDataLibrary[omd.name];
 
                     }
 
                     if (m != null)
                     {
-                        for (int i = 0; i < m.wavenumbers.Length; i++) 
-                        newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
-                        if (DataOverlays.ContainsKey(omd.name)) 
+                        for (int i = 0; i < m.wavenumbers.Length; i++)
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(omd.name))
                             DataOverlays[omd.name] = newOverlay;
                         else
                             DataOverlays.Add(omd.name, newOverlay);
@@ -1149,11 +1164,57 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public Command matchCmd { get; }
+    public bool displayMatch
+    {
+        get { return _displayMatch; }
+        set 
+        {
+            _displayMatch = value;
+            bool wasDisplayed = fullLibraryOverlayStatus[matchCompound];
+            bool selected = value;
+
+            fullLibraryOverlayStatus[matchCompound] = value;
+
+            if (wasDisplayed != selected)
+            {
+                if (!wasDisplayed)
+                {
+                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    Measurement m = library.getSample(matchCompound);
+                    if (m == null && userDataLibrary.ContainsKey(matchCompound))
+                    {
+                        m = userDataLibrary[matchCompound];
+
+                    }
+
+                    if (m != null)
+                    {
+                        for (int i = 0; i < m.wavenumbers.Length; i++)
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(matchCompound))
+                            DataOverlays[matchCompound] = newOverlay;
+                        else
+                            DataOverlays.Add(matchCompound, newOverlay);
+                    }
+                }
+                else
+                {
+                    DataOverlays.Remove(matchCompound);
+                }
+
+                OverlaysChanged.Invoke(this, this);
+            }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(displayMatch)));
+        }
+    }
+    bool _displayMatch;
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
     public bool hasDecon {get; private set;}
     public bool waitingForMatch {get; private set;}
     public string matchResult {get; private set;}
+    string matchCompound = "";
     public string deconResult {get; private set;}
 
     async Task<bool> doMatchAsync()
@@ -1167,7 +1228,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (result != null)
         {
             logger.info("returned from library match function with result {0}", result);
-
+            matchCompound = result.Item1;
             matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
             hasMatch = true;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
