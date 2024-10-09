@@ -43,16 +43,11 @@
                                            LabelFitMode="MultiLine"
                                            LabelTextColor="#999"/>
             </telerik:RadCartesianChart.VerticalAxis>
-
+            
             <!-- series data -->
             <telerik:RadCartesianChart.Series>
                 <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
-                <telerik:ScatterLineSeries XValueBinding="xValue"
-                                               YValueBinding="intensity"
-                                               Stroke="#27c0a1"
-                                               DisplayName="Live"
-                                               x:DataType="local:ViewModels.ScopeViewModel"
-                                               ItemsSource="{Binding chartData}" />
+                <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#27c0a1" DisplayName="Live" x:DataType="local:ViewModels.ScopeViewModel" ItemsSource="{Binding chartData}" />
 
                 <!-- I couldn't find a way to add these programmatically at runtime (and appear on the graph) -->
                 <telerik:ScatterLineSeries DisplayName="Trace #0" Stroke="#f84f21" ItemsSource="{Binding trace0}" XValueBinding="xValue" YValueBinding="intensity" x:DataType="local:ViewModels.ScopeViewModel"/>
