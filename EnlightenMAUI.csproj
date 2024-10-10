@@ -49,13 +49,14 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.6.4</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.6.5</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
+	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.6.4</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.6.5</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	</PropertyGroup>
 
@@ -77,17 +78,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="libraries\SiG-785-OEM\Acetaminophen.json" />
-	  <None Remove="libraries\SiG-785\2mmHDPE.csv" />
-	  <None Remove="libraries\SiG-785\4mmHDPE.csv" />
-	  <None Remove="libraries\SiG-785\acetone.csv" />
-	  <None Remove="libraries\SiG-785\alkanes.csv" />
-	  <None Remove="libraries\SiG-785\cyclohexane.csv" />
-	  <None Remove="libraries\SiG-785\ethanol.csv" />
-	  <None Remove="libraries\SiG-785\HDPE-20190904-111854-213955-WP-00438.csv" />
-	  <None Remove="libraries\SiG-785\ibuprofen-20190904-111716-276404-WP-00438.csv" />
-	  <None Remove="libraries\SiG-785\ibuprofen.csv" />
-	  <None Remove="libraries\SiG-785\isopropanol.csv" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\enlighten_logo.png" />
 	  <None Remove="Resources\Images\ico_bluetooth.png" />
@@ -101,39 +91,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiAsset Include="libraries\SiG-785-OEM\Acetaminophen.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\2mmHDPE.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\4mmHDPE.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\acetone.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\alkanes.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\cyclohexane.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\ethanol.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\HDPE-20190904-111854-213955-WP-00438.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\ibuprofen-20190904-111716-276404-WP-00438.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\ibuprofen.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="libraries\SiG-785\isopropanol.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -141,6 +98,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Accord.Statistics" Version="3.8.0" />
 		<PackageReference Include="CommunityToolkit.Maui" Version="8.0.1" />
 		<PackageReference Include="CommunityToolkit.Maui.Core" Version="8.0.1" />
 		<PackageReference Include="CSparse" Version="4.1.0" />
@@ -155,6 +113,12 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="DeconvolutionMAUI">
+	    <HintPath>..\DeconvolutionMAUI\DeconvolutionMAUI\bin\Debug\net8.0-android\DeconvolutionMAUI.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -192,9 +156,6 @@
 
 	<ItemGroup>
 	  <None Update="CHANGELOG.md">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </None>
-	  <None Update="dist\background_model.tflite">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </None>
 	  <None Update="README.md">

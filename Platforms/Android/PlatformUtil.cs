@@ -1,6 +1,7 @@
 ﻿using Android;
 using Android.Content.Res;
 using System.Linq;
+using System.Text;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Transforms.Onnx;
@@ -8,19 +9,24 @@ using Telerik.Maui.Controls.Scheduler;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using AndroidX.AppCompat.Widget;
 using EnlightenMAUI.Models;
+using Android.Content;
+using Android.OS;
+using Android.Webkit;
+using AndroidX.DocumentFile.Provider;
+using Java.IO;
 namespace EnlightenMAUI.Platforms;
 
 
 internal class ModelInput
 {
-    [ColumnName("serving_default_input_1:0")]
+    [ColumnName("input_1")]
     [VectorType(1, 2376, 1)]
     public float[] spectrum { get; set; }
 }
 
 internal class Prediction
 {
-    [ColumnName("StatefulPartitionedCall:0")]
+    [ColumnName("conv1d_18")]
     [VectorType(1, 2008, 1)]
     public float[] spectrum { get; set; }
 
@@ -33,23 +39,72 @@ internal class PlatformUtil
     static PredictionEngine<ModelInput, Prediction> engine;
     static ITransformer transformer;
     public static bool transformerLoaded = false;
+    public static int REQUEST_TREE = 85;
 
     static string savePath;
+
+    public static void RequestSelectLogFolder()
+    {
+        var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+        var intent = new Android.Content.Intent(Android.Content.Intent.ActionOpenDocumentTree);
+        intent.AddFlags(Android.Content.ActivityFlags.GrantReadUriPermission |
+                        Android.Content.ActivityFlags.GrantWriteUriPermission |
+                        Android.Content.ActivityFlags.GrantPersistableUriPermission |
+                        Android.Content.ActivityFlags.GrantPrefixUriPermission);
+        current_activity.StartActivityForResult(intent, REQUEST_TREE);
+    }
+
+    public static void OpenLogFileForWriting(string file_name, string file_contents)
+    {
+        var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+
+        List<UriPermission> permissions = current_activity.ContentResolver.PersistedUriPermissions.ToList();
+        if (permissions != null && permissions.Count > 0)
+        {
+            DocumentFile log_folder = DocumentFile.FromTreeUri(current_activity, permissions[0].Uri);
+            DocumentFile log_file = log_folder.CreateFile(MimeTypeMap.Singleton.GetMimeTypeFromExtension("csv"), file_name);
+            ParcelFileDescriptor pfd = current_activity.ContentResolver.OpenFileDescriptor(log_file.Uri, "w");
+            FileOutputStream file_output_stream = new FileOutputStream(pfd.FileDescriptor);
+            file_output_stream.Write(Encoding.UTF8.GetBytes(file_contents));
+            file_output_stream.Close();
+        }
+    }
+
+    public static bool HasFolderBeenSelectedAndPermissionsGiven()
+    {
+        var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+
+        List<UriPermission> permissions = current_activity.ContentResolver.PersistedUriPermissions.ToList();
+        return (permissions != null && permissions.Count > 0);
+    }
+
 
     public static void recursePath(Java.IO.File directory)
     {
         if (directory.IsDirectory)
         {
             Java.IO.File[] paths = directory.ListFiles();
-            foreach (Java.IO.File path in paths)
+            if (paths != null)
             {
-                logger.info("going deeper down {0}", path.AbsolutePath);
-                recursePath(path);
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    recursePath(path);
+                }
             }
         }
         else
         {
             logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath))
+            {
+                using Stream inputStream = System.IO.File.OpenRead(directory.AbsolutePath);
+                StreamReader sr = new StreamReader(inputStream);
+                string blob = sr.ReadToEnd();
+
+            }
+
         }
     }
 
@@ -147,7 +202,7 @@ internal class PlatformUtil
 
             var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
             logger.debug("building pipeline");
-            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "conv1d_18" }, inputColumnNames: new[] { "input_1" });
             logger.debug("building transformer");
             transformer = pipeline.Fit(data);
             var transCope = transformer;
@@ -176,11 +231,15 @@ internal class PlatformUtil
 
             double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
             double max = interpolatedCounts.Max();
-            interpolatedCounts = interpolatedCounts.Select(x => x / max).ToArray();
+
+            for (int i = 0; i < interpolatedCounts.Length; i++)
+            {
+                interpolatedCounts[i] = interpolatedCounts[i] / max;
+            }
 
             ModelInput modelInput = new ModelInput();
             modelInput.spectrum = new float[2376];
-            for (int i =  0; i < counts.Length; i++) 
+            for (int i =  0; i < interpolatedCounts.Length; i++) 
                 modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
             Prediction p = new Prediction();

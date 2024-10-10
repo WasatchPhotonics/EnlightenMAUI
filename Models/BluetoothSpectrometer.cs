@@ -732,10 +732,15 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (PlatformUtil.transformerLoaded && useBackgroundRemoval && dark != null)
         {
+            logger.info("Performing background removal");
+            for (int i = 0; i < spectrum.Length; ++i)
+            {
+                spectrum[i] -= dark[i];
+            }
+
             double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
-            double[] temp = Wavecal.mapWavenumbers(wavenumbers, dark, measurement.wavenumbers);
-            stretchedDark = temp;
+            stretchedDark = new double[smoothed.Length];
             spectrum = smoothed;
         }
         else
