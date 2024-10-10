@@ -408,7 +408,7 @@ namespace EnlightenMAUI.Models
             }
             */
 
-            if (PlatformUtil.transformerLoaded)
+            if (false)
             {
                 double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
                 double[]  wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
@@ -425,19 +425,25 @@ namespace EnlightenMAUI.Models
 
             else
             {
-                Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
-                double airPLSLambda = 10000;
-                int airPLSMaxIter = 100;
-                double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
-                double[] shortened = new double[updated.processed.Length];
-                Array.Copy(array, 0, shortened, roiStart, array.Length);
-                updated.raw = shortened;
-                updated.dark = null;
+                double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
+
+                Measurement updated = new Measurement();
+                updated.wavenumbers = wavenumbers;
+                updated.raw = newIntensities;
+                //double airPLSLambda = 10000;
+                //int airPLSMaxIter = 100;
+                //double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+                //double[] shortened = new double[updated.processed.Length];
+                //Array.Copy(array, 0, shortened, roiStart, array.Length);
+                //updated.raw = shortened;
+                //updated.dark = null;
 
                 library.Add(name, updated);
 
 #if USE_DECON
-                deconvolutionLibrary.library.Add(name, spec);
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(updated.wavenumbers), new List<double>(updated.processed));
+                deconvolutionLibrary.library.Add(name, upSpec);
 #endif
             }
 

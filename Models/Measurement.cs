@@ -608,7 +608,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Laser Enable, {0}", spec.laserEnabled || spec.autoDarkEnabled);
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
         sw.WriteLine("Timestamp, {0}", timestamp.ToString());
-        sw.WriteLine("Note, {0}", spec.note);
+        sw.WriteLine("Note, {0}", spec.measurement.notes);
         sw.WriteLine("Pixel Count, {0}", spec.eeprom.activePixelsHoriz);
 
         ////////////////////////////////////////////////////////////////////

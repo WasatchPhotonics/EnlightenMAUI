@@ -41,6 +41,7 @@
             <telerik:RadCartesianChart.VerticalAxis>
                 <telerik:NumericalAxis ShowLabels="True"
                                            LabelFitMode="MultiLine"
+                                       RangeExtendDirection="Positive"
                                            LabelTextColor="#999"/>
             </telerik:RadCartesianChart.VerticalAxis>
             

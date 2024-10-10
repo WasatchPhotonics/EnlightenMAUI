@@ -1002,6 +1002,33 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 spec.measurement.filename = saveViewModel.saveName + ".csv";
                 spec.measurement.notes = saveViewModel.notes;
+
+                userDataLibrary.Add(saveViewModel.saveName, spec.measurement);
+                if (!fullLibraryOverlayStatus.ContainsKey(saveViewModel.saveName))
+                    fullLibraryOverlayStatus.Add(saveViewModel.saveName, saveViewModel.addToDisplay);
+                else
+                    fullLibraryOverlayStatus[saveViewModel.saveName] = saveViewModel.addToDisplay;
+                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(saveViewModel.saveName, saveViewModel.addToDisplay));
+                if (saveViewModel.addToDisplay)
+                {
+
+                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    Measurement m = spec.measurement;
+
+                    if (m != null)
+                    {
+                        for (int i = 0; i < m.wavenumbers.Length; i++)
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(saveViewModel.saveName))
+                            DataOverlays[saveViewModel.saveName] = newOverlay;
+                        else
+                            DataOverlays.Add(saveViewModel.saveName, newOverlay);
+
+                        OverlaysChanged.Invoke(this, this);
+                    }
+
+                }
+
                 var ok = await spec.measurement.saveAsync();
                 if (ok)
                 {
