@@ -946,12 +946,19 @@ public class ScopeViewModel : INotifyPropertyChanged
                             DataOverlays.Add(omd.name, newOverlay);
                     }
                 }
+                else
+                {
+                    DataOverlays.Remove(omd.name);
+                }
 
             }
         }
 
         if (somethingChanged)
             OverlaysChanged.Invoke(this, this);
+
+        if (DataOverlays.Count == 0)
+            hasTraces = false;
     }
 
     bool doClear()

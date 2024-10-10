@@ -79,6 +79,8 @@ public partial class ScopePage : ContentPage
 
         if (chart.Series.Count > 1) 
             svm.hasTraces = true;
+        else
+            svm.hasTraces = false;
     }
 
     private void Svm_WipeOverlays(object sender, ScopeViewModel e)
