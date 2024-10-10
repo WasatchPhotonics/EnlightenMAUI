@@ -570,9 +570,12 @@ namespace EnlightenMAUI.Models
             }
 
             logger.info("waiting for matches");
+            int i = 0;
             foreach (Task t in matchTasks)
             {
+                logger.debug("waiting for match {0}", i + 1);
                 await t;
+                ++i;
             }
             logger.info("matches complete");
 
