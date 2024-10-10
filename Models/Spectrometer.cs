@@ -242,7 +242,37 @@ namespace EnlightenMAUI.Models
                 _useBackgroundRemoval = value;
             }
         }
-        bool _useBackgroundRemoval = false;
+        bool _useBackgroundRemoval = true;
+        
+        public bool performMatch
+        {
+            get { return _performMatch; }
+            set
+            {
+                _performMatch = value;
+            }
+        }
+        bool _performMatch = true;
+
+        public bool performDeconvolution
+        {
+            get { return _performDeconvolution; }
+            set
+            {
+                _performDeconvolution = value;
+            }
+        }
+        bool _performDeconvolution = false;
+        
+        public bool useHorizontalROI
+        {
+            get { return _useHorizontalROI; }
+            set
+            {
+                _useHorizontalROI = value;
+            }
+        }
+        bool _useHorizontalROI = true;
 
         public virtual byte laserWatchdogSec
         {

@@ -342,37 +342,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Acquisition Parameters
-    ////////////////////////////////////////////////////////////////////////
-
-    public UInt32 integrationTimeMS
-    {
-        get => spec.integrationTimeMS;
-        set
-        {
-            spec.integrationTimeMS = value;
-        }
-    }
-
-    public float gainDb
-    {
-        get => spec.gainDb;
-        set
-        {
-            spec.gainDb = value;
-        }
-    }
-
-    public byte scansToAverage
-    {
-        get => spec.scansToAverage;
-        set
-        {
-            spec.scansToAverage = value;
-        }
-    }
-
-    ////////////////////////////////////////////////////////////////////////
     // dark subtraction
     ////////////////////////////////////////////////////////////////////////
 
@@ -404,66 +373,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.doDark: done");
         return true;
     }
-
-    ////////////////////////////////////////////////////////////////////////
-    // misc acquisition parameters
-    ////////////////////////////////////////////////////////////////////////
-
-    // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useHorizontalROI
-    {
-        get => _useHorizontalROI;
-        set
-        {
-            _useHorizontalROI = value;
-            updateChart();
-        }
-    }
-    private bool _useHorizontalROI = true;
-
-    // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useRamanIntensityCorrection
-    {
-        get => spec.useRamanIntensityCorrection;
-        set => spec.useRamanIntensityCorrection = value;
-    }
-
-    public bool useBackgroundRemoval
-    {
-        get => _useBackgroundRemoval;
-        set
-        {
-            _useBackgroundRemoval = value;
-            if (spec != null)
-                spec.useBackgroundRemoval = value;
-
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
-        }
-    }
-    private bool _useBackgroundRemoval = true;
-
-    public bool performMatch
-    {
-        get => _performMatch;
-        set
-        {
-            _performMatch = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
-        }
-    }
-    private bool _performMatch = true;
-
-    public bool performDeconvolution
-    {
-        get => _performDeconvolution;
-        set
-        {
-            _performDeconvolution = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
-        }
-    }
-    private bool _performDeconvolution = false;
-
 
     public string note
     {
@@ -519,17 +428,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool autoDarkEnabled
-    {
-        get => spec.autoDarkEnabled;
-        set
-        {
-            if (spec.autoDarkEnabled != value)
-                spec.autoDarkEnabled = value;
-            updateLaserProperties();
-        }
-    }
-
     // Provided so the "Laser Enable" Switch is disabled if we're in Raman
     // Mode (or battery is low).  Note that unless authenticated, you can't
     // even see this switch.
@@ -537,20 +435,11 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         get
         {
-            var available = !autoDarkEnabled && spec.battery.level >= 5;
+            var available = !spec.autoDarkEnabled && spec.battery.level >= 5;
             if (!available)
-                logger.debug($"laser not available because ramanModeEnabled ({autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
+                logger.debug($"laser not available because ramanModeEnabled ({spec.autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
             return available;
         }
-    }
-
-    public void updateLaserProperties()
-    {
-        logger.debug("SVM.updateLaserProperties: start");
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
-        logger.debug("SVM.updateLaserProperties: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -630,6 +519,14 @@ public class ScopeViewModel : INotifyPropertyChanged
     public void setQRText(string resultText)
     {
         qrText = resultText;
+    }
+
+    public void updateLaserProperties()
+    {
+        logger.debug("SVM.updateLaserProperties: start");
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
+        logger.debug("SVM.updateLaserProperties: done");
     }
 
     void updateBatteryProperties()
@@ -762,7 +659,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && performMatch && spec.dark != null)
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && spec.dark != null)
             doMatchAsync();
 
         return ok;
@@ -947,7 +844,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             for (int i = 0; i < pixels; i++)
             {
                 if (!usingRemovalAxis &&
-                    useHorizontalROI &&
+                    spec.useHorizontalROI &&
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
                     continue;
@@ -1241,7 +1138,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
         }
 
-        if (performDeconvolution)
+        if (spec.performDeconvolution)
         {
 #if USE_DECON
             var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
