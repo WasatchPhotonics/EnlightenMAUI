@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
+using EnlightenMAUI.Platforms;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -44,6 +45,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
+
+        Task.Run(() => PlatformUtil.loadONNXModel("background_model.onnx"));
+        //Thread.Sleep(100);
 
         if (spec != null && spec.paired)
             library = new Library("libraries/SiG-785-OEM", spec);
@@ -220,6 +224,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => spec.useRamanIntensityCorrection;
         set => spec.useRamanIntensityCorrection = value;
     }
+
+    public bool useBackgroundRemoval
+    {
+        get => _useBackgroundRemoval;
+        set
+        {
+            _useBackgroundRemoval = value;
+            if (spec != null)
+                spec.useBackgroundRemoval = value;
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
+        }
+    }
+    private bool _useBackgroundRemoval = false;
+
 
     public string note
     {
@@ -651,8 +670,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("refreshChartData: start");
 
         // use last Measurement from the Spectrometer
-        uint pixels = spec.pixels;
+        uint pixels = (uint)spec.measurement.processed.Length;
         double[] intensities = spec.measurement.processed;
+
+        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.measurement.dark != null;
 
         try
         {
@@ -660,7 +681,12 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (xAxisName == "Wavelength")
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
-                xAxis = spec.wavenumbers;
+            {
+                if (usingRemovalAxis)
+                    xAxis = spec.measurement.wavenumbers;
+                else
+                    xAxis = spec.wavenumbers;
+            }
             else
                 xAxis = spec.xAxisPixels;
 
@@ -678,7 +704,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             int pxHi = -1;
             for (int i = 0; i < pixels; i++)
             {
-                if (useHorizontalROI && 
+                if (!usingRemovalAxis &&
+                    useHorizontalROI && 
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd && 
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
                         continue;

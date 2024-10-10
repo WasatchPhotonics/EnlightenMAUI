@@ -1,12 +1,224 @@
 ﻿using Android;
-
+using Android.Content.Res;
+using System.Linq;
+using Microsoft.ML;
+using Microsoft.ML.Data;
+using Microsoft.ML.Transforms.Onnx;
+using Telerik.Maui.Controls.Scheduler;
+using Microsoft.ML.OnnxRuntime.Tensors;
+using AndroidX.AppCompat.Widget;
+using EnlightenMAUI.Models;
 namespace EnlightenMAUI.Platforms;
+
+
+internal class ModelInput
+{
+    [ColumnName("serving_default_input_1:0")]
+    [VectorType(1, 2376, 1)]
+    public float[] spectrum { get; set; }
+}
+
+internal class Prediction
+{
+    [ColumnName("StatefulPartitionedCall:0")]
+    [VectorType(1, 2008, 1)]
+    public float[] spectrum { get; set; }
+
+}
 
 internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
+    static MLContext mlContext = new MLContext();
+    static PredictionEngine<ModelInput, Prediction> engine;
+    static ITransformer transformer;
+    public static bool transformerLoaded = false;
 
     static string savePath;
+
+    public static void recursePath(Java.IO.File directory)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+            foreach (Java.IO.File path in paths)
+            {
+                logger.info("going deeper down {0}", path.AbsolutePath);
+                recursePath(path);
+            }
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+        }
+    }
+
+    public static string recursePathAndOpen(Java.IO.File directory, string name)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+
+            string finalBlob = null;
+
+            if (paths != null)
+            {
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    string tempBlob = recursePathAndOpen(path, name);
+                    if (tempBlob != null && finalBlob == null)
+                        finalBlob = tempBlob;
+                }
+
+                return finalBlob;
+            }
+
+            return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath) && directory.AbsolutePath.Split('/').Last() == name)
+            {
+                using Stream inputStream = System.IO.File.OpenRead(directory.AbsolutePath);
+                StreamReader sr = new StreamReader(inputStream);
+                string blob = sr.ReadToEnd();
+                return blob;
+            }
+
+            return null;
+        }
+    }
+    public static string recurseAndFindPath(Java.IO.File directory, string name)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+
+            string finalBlob = null;
+
+            if (paths != null)
+            {
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    string tempBlob = recurseAndFindPath(path, name);
+                    if (tempBlob != null && finalBlob == null)
+                        finalBlob = tempBlob;
+                }
+
+                return finalBlob;
+            }
+
+            return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath) && directory.AbsolutePath.Split('/').Last() == name)
+            {
+                return directory.AbsolutePath;
+            }
+
+            return null;
+        }
+    }
+
+    public async static Task loadONNXModel(string path)
+    {
+        try
+        {
+            string fullPath = null;
+
+            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            foreach (var cDir in cacheDirs)
+            {
+                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                fullPath = recurseAndFindPath(cDir, path);
+                if (fullPath != null)
+                    break;
+            }
+
+            if (fullPath == null)
+                return;
+
+            var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
+            logger.debug("building pipeline");
+            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+            logger.debug("building transformer");
+            transformer = pipeline.Fit(data);
+            var transCope = transformer;
+            logger.debug("creating engine");
+            engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
+            var engCop = engine;
+
+            logger.debug("onnx model load complete");
+            transformerLoaded = true;
+        }
+        catch (Exception e)
+        {
+            logger.info("onnx load failed with exception {0}", e.Message);
+        }
+    }
+
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts)
+    {
+        try
+        {
+            double[] targetWavenum = new double[2376];
+            for (int i = 0; i < targetWavenum.Length; i++)
+            {
+                targetWavenum[i] = i + 216;
+            }
+
+            double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
+            double max = interpolatedCounts.Max();
+            interpolatedCounts = interpolatedCounts.Select(x => x / max).ToArray();
+
+            ModelInput modelInput = new ModelInput();
+            modelInput.spectrum = new float[2376];
+            for (int i =  0; i < counts.Length; i++) 
+                modelInput.spectrum[i] = (float)interpolatedCounts[i];
+
+            Prediction p = new Prediction();
+
+            /*
+            var res = engine.Predict(modelInput);
+
+            var data = mlContext.Data.LoadFromEnumerable(new List<ModelInput> { modelInput });
+            var pred = transformer.Transform(data);
+            DataViewSchema columns = pred.Schema;
+            var final = pred.GetColumn<float[,]>("StatefulPartitionedCall:0");
+            
+
+            int count = 0;
+            bool isOk = final.TryGetNonEnumeratedCount(out count);
+            */
+            //transformer.Transform()
+
+            logger.debug("making prediction");
+            p = engine.Predict(modelInput);
+            logger.debug("packing prediction");
+
+            int outputSize = p.spectrum.GetLength(0);
+            double[] output = new double[outputSize];
+            for (int i = 0; i < outputSize; ++i)
+            {
+                output[i] = p.spectrum[i] * max;
+            }
+
+            logger.debug("returning processed spectrum");
+            return output;
+        }
+        catch (Exception e)
+        {
+            logger.debug("background process failed with exception {0}", e.Message);
+            return null;
+        }
+    }
 
     public static string getLibraryFilenames()
     {
