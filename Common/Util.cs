@@ -106,22 +106,28 @@ public class Util
     {
         if (smooth)
         {
-            logger.info("smoothing sample and library");
+            //logger.info("smoothing sample and library");
             double[] yIn = AirPLS.smooth(sampleM.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
-            double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
-            logger.info("smooth complete");
+            //double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
+            double[] array = library.processed.Skip((int)sampleM.roiStart).Take(yIn.Length).ToArray();
+
+            logger.info("matching library array of length {0} to {1} with start val {2} and end val {3}",
+                array.Length,
+                yIn.Length,
+                array[0],
+                array[array.Length - 1]);
 
             double score = 0;
 
             try
             {
-                logger.info("calculating match score");
+                //logger.info("calculating match score");
                 score = MathNet.Numerics.Statistics.Correlation.Pearson(yIn, array);
-                logger.info("returning match score {0}", score);
+                //logger.info("returning match score {0}", score);
             }
             catch (Exception e)
             {
-                logger.error("Pearson score failed with error {0}", e.Message);
+                //logger.error("Pearson score failed with error {0}", e.Message);
                 score = 0;
             }
 
@@ -258,12 +264,12 @@ public class AirPLS
     public static double[] smooth(double[] spectrum, double smoothnessParam = 100, int maxIterations = 10, double convergenceThreshold = 0.001, bool verbose = false, int startIndex = 0, int endIndex = 0)
     {
 
-        Logger.getInstance().info("smoothing sample and library");
+        //Logger.getInstance().info("smoothing sample and library");
         double[] clipped = new double[spectrum.Length];
 
         if (startIndex != endIndex)
         {
-            Logger.getInstance().info("creating clipped array");
+            //Logger.getInstance().info("creating clipped array");
 
             clipped = new double[endIndex - startIndex + 1];
             for (int i = startIndex; i <= endIndex; ++i)
@@ -287,7 +293,7 @@ public class AirPLS
 
         for (int i = 0; i < maxIterations; ++i)
         {
-            Logger.getInstance().info("trying smooth iteration {0}", i);
+            //Logger.getInstance().info("trying smooth iteration {0}", i);
             baseline = smoother.smooth(weights);
             double[] baselineError = new double[clipped.Length];
             bool[] mask = new bool[clipped.Length];
@@ -348,7 +354,7 @@ public class WhittakerSmoother
 
     public WhittakerSmoother(double[] signal, double smoothnessParam, int derivativeOrder = 1)
     {
-        Logger.getInstance().debug("creating initial stored smooth");
+        //Logger.getInstance().debug("creating initial stored smooth");
         spectrumVec = CreateVector.DenseOfArray(signal);
         
         double[] diffArray = new double[derivativeOrder * 2 + 1];
@@ -369,38 +375,38 @@ public class WhittakerSmoother
             }
         }
 
-        Logger.getInstance().debug("creating sparse matrix");
+        //Logger.getInstance().debug("creating sparse matrix");
         CSparseMatrix smoothingMatrix = (CSparseMatrix)CSparseMatrix.OfDiagonals(mat, [0, 1, 2], signal.Length - derivativeOrder, signal.Length);
-        Logger.getInstance().debug("transpose and multiply matrix");
+        //Logger.getInstance().debug("transpose and multiply matrix");
         storedSmooth = (CSparseMatrix)smoothingMatrix.Transpose().Multiply(smoothingMatrix);
 
-        Logger.getInstance().debug("diagonal multiply matrix");
+        //Logger.getInstance().debug("diagonal multiply matrix");
         CSparseMatrix scaleMatrix = (CSparseMatrix)CSparseMatrix.CreateDiagonal(storedSmooth.ColumnCount, smoothnessParam);
 
         storedSmooth = (CSparseMatrix)scaleMatrix.Multiply(storedSmooth);
 
         //newStoredSmooth = (CSparseMatrix)CSparseMatrix.OfArray(storedSmooth.ToArray());
-        Logger.getInstance().debug("finalized initial stored smooth");
+        //Logger.getInstance().debug("finalized initial stored smooth");
     }
     
     public double[] smooth(double[] weights)
     {
-        Logger.getInstance().debug("setting up weight matrix");
+        //Logger.getInstance().debug("setting up weight matrix");
         CSparseMatrix weightID =  (CSparseMatrix)CSparseMatrix.OfDiagonalArray(weights);
 
-        Logger.getInstance().debug("creating dense vector");
+        //Logger.getInstance().debug("creating dense vector");
         Vector<double> weightVec = CreateVector.DenseOfArray(weights);
 
-        Logger.getInstance().debug("creating sparse matrix");
+        //Logger.getInstance().debug("creating sparse matrix");
         CSparseMatrix A = (CSparseMatrix)weightID.Add(storedSmooth);
-        Logger.getInstance().debug("multiplying vector");
+        //Logger.getInstance().debug("multiplying vector");
         Vector<double> B = weightVec.PointwiseMultiply(spectrumVec);
-        Logger.getInstance().debug("converting sparse matrix");
+        //Logger.getInstance().debug("converting sparse matrix");
         SparseLU solver = SparseLU.Create(A, ColumnOrdering.MinimumDegreeAtPlusA);
 
-        Logger.getInstance().debug("solving final sparse matrix");
+        //Logger.getInstance().debug("solving final sparse matrix");
         Vector<double> background = solver.Solve(B);
-        Logger.getInstance().debug("returning solved matrix");
+        //Logger.getInstance().debug("returning solved matrix");
         return background.ToArray();
     }
 }

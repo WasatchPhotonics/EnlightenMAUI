@@ -67,7 +67,7 @@ public class LaserState
     // override these is.
     public byte[] serialize()
     {
-        byte[] data = new byte[4];
+        byte[] data = new byte[6];
 
         data[1] = (byte)type;
         data[0] = (byte)mode;

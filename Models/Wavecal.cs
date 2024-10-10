@@ -408,5 +408,55 @@ namespace EnlightenMAUI.Models
             return m;
         }
 
+        public static double[] mapWavenumbers(double[] wavenumbers, double[] intensities, double[] targetWavenumbers)
+        {
+            double[] raw = new double[targetWavenumbers.Length];
+
+            for (int i = 0; i < raw.Length; ++i)
+            {
+                while (targetWavenumbers[i] < wavenumbers[0])
+                {
+                    raw[i] = intensities[0];
+                    ++i;
+                }
+
+                int index = Array.BinarySearch(wavenumbers, targetWavenumbers[i]);
+                if (index < 0)
+                    index = ~index;
+
+                //Logger.getInstance().info("mapping new pixel {0} at new wavenumber {1:f2} to pixel {2}", i, wavenumbers[i], index);
+
+                if (index < intensities.Length)
+                {
+                    int first = index - 1;
+                    int second = index;
+
+                    if (first < 0)
+                    {
+                        raw[i] = intensities[second];
+                        continue;
+                    }
+
+                    double pixelSize = wavenumbers[second] - wavenumbers[first];
+                    double pctFirst = 1 - ((pixelSize - (wavenumbers[second] - targetWavenumbers[i])) / pixelSize);
+
+                    //if (targetWavenumbers[i] > 790 && targetWavenumbers[i] < 810)
+                    //{
+                    //    Logger.getInstance().info("diving into key cyclo peak interp");
+                    //}
+
+                    //Logger.getInstance().info("interpolating at {0:f3} pct {1:f2} vs. {2:f2}", pctFirst, targetWavenumbers[first], targetWavenumbers[second]);
+                    raw[i] = Util.interpolate(intensities[first], intensities[second], pctFirst);
+                }
+                else
+                {
+                    //Logger.getInstance().info("interpolating beyond end as last pixel");
+
+                    raw[i] = intensities.Last();
+                }
+            }
+            return raw;
+        }
+
     }
 }

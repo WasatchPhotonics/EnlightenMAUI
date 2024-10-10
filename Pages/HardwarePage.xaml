@@ -5,6 +5,7 @@
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:DataType="local:ViewModels.HardwareViewModel"
+             Shell.NavBarIsVisible="False"
              x:Class="EnlightenMAUI.HardwarePage"
              BackgroundColor="#333">
 

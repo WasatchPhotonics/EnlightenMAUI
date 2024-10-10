@@ -16,8 +16,8 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public SettingsViewModel()
     {
-        laserWatchdogTimeoutSec = spec.laserWatchdogSec;
-        laserWarningDelaySec = spec.laserWarningDelaySec;
+        laserWatchdogTimeoutSec = 0;
+        laserWarningDelaySec = 0;
     }
 
     public void loadSettings()

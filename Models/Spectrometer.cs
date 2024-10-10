@@ -35,6 +35,7 @@ namespace EnlightenMAUI.Models
 
         public double[] lastSpectrum;
         public double[] dark;
+        public double[] stretchedDark;
 
         public Measurement measurement;
 
@@ -231,6 +232,18 @@ namespace EnlightenMAUI.Models
             }
         }
 
+        public bool useBackgroundRemoval
+        {
+            get { return _useBackgroundRemoval; }
+            set
+            {
+                if (!value)
+                    stretchedDark = null;
+                _useBackgroundRemoval = value;
+            }
+        }
+        bool _useBackgroundRemoval = false;
+
         public virtual byte laserWatchdogSec
         {
             get => laserState.watchdogSec;
@@ -313,6 +326,7 @@ namespace EnlightenMAUI.Models
             {
                 logger.debug("Spectrometer.dark: clearing dark");
                 dark = null;
+                stretchedDark = null;
             }
             logger.debug("Spectrometer.toggleDark: dark {0} null", dark == null ? "is" : "IS NOT");
             logger.debug("Spectrometer.toggleDark: done");

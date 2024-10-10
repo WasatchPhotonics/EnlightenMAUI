@@ -2,6 +2,9 @@
 using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
+using static Android.Widget.GridLayout;
+using Java.Util.Functions;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
 using Xamarin.Google.Crypto.Tink.Prf;
@@ -729,6 +732,25 @@ public class BluetoothSpectrometer : Spectrometer
 
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
+
+
+        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && dark != null)
+        {
+            logger.info("Performing background removal");
+            for (int i = 0; i < spectrum.Length; ++i)
+            {
+                spectrum[i] -= dark[i];
+            }
+
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
+            measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            stretchedDark = new double[smoothed.Length];
+            spectrum = smoothed;
+        }
+        else
+        {
+            measurement.wavenumbers = wavenumbers;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Store Measurement

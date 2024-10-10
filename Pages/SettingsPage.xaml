@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:EnlightenMAUI"
              xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              x:DataType="local:ViewModels.SettingsViewModel"
+             Shell.NavBarIsVisible="False"
              x:Class="EnlightenMAUI.SettingsPage"
              BackgroundColor="#333">
 
@@ -62,7 +63,7 @@
 
                     <!-- Laser Warning Delay -->
                     <StackLayout Orientation="Horizontal">
-                        <Label Text="Laser Warning Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <Label Text="Laser Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
                                                  Value="{Binding laserWarningDelaySec}" 
                                                  Minimum="0" Maximum="10"
@@ -71,7 +72,7 @@
 
                     <!-- Laser Watchdog Timeout -->
                     <StackLayout Orientation="Horizontal">
-                        <Label Text="Laser Watchdog Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <Label Text="Laser Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
                                                  Value="{Binding laserWatchdogTimeoutSec}" 
                                                  Minimum="0" Maximum="600"

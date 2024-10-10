@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
+using EnlightenMAUI.Platforms;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -29,6 +30,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     Logger logger = Logger.getInstance();
     Library library;
+    Task libraryLoader;
 
     public delegate void UserNotification(string title, string message, string button);
     public event UserNotification notifyUser;
@@ -45,8 +47,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        Task loader = PlatformUtil.loadONNXModel("background_model.onnx");
+        loader.Wait();
+        //Thread.Sleep(100);
+
         if (spec != null && spec.paired)
-            library = new Library("libraries/SiG-785-OEM", spec);
+        {
+            libraryLoader = Task.Run(() => library = new Library("library", spec));
+        }
 
         settings = Settings.getInstance();
 
@@ -54,6 +62,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress; 
         spec.measurement.PropertyChanged += handleSpectrometerChange;
+
+        spec.laserWatchdogSec = 0;
+        spec.laserWarningDelaySec = 0;
 
         // bind ScopePage Commands
         laserCmd   = new Command(() => { _ = doLaser       (); }); 
@@ -71,7 +82,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Pixel");
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
-
+        
         logger.debug("SVM.ctor: updating chart");
         updateChart();
         
@@ -220,6 +231,43 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => spec.useRamanIntensityCorrection;
         set => spec.useRamanIntensityCorrection = value;
     }
+
+    public bool useBackgroundRemoval
+    {
+        get => _useBackgroundRemoval;
+        set
+        {
+            _useBackgroundRemoval = value;
+            if (spec != null)
+                spec.useBackgroundRemoval = value;
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
+        }
+    }
+    private bool _useBackgroundRemoval = false;
+    
+    public bool performMatch
+    {
+        get => _performMatch;
+        set
+        {
+            _performMatch = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
+        }
+    }
+    private bool _performMatch = false;
+    
+    public bool performDeconvolution
+    {
+        get => _performDeconvolution;
+        set
+        {
+            _performDeconvolution = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
+        }
+    }
+    private bool _performDeconvolution = false;
+
 
     public string note
     {
@@ -503,7 +551,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        doMatchAsync();
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && performMatch && spec.dark != null)
+            doMatchAsync();
 
         return ok;
     }
@@ -651,8 +700,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("refreshChartData: start");
 
         // use last Measurement from the Spectrometer
-        uint pixels = spec.pixels;
+        uint pixels = (uint)spec.measurement.processed.Length;
         double[] intensities = spec.measurement.processed;
+
+        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.measurement.dark != null;
 
         try
         {
@@ -660,7 +711,12 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (xAxisName == "Wavelength")
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
-                xAxis = spec.wavenumbers;
+            {
+                if (usingRemovalAxis)
+                    xAxis = spec.measurement.wavenumbers;
+                else
+                    xAxis = spec.wavenumbers;
+            }
             else
                 xAxis = spec.xAxisPixels;
 
@@ -678,7 +734,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             int pxHi = -1;
             for (int i = 0; i < pixels; i++)
             {
-                if (useHorizontalROI && 
+                if (!usingRemovalAxis &&
+                    useHorizontalROI && 
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd && 
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
                         continue;
@@ -806,8 +863,10 @@ public class ScopeViewModel : INotifyPropertyChanged
     public Command matchCmd { get; }
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
+    public bool hasDecon {get; private set;}
     public bool waitingForMatch {get; private set;}
     public string matchResult {get; private set;}
+    public string deconResult {get; private set;}
 
     async Task<bool> doMatchAsync()
     {
@@ -816,16 +875,63 @@ public class ScopeViewModel : INotifyPropertyChanged
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
         var result = await library.findMatch(spec.measurement);
+
+        logger.info("returned from library match function with result {0}", result);
+        
+        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
+        hasMatch = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+
+        if (performDeconvolution)
+        {
+#if USE_DECON
+            var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);
+            string matched = "";
+            string deconS = "";
+            string alts = "";
+            logger.info("finished deconvolution match, setting match result string");
+            foreach (double match_concentrations in matched_spectra.compounds.Keys)
+            {
+                string[] matches = matched_spectra.compounds[match_concentrations].ToArray();
+                matched += match_concentrations.ToString("F1") + "%: ";
+                deconS += match_concentrations.ToString("F1") + "%: ";
+                logger.info($"match value of {match_concentrations}");
+                foreach (string match in matches)
+                {
+                    matched += match + " ";
+                    deconS += match + " ";
+                    logger.info($"For this matched {match}");
+                }
+                matched += "\n";
+            }
+            foreach (string alternate in matched_spectra.alternatives)
+            {
+                alts += alternate + " ";
+            }
+            logger.info("combining results string");
+            string decon = $"Matches: \n{(matched == "" ? "None\n" : matched)}Alternative: \n{alts}";
+            logger.info("deconvolution results: {0}", decon);
+
+            if (matched != "")
+            {
+                deconResult = deconS;
+                hasDecon = true;
+                logger.info("deconvolution matches: {0}", deconResult);
+            }
+            else
+            {
+                hasDecon = false;
+            }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasDecon)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(deconResult)));
+#endif
+        }
+
         waitingForMatch = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
 
-        logger.info("returned from library match function with result {0}", result);
-
-        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
-        hasMatch = true;
-
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
 
         return true;
     }
