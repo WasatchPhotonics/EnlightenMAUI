@@ -39,7 +39,7 @@
                                            Maximum="{Binding xAxisMaximum}" />
             </telerik:RadCartesianChart.HorizontalAxis>
             <telerik:RadCartesianChart.VerticalAxis>
-                <telerik:NumericalAxis ShowLabels="False"
+                <telerik:NumericalAxis ShowLabels="True"
                                            LabelFitMode="MultiLine"
                                            LabelTextColor="#999"/>
             </telerik:RadCartesianChart.VerticalAxis>
