@@ -1,5 +1,9 @@
 # Changelog
 
+- 2024-10-11 0.7.0
+	- added background removal option
+	- added deconvolution matching
+	- fixed auto dark mode
 - 2024-09-24 0.6.4
 	- fixed issues in interfacing with auto dark (fka raman) mode
 	- renamed references to auto dark mode to reflect name change
