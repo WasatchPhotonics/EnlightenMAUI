@@ -64,7 +64,7 @@
 		<!-- App Icon -->
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Images\enlighten_logo.png" Color="#333" BaseSize="300, 300" />
+		<MauiSplashScreen Include="Resources\AppIcon\appicon.svg" Color="#333" BaseSize="300, 300" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
