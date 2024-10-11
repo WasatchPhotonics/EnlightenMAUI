@@ -614,6 +614,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec.acquiring)
             return false;
 
+        hasMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+
         logger.debug("doAcquireAsync: =======================================");
         logger.debug("doAcquireAsync: Attempting to take one averaged reading");
         logger.debug("doAcquireAsync: =======================================");
@@ -954,15 +957,16 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
         }
 
+        if (fullLibraryOverlayStatus.ContainsKey(matchCompound))
+            displayMatch = fullLibraryOverlayStatus[matchCompound];
+
         if (somethingChanged)
             OverlaysChanged.Invoke(this, this);
-
-        if (DataOverlays.Count == 0)
-            hasTraces = false;
     }
 
     bool doClear()
     {
+        displayMatch = false;
         hasTraces = false;
 
         WipeOverlays.Invoke(this, this);
@@ -1101,6 +1105,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         set 
         {
             _displayMatch = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(displayMatch)));
+
             bool wasDisplayed = fullLibraryOverlayStatus[matchCompound];
             bool selected = value;
 
@@ -1108,6 +1114,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
             if (wasDisplayed != selected)
             {
+                foreach (var o in overlaysViewModel.overlays)
+                {
+                    if (o.name == matchCompound)
+                        o.selected = selected;
+                }
+
                 if (!wasDisplayed)
                 {
                     ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
@@ -1136,7 +1148,6 @@ public class ScopeViewModel : INotifyPropertyChanged
                 OverlaysChanged.Invoke(this, this);
             }
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(displayMatch)));
         }
     }
     bool _displayMatch;
