@@ -596,6 +596,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             await doConnectAsync(true);
             if (BLEDevice.paired)
             {
+                //Spectrometer.raiseSpectrometerConnected();
                 logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
                 await Shell.Current.GoToAsync("//ScopePage");
             }
@@ -629,6 +630,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     USBSpectrometer usbSpectrometer = new USBSpectrometer(udc, acc);
                     spec = usbSpectrometer;
                     bool ok = await (spec as USBSpectrometer).initAsync();
+                    //if (ok)
+                        //Spectrometer.raiseSpectrometerConnected();
+
                     USBSpectrometer.setInstance(usbSpectrometer);
                     USBViewDevice.paired = true;
                     return ok;
@@ -657,6 +661,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 else
                 {
                     (spec as USBSpectrometer).connect();
+                    //Spectrometer.raiseSpectrometerConnected();
                     return await (spec as USBSpectrometer).initAsync();
                 }
                 return true;

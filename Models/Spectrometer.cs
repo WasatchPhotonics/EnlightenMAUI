@@ -1,4 +1,5 @@
 ﻿using EnlightenMAUI.Common;
+using EnlightenMAUI.ViewModels;
 using Plugin.BLE.Abstractions.Contracts;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace EnlightenMAUI.Models
 {
     public abstract class Spectrometer : INotifyPropertyChanged
     {
+        public static EventHandler<Spectrometer> NewConnection;
         protected Logger logger = Logger.getInstance();
         // @see https://forums.xamarin.com/discussion/93330/mutex-is-bugged-in-xamarin
         protected static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1);
@@ -58,6 +60,11 @@ namespace EnlightenMAUI.Models
         public void raiseAcquisitionProgress(double arg)
         {
             showAcquisitionProgress(arg);
+        }
+
+        public static void raiseSpectrometerConnected()
+        {
+            NewConnection.Invoke(null, null);
         }
 
         protected void generatePixelAxis()
@@ -338,7 +345,7 @@ namespace EnlightenMAUI.Models
         // I used to call this at the END of an acquisition, and that worked; 
         // until it didn't.  Now I call it BEFORE each acquisition, and that
         // seems to work better?
-        protected abstract Task<bool> updateBatteryAsync();
+        internal abstract Task<bool> updateBatteryAsync();
 
         ////////////////////////////////////////////////////////////////////////
         // dark

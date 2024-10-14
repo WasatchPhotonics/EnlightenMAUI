@@ -256,6 +256,23 @@ namespace EnlightenMAUI.Models
                 return null;
         }
 
+        public void addSampleToLibrary(string name, Measurement sample)
+        {
+            Measurement adjusted = sample;
+            if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
+                adjusted = sample;
+            else
+            {
+                double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] newIntensities = Wavecal.mapWavenumbers(sample.wavenumbers, sample.processed, wavenumbers);
+                adjusted.wavenumbers = wavenumbers;
+                adjusted.dark = null;
+                adjusted.raw = newIntensities;
+            }
+
+            library[name] = sample;
+        }
+
         async Task loadFiles(string root)
         {
 

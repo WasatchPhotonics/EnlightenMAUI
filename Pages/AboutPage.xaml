@@ -16,7 +16,7 @@
                 AlignItems="Center"
                 JustifyContent="SpaceEvenly">
 
-        <Image Source="enlighten_logo.png" Margin="10" Aspect="AspectFill" />
+        <Image Source="enlighten_logo.png" Margin="20" HorizontalOptions="CenterAndExpand" HeightRequest="100" Aspect="AspectFit" />
 
         <Button Padding="40,10,40,10" 
                 Text="Learn more" 

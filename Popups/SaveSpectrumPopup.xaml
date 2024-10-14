@@ -13,8 +13,9 @@
             <RoundRectangle CornerRadius="10,10,10,10" />
         </Border.StrokeShape>
 
-        <VerticalStackLayout HorizontalOptions="Fill"
-                             VerticalOptions="CenterAndExpand">
+        <StackLayout Orientation="Vertical" 
+                     HorizontalOptions="Fill"
+                     VerticalOptions="Center">
 
             <Label HorizontalOptions="Center"
                    VerticalOptions="Center"
@@ -39,23 +40,38 @@
                    TextColor="Black"
                    VerticalOptions="Center"
                    Text="{Binding notes}"/>
-
-            <HorizontalStackLayout Margin="5"
-                                   HorizontalOptions="End"
-                                   VerticalOptions="Center">
+            
+            <StackLayout Orientation="Horizontal" HorizontalOptions="CenterAndExpand">
+                <HorizontalStackLayout Margin="5"
+                                       HorizontalOptions="Start"
+                                       VerticalOptions="Center">
                 
-                <Label HorizontalOptions="Center"
-                       VerticalOptions="Center"
-                       Margin="3" Text="Add To Display"/>
-                <CheckBox HorizontalOptions="Center"
-                          VerticalOptions="Center"
-                          Margin="3"
-                          IsChecked="{Binding addToDisplay}"/>
+                    <Label HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Margin="3" Text="Add To Library"/>
+                    <CheckBox HorizontalOptions="Center"
+                              VerticalOptions="Center"
+                              Margin="3"
+                              IsChecked="{Binding addToLibrary}"/>
                 
-            </HorizontalStackLayout>
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Margin="5"
+                                       HorizontalOptions="End"
+                                       VerticalOptions="Center">
+                
+                    <Label HorizontalOptions="End"
+                           VerticalOptions="Center"
+                           Margin="3" Text="Add To Display"/>
+                    <CheckBox HorizontalOptions="End"
+                              VerticalOptions="Center"
+                              Margin="3"
+                              IsChecked="{Binding addToDisplay}"/>
+                
+                </HorizontalStackLayout>
+            </StackLayout>
             
             <FlexLayout Wrap="Wrap" AlignItems="Stretch"  
-                        VerticalOptions="FillAndExpand"
+                        VerticalOptions="Fill"
                         Margin="5"
                         JustifyContent="SpaceEvenly">
                 <Button VerticalOptions="Start"
@@ -69,7 +85,7 @@
                         Text="Save"
                         Command="{Binding saveCmd}"/>
             </FlexLayout>
-        </VerticalStackLayout>
+        </StackLayout>
         
     </Border>
 </toolkit:Popup>

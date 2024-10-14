@@ -54,6 +54,17 @@ namespace EnlightenMAUI.ViewModels
         }
         bool _toBeSaved = false;
 
+        public bool addToLibrary
+        {
+            get { return _addToLibrary; }
+            set
+            {
+                _addToLibrary = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(addToLibrary)));
+            }
+        }
+        bool _addToLibrary;
+        
         public bool addToDisplay
         {
             get { return _addToDisplay; }
