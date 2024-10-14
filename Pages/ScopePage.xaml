@@ -12,7 +12,7 @@
         <local:ViewModels.ScopeViewModel/>
     </ContentPage.BindingContext>
 
-    <VerticalStackLayout Padding="0" Spacing="0">
+    <StackLayout Orientation="Vertical" Padding="0" Spacing="0">
 
         <!-- Page header -->
         <Image Source="enlighten_logo.png" WidthRequest="300"/>
@@ -24,8 +24,7 @@
         <telerik:RadCartesianChart x:Name="chart"
                                     HorizontalOptions="FillAndExpand"
                                     VerticalOptions="FillAndExpand"
-                                       MinimumHeightRequest="400"
-                                       MaximumHeightRequest="500"
+                                    MinimumHeightRequest="300"
                                     BackgroundColor="#000"
                                     Margin="0">
 
@@ -200,5 +199,5 @@
             </Frame>
         </Frame>
 
-    </VerticalStackLayout>
+    </StackLayout>
 </ContentPage>

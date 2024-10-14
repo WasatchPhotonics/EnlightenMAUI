@@ -21,7 +21,7 @@
         <ShellContent x:Name="BluetoothTab" Title="Pair" Icon="IMages/ico_bluetooth.png" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
 
         <!-- Scope -->
-        <ShellContent x:Name="ScopeTab" Title="Scope" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
+        <ShellContent x:Name="ScopeTab" Title="Spectra" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
 
         <!-- Clipboard -->
         <!-- 
