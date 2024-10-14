@@ -18,6 +18,7 @@ using Deconvolution = DeconvolutionMAUI;
 using EnlightenMAUI.Common;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
+using System.Reflection.Metadata;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -1159,6 +1160,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     string matchCompound = "";
     public string deconResult {get; private set;}
 
+    public const double MATCH_THRESHOLD = 0.6;
+
     async Task<bool> doMatchAsync()
     {
         logger.info("calling library match function");
@@ -1170,11 +1173,15 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (result != null)
         {
             logger.info("returned from library match function with result {0}", result);
-            matchCompound = result.Item1;
-            matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
-            hasMatch = true;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+
+            if (result.Item2 >= MATCH_THRESHOLD)
+            {
+                matchCompound = result.Item1;
+                matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
+                hasMatch = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+            }
         }
         else
         {
