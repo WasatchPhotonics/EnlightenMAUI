@@ -62,11 +62,6 @@ namespace EnlightenMAUI.Models
             showAcquisitionProgress(arg);
         }
 
-        public static void raiseSpectrometerConnected()
-        {
-            NewConnection.Invoke(null, null);
-        }
-
         protected void generatePixelAxis()
         {
             xAxisPixels = new double[pixels];

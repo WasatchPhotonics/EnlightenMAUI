@@ -116,7 +116,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress;
         spec.measurement.PropertyChanged += handleSpectrometerChange;
-        //Spectrometer.NewConnection += handleNewSpectrometer;
+        Spectrometer.NewConnection += handleNewSpectrometer;
 
         if (spec != null && spec.paired)
         {
@@ -196,6 +196,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
             spec.updateBatteryAsync();
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
 
         laserCmd.ChangeCanExecute();
         acquireCmd.ChangeCanExecute();
