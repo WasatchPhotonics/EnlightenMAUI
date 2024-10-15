@@ -197,6 +197,16 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
             spec.updateBatteryAsync();
 
+        laserCmd.ChangeCanExecute();
+        acquireCmd.ChangeCanExecute();
+        refreshCmd.ChangeCanExecute();
+        darkCmd.ChangeCanExecute();
+
+        saveCmd.ChangeCanExecute();
+        uploadCmd.ChangeCanExecute();
+        addCmd.ChangeCanExecute();
+        clearCmd.ChangeCanExecute();
+
         logger.debug("SVM.ctor: done");
     }
 
