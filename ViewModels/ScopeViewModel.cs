@@ -158,6 +158,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public void refreshSpec()
     {
+        fullLibraryOverlayStatus.Clear();
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
@@ -167,6 +168,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() => library = new Library("library", spec));
             libraryLoader.Wait();
             library.LoadFinished += Library_LoadFinished;
+            Task.Run(() => findUserFiles());
         }
 
         overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());

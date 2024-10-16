@@ -1,5 +1,12 @@
 # Changelog
 
+- 2024-10-16 0.8.0
+    - reworked tab layout
+    - simplified "spectra" tab controls and icon-ized buttons
+    - shuffled other controls and lots of small aesthetic changes
+    - reworked add/save functions and added new UI flow
+    - fixed fairly major bug with general tab flow
+    - other smaller bug fixes
 - 2024-10-11 0.7.0
 	- added background removal option
 	- added deconvolution matching
