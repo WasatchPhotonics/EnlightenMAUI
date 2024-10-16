@@ -1,18 +1,65 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Views;
+using EnlightenMAUI.Popups;
+using static Android.Provider.DocumentsContract;
+using static Java.Util.Jar.Attributes;
+#if USE_DECON
+using Deconvolution = DeconvolutionMAUI;
+#endif
+using EnlightenMAUI.Common;
+using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
+using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
+using System.Reflection.Metadata;
+using System.Text;
 
 namespace EnlightenMAUI.ViewModels;
 
 // This class provides all the business logic controlling the ScopeView. 
 public class ScopeViewModel : INotifyPropertyChanged
 {
+    public static UInt32[] colors =
+    {
+        0xffe6194b,
+        0xff3cb44b,
+        0xffffe119,
+        0xff4363d8,
+        0xfff58231,
+        0xff911eb4,
+        0xff46f0f0,
+        0xfff032e6,
+        0xffbcf60c,
+        0xfffabebe,
+        0xff008080,
+        0xffe6beff,
+        0xff9a6324,
+        0xfffffac8,
+        0xff800000,
+        0xffaaffc3,
+        0xff808000,
+        0xffffd8b1,
+        0xff000075,
+        0xff808080
+    };
+
+    //private readonly IPopupService popupService;
     public event PropertyChangedEventHandler PropertyChanged;
+    public event EventHandler<ScopeViewModel> OverlaysChanged;
+    public event EventHandler<ScopeViewModel> WipeOverlays;
+    SaveSpectrumPopupViewModel saveViewModel;
+    OverlaysPopupViewModel overlaysViewModel;
+    SaveSpectrumPopup savePopup;
+    bool popupClosing = false;
+    public Dictionary<string, bool> fullLibraryOverlayStatus = new Dictionary<string, bool>();
+    Dictionary<string, Measurement> userDataLibrary = new Dictionary<string, Measurement>();
 
     // So the ScopeViewModel can float-up Toast events to the ScopeView.
     // This probably could be done using notifications, but I'm not sure I
@@ -41,6 +88,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public ScopeViewModel()
     {
+        //this.popupService = popupService;
         logger.debug("SVM.ctor: start");
 
         spec = BluetoothSpectrometer.getInstance();
@@ -54,45 +102,264 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
         {
             libraryLoader = Task.Run(() => library = new Library("library", spec));
+            libraryLoader.Wait();
+            library.LoadFinished += Library_LoadFinished;
+            Task.Run(() => findUserFiles());
         }
 
+
+        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
         settings = Settings.getInstance();
+        string savePath = settings.getSavePath();
 
         settings.PropertyChanged += handleSettingsChange;
         spec.PropertyChanged += handleSpectrometerChange;
-        spec.showAcquisitionProgress += showAcquisitionProgress; 
+        spec.showAcquisitionProgress += showAcquisitionProgress;
         spec.measurement.PropertyChanged += handleSpectrometerChange;
+        Spectrometer.NewConnection += handleNewSpectrometer;
 
-        spec.laserWatchdogSec = 0;
-        spec.laserWarningDelaySec = 0;
+        if (spec != null && spec.paired)
+        {
+            spec.laserWatchdogSec = 0;
+            spec.laserWarningDelaySec = 0;
+        }
 
         // bind ScopePage Commands
-        laserCmd   = new Command(() => { _ = doLaser       (); }); 
+        laserCmd = new Command(() => { _ = doLaser(); });
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
-        refreshCmd = new Command(() => { _ = doAcquireAsync(); }); 
-        darkCmd    = new Command(() => { _ = doDark        (); });
+        refreshCmd = new Command(() => { _ = doAcquireAsync(); });
+        darkCmd = new Command(() => { _ = doDark(); });
 
-        saveCmd    = new Command(() => { _ = doSave        (); });
-        uploadCmd  = new Command(() => { _ = doUpload      (); });
-        addCmd     = new Command(() => { _ = doAdd         (); });
-        clearCmd   = new Command(() => { _ = doClear       (); });
+        saveCmd = new Command(() => { _ = doSave(); });
+        uploadCmd = new Command(() => { _ = doUpload(); });
+        addCmd = new Command(() => { _ = doAdd(); });
+        clearCmd = new Command(() => { _ = doClear(); });
         //matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
         xAxisNames = new ObservableCollection<string>();
         xAxisNames.Add("Pixel");
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
-        
+
         logger.debug("SVM.ctor: updating chart");
         updateChart();
-        
+
+        if (spec != null && spec.paired)
+            spec.updateBatteryAsync();
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
     }
 
-    public ObservableCollection<string> xAxisNames { get; set; }
-    public string xAxisName 
+    void handleNewSpectrometer(object sender, Spectrometer e)
     {
-        get => _xAxisName; 
+        refreshSpec();
+    }
+
+    public void refreshSpec()
+    {
+        spec = BluetoothSpectrometer.getInstance();
+        if (spec == null || !spec.paired)
+            spec = USBSpectrometer.getInstance();
+
+        if (spec != null && spec.paired)
+        {
+            libraryLoader = Task.Run(() => library = new Library("library", spec));
+            libraryLoader.Wait();
+            library.LoadFinished += Library_LoadFinished;
+        }
+
+        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
+
+        spec.PropertyChanged += handleSpectrometerChange;
+        spec.showAcquisitionProgress += showAcquisitionProgress;
+        spec.measurement.PropertyChanged += handleSpectrometerChange;
+
+        laserCmd = new Command(() => { _ = doLaser(); });
+        acquireCmd = new Command(() => { _ = doAcquireAsync(); });
+        refreshCmd = new Command(() => { _ = doAcquireAsync(); });
+        darkCmd = new Command(() => { _ = doDark(); });
+
+        saveCmd = new Command(() => { _ = doSave(); });
+        uploadCmd = new Command(() => { _ = doUpload(); });
+        addCmd = new Command(() => { _ = doAdd(); });
+        clearCmd = new Command(() => { _ = doClear(); });
+
+        if (spec != null && spec.paired)
+        {
+            spec.laserWatchdogSec = 0;
+            spec.laserWarningDelaySec = 0;
+        }
+
+        logger.debug("SVM.ctor: updating chart");
+        updateChart();
+
+        if (spec != null && spec.paired)
+            spec.updateBatteryAsync();
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
+
+        laserCmd.ChangeCanExecute();
+        acquireCmd.ChangeCanExecute();
+        refreshCmd.ChangeCanExecute();
+        darkCmd.ChangeCanExecute();
+
+        saveCmd.ChangeCanExecute();
+        uploadCmd.ChangeCanExecute();
+        addCmd.ChangeCanExecute();
+        clearCmd.ChangeCanExecute();
+
+        logger.debug("SVM.ctor: done");
+    }
+
+    private void Library_LoadFinished(object sender, Library e)
+    {
+        foreach (string sample in library.samples)
+        {
+            if (!fullLibraryOverlayStatus.ContainsKey(sample))
+            {
+                fullLibraryOverlayStatus.Add(sample, false);
+                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(sample, false));
+            }
+        }
+    }
+
+    private async Task findUserFiles()
+    {
+        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        Java.IO.File libraryFolder = null;
+        foreach (var cDir in cacheDirs)
+        {
+            var subs = await cDir.ListFilesAsync();
+            foreach (var sub in subs)
+            {
+                if (sub.AbsolutePath.Split('/').Last() == "Documents")
+                {
+                    libraryFolder = sub;
+                    break;
+                }
+            }
+        }
+
+        if (libraryFolder == null)
+            return;
+
+        Regex csvReg = new Regex(@".*\.csv$");
+
+        var libraryFiles = libraryFolder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.IsDirectory)
+            {
+                findUserFilesDeeper(libraryFile);
+            }
+            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+            {
+                try
+                {
+                    await addUserFile(libraryFile);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                }
+            }
+        }
+    }
+
+    async Task findUserFilesDeeper(Java.IO.File folder)
+    {
+        var libraryFiles = folder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.IsDirectory)
+            {
+                findUserFilesDeeper(libraryFile);
+            }
+            else
+            {
+                await addUserFile(libraryFile, true);
+            }
+        }
+    }
+
+    async Task addUserFile(Java.IO.File file, bool addToLibrary = false)
+    {
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        if (!fullLibraryOverlayStatus.ContainsKey(name))
+        {
+            if (addToLibrary)
+                await loadCSV(file);
+
+            fullLibraryOverlayStatus.Add(name, false);
+            overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(name, false));
+        }
+    }
+
+    async Task loadCSV(Java.IO.File file)
+    {
+        logger.info("start loading library file from {0}", file.AbsolutePath);
+
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = File.OpenRead(file.AbsolutePath);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+        Wavecal wavecal = new Wavecal(spec.pixels);
+        wavecal.coeffs = spec.eeprom.wavecalCoeffs;
+        wavecal.excitationNM = spec.laserExcitationNM;
+
+        Measurement mOrig = m.copy();
+
+        /*
+        double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+        while (smoothedSpec == null || smoothedSpec.Length == 0)
+        {
+            smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            await Task.Delay(50);
+        }
+        */
+
+        if (PlatformUtil.transformerLoaded)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            userDataLibrary.Add(name, updated);
+        }
+
+        else
+        {
+            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)spec.eeprom.ROIHorizStart, (int)spec.eeprom.ROIHorizEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, spec.eeprom.ROIHorizStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+
+            userDataLibrary.Add(name, updated);
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsolutePath);
+    }
+
+
+    public ObservableCollection<string> xAxisNames { get; set; }
+    public string xAxisName
+    {
+        get => _xAxisName;
         set
         {
             _xAxisName = value;
@@ -124,7 +391,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _xAxisMinimum = value;
-           PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMinimum)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMinimum)));
         }
     }
     double _xAxisMinimum;
@@ -135,52 +402,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         set
         {
             _xAxisMaximum = value;
-           PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMaximum)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(xAxisMaximum)));
         }
     }
     double _xAxisMaximum;
 
     public string xAxisLabelFormat
     {
-        get => xAxisName == "Pixel" ? "F0" : "F2";
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    // Acquisition Parameters
-    ////////////////////////////////////////////////////////////////////////
-
-    public UInt32 integrationTimeMS
-    {
-        get => spec.integrationTimeMS;
-        set
-        {
-            spec.integrationTimeMS = value;
-        }
-    }
-
-    public float gainDb
-    {
-        get => spec.gainDb;
-        set
-        {
-            spec.gainDb = value;
-        }
-    }
-
-    public byte scansToAverage
-    {
-        get => spec.scansToAverage;
-        set
-        {
-            spec.scansToAverage = value;
-        }
+        get => "F0";
     }
 
     ////////////////////////////////////////////////////////////////////////
     // dark subtraction
     ////////////////////////////////////////////////////////////////////////
 
-    public Command darkCmd { get; }
+    public Command darkCmd { get; private set; }
 
     public string darkButtonForegroundColor
     {
@@ -209,66 +445,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         return true;
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // misc acquisition parameters
-    ////////////////////////////////////////////////////////////////////////
-
-    // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useHorizontalROI 
-    { 
-        get => _useHorizontalROI;
-        set
-        {
-            _useHorizontalROI = value;
-            updateChart();
-        }
-    }
-    private bool _useHorizontalROI = true;
-
-    // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useRamanIntensityCorrection 
-    { 
-        get => spec.useRamanIntensityCorrection;
-        set => spec.useRamanIntensityCorrection = value;
-    }
-
-    public bool useBackgroundRemoval
-    {
-        get => _useBackgroundRemoval;
-        set
-        {
-            _useBackgroundRemoval = value;
-            if (spec != null)
-                spec.useBackgroundRemoval = value;
-
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
-        }
-    }
-    private bool _useBackgroundRemoval = false;
-    
-    public bool performMatch
-    {
-        get => _performMatch;
-        set
-        {
-            _performMatch = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
-        }
-    }
-    private bool _performMatch = false;
-    
-    public bool performDeconvolution
-    {
-        get => _performDeconvolution;
-        set
-        {
-            _performDeconvolution = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
-        }
-    }
-    private bool _performDeconvolution = false;
-
-
     public string note
     {
         get => spec.note;
@@ -279,7 +455,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Laser Shenanigans
     ////////////////////////////////////////////////////////////////////////
 
-    public Command laserCmd { get; }
+    public Command laserCmd { get; private set; }
 
     public string laserButtonForegroundColor
     {
@@ -315,22 +491,11 @@ public class ScopeViewModel : INotifyPropertyChanged
     public bool laserEnabled
     {
         get => spec.laserEnabled;
-        set 
-        { 
+        set
+        {
             if (spec.laserEnabled != value)
                 spec.laserEnabled = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
-        }
-    }
-
-    public bool autoDarkEnabled
-    {
-        get => spec.autoDarkEnabled;
-        set
-        {
-            if (spec.autoDarkEnabled != value)
-                spec.autoDarkEnabled = value;
-            updateLaserProperties();
         }
     }
 
@@ -341,20 +506,11 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         get
         {
-            var available = !autoDarkEnabled && spec.battery.level >= 5;
+            var available = !spec.autoDarkEnabled && spec.battery.level >= 5;
             if (!available)
-                logger.debug($"laser not available because ramanModeEnabled ({autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
+                logger.debug($"laser not available because ramanModeEnabled ({spec.autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
             return available;
         }
-    }
-
-    public void updateLaserProperties()
-    { 
-        logger.debug("SVM.updateLaserProperties: start");
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
-        logger.debug("SVM.updateLaserProperties: done");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -385,7 +541,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public bool isRefreshing
     {
         get => _isRefreshing;
-        set 
+        set
         {
             logger.debug($"SVM: isRefreshing -> {value}");
             _isRefreshing = value;
@@ -399,24 +555,24 @@ public class ScopeViewModel : INotifyPropertyChanged
     // @todo consider whether this feature should user-configurable, as an 
     //       accidental acquisition could be destructive of both data and 
     //       health (as the laser could auto-fire)
-    public Command refreshCmd { get; }
+    public Command refreshCmd { get; private set; }
 
     ////////////////////////////////////////////////////////////////////////
     // Status Bar
     ////////////////////////////////////////////////////////////////////////
 
     public string spectrumMax
-    { 
+    {
         get => string.Format("Max: {0:f2}", spec.measurement.max);
     }
 
-    public string batteryState 
-    { 
+    public string batteryState
+    {
         get => spec.battery.ToString();
     }
 
     public string batteryColor
-    { 
+    {
         get => spec.battery.level > 20 ? "#eee" : "#f33";
     }
 
@@ -434,6 +590,14 @@ public class ScopeViewModel : INotifyPropertyChanged
     public void setQRText(string resultText)
     {
         qrText = resultText;
+    }
+
+    public void updateLaserProperties()
+    {
+        logger.debug("SVM.updateLaserProperties: start");
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
+        logger.debug("SVM.updateLaserProperties: done");
     }
 
     void updateBatteryProperties()
@@ -513,7 +677,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     // invoked by ScopeView when the user clicks "Acquire" 
-    public Command acquireCmd { get; }
+    public Command acquireCmd { get; private set; }
 
     // the user clicked the "Acquire" button on the Scope View
     async Task<bool> doAcquireAsync()
@@ -521,9 +685,27 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec.acquiring)
             return false;
 
+        hasMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+
         logger.debug("doAcquireAsync: =======================================");
         logger.debug("doAcquireAsync: Attempting to take one averaged reading");
         logger.debug("doAcquireAsync: =======================================");
+
+        if (displayMatch)
+        {
+            try
+            {
+                //DataOverlays.Remove(matchCompound);
+                //fullLibraryOverlayStatus[matchCompound] = false;
+                displayMatch = false;
+                await Task.Delay(1);
+            }
+            catch (Exception ex)
+            {
+                logger.error("ovelray removal failed out with exception {0}", ex.Message);
+            }
+        }
 
         // take a fresh Measurement
         var startTime = DateTime.Now;
@@ -551,20 +733,20 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && performMatch && spec.dark != null)
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && spec.dark != null)
             doMatchAsync();
 
         return ok;
     }
 
-    void showAcquisitionProgress(double progress) => acquisitionProgress = progress; 
+    void showAcquisitionProgress(double progress) => acquisitionProgress = progress;
 
     // this is a floating-point "percentage completion" backing the 
     // ProgressBar on the ScopeView
     public double acquisitionProgress
     {
         get => _acquisitionProgress;
-        set 
+        set
         {
             _acquisitionProgress = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(acquisitionProgress)));
@@ -578,11 +760,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (m is null || m.raw is null)
             return false;
 
-        var allZero = true;                
-        var allHigh = true;                
+        var allZero = true;
+        var allHigh = true;
         for (int i = 0; i < m.raw.Length; i++)
         {
-            if (m.raw[i] !=     0) allZero = false;
+            if (m.raw[i] != 0) allZero = false;
             if (m.raw[i] != 65535) allHigh = false;
 
             // no point checking beyond this point
@@ -603,12 +785,13 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool hasSpectrum { get => spec.lastSpectrum != null; }
 
-    public Command addCmd { get; }
-    public Command clearCmd { get; }
+    public Command addCmd { get; private set; }
+    public Command clearCmd { get; private set; }
 
     public RadCartesianChart theChart;
 
     public ObservableCollection<ChartDataPoint> chartData { get; set; } = new ObservableCollection<ChartDataPoint>();
+    public Dictionary<string, ObservableCollection<ChartDataPoint>> DataOverlays { get; set; } = new Dictionary<string, ObservableCollection<ChartDataPoint>>();
 
     // declare statically for now; these are individual Properties because 
     // I don't think I can use databinding against array elements
@@ -625,7 +808,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     double[] xAxis;
     int nextTrace = 0;
 
-    public bool hasTraces 
+    public bool hasTraces
     {
         get => _hasTraces;
         set
@@ -652,7 +835,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
     ObservableCollection<ChartDataPoint> getTraceData(int trace)
     {
-        switch(trace)
+        switch (trace)
         {
             case 0: return trace0;
             case 1: return trace1;
@@ -668,16 +851,16 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     string getTraceName(int trace)
     {
-        switch(trace)
+        switch (trace)
         {
             case 0: return nameof(trace0);
             case 1: return nameof(trace1);
-            case 2: return nameof(trace2); 
-            case 3: return nameof(trace3); 
-            case 4: return nameof(trace4); 
-            case 5: return nameof(trace5); 
-            case 6: return nameof(trace6); 
-            case 7: return nameof(trace7); 
+            case 2: return nameof(trace2);
+            case 3: return nameof(trace3);
+            case 4: return nameof(trace4);
+            case 5: return nameof(trace5);
+            case 6: return nameof(trace6);
+            case 7: return nameof(trace7);
         }
         return nameof(trace0);
     }
@@ -692,7 +875,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("updateChart: done");
     }
 
-    void updateTrace(int trace) => 
+    void updateTrace(int trace) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(getTraceName(trace)));
 
     private void refreshChartData()
@@ -735,10 +918,10 @@ public class ScopeViewModel : INotifyPropertyChanged
             for (int i = 0; i < pixels; i++)
             {
                 if (!usingRemovalAxis &&
-                    useHorizontalROI && 
-                    spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd && 
+                    spec.useHorizontalROI &&
+                    spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
-                        continue;
+                    continue;
 
                 updateChartData.Add(new ChartDataPoint() { intensity = intensities[i], xValue = xAxis[i] });
                 if (pxLo < 0)
@@ -759,7 +942,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 chartData.Add(chartDataPoint);
             }
-            
+
             //oldChartData.Clear();
 
             xAxisMinimum = xAxis[pxLo];
@@ -767,7 +950,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             logger.debug($"refreshChartData: pxLo {pxLo}, pxHi {pxHi}, xMin {xAxisMinimum:f2}, xMax {xAxisMaximum:f2}");
         }
         catch (Exception ex)
-        { 
+        {
             logger.debug($"refreshChartData: caught exception {ex}");
         }
         logger.debug("refreshChartData: done");
@@ -775,6 +958,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     bool doAdd()
     {
+        /*
         logger.debug("Add button pressed");
         var name = getTraceName(nextTrace);
         logger.debug($"Populating trace {name}");
@@ -785,19 +969,88 @@ public class ScopeViewModel : INotifyPropertyChanged
         updateTrace(nextTrace);
         nextTrace = (nextTrace + 1) % MAX_TRACES;
         hasTraces = true;
-        return true; 
+        return true; */
+
+
+        //saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
+        //saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
+        //savePopup = new SaveSpectrumPopup(saveViewModel);
+        //Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
+
+        OverlaysPopup op = new OverlaysPopup(overlaysViewModel);
+        op.Closed += Op_Closed;
+        Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
+
+
+        return true;
+
+
+    }
+
+    private void Op_Closed(object sender, PopupClosedEventArgs e)
+    {
+        bool somethingChanged = false;
+
+        foreach (SpectrumOverlayMetadata omd in overlaysViewModel.overlays)
+        {
+            bool wasDisplayed = fullLibraryOverlayStatus[omd.name];
+
+            fullLibraryOverlayStatus[omd.name] = omd.selected;
+
+            if (wasDisplayed != omd.selected)
+            {
+                somethingChanged = true;
+                if (!wasDisplayed)
+                {
+                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    Measurement m = library.getSample(omd.name);
+                    if (m == null && userDataLibrary.ContainsKey(omd.name))
+                    {
+                        m = userDataLibrary[omd.name];
+
+                    }
+
+                    if (m != null)
+                    {
+                        for (int i = 0; i < m.wavenumbers.Length; i++)
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(omd.name))
+                            DataOverlays[omd.name] = newOverlay;
+                        else
+                            DataOverlays.Add(omd.name, newOverlay);
+                    }
+                }
+                else
+                {
+                    DataOverlays.Remove(omd.name);
+                }
+
+            }
+        }
+
+        if (fullLibraryOverlayStatus.ContainsKey(matchCompound))
+            displayMatch = fullLibraryOverlayStatus[matchCompound];
+
+        if (somethingChanged)
+            OverlaysChanged.Invoke(this, this);
     }
 
     bool doClear()
     {
-        logger.debug("Clear button pressed");
-        for (int i = 0; i < MAX_TRACES; i++)
-        {
-            getTraceData(i).Clear();
-            updateTrace(i);
-        }
-        nextTrace = 0;
+        displayMatch = false;
         hasTraces = false;
+
+        WipeOverlays.Invoke(this, this);
+
+        foreach (var overlay in overlaysViewModel.overlays)
+        {
+            overlay.selected = false;
+        }
+        foreach (string overlayName in fullLibraryOverlayStatus.Keys)
+        {
+            fullLibraryOverlayStatus[overlayName] = false;
+        }
+
         return true;
     }
 
@@ -805,15 +1058,102 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Save Command
     ////////////////////////////////////////////////////////////////////////
 
-    public Command saveCmd { get; }
+    public Command saveCmd { get; private set; }
 
     // the user clicked the "Save" button on the Scope View
     async Task<bool> doSave()
     {
-        var ok = await spec.measurement.saveAsync();
-        if (ok)
-            notifyToast?.Invoke($"saved {spec.measurement.filename}");
-        return ok;
+        DisplayPopup();
+        return true;
+    }
+
+    public void DisplayPopup()
+    {
+        //this.popupService.ShowPopup<SaveSpectrumPopupViewModel>();
+        saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
+        saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
+        savePopup = new SaveSpectrumPopup(saveViewModel);
+        popupClosing = false;
+        Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
+    }
+
+    private async void SaveViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (saveViewModel != null)
+        {
+            if (e.PropertyName == nameof(saveViewModel.toBeSaved) && saveViewModel.toBeSaved)
+            {
+
+                if (!userDataLibrary.ContainsKey(saveViewModel.saveName)) 
+                    userDataLibrary.Add(saveViewModel.saveName, spec.measurement);
+                else
+                {
+                    string name = saveViewModel.saveName.Split('-')[0];
+                    int count = 0;
+                    foreach (string sample in userDataLibrary.Keys)
+                    {
+                        if (sample.StartsWith(name))
+                        {
+                            ++count;
+                        }
+                    }
+
+                    name += "-";
+                    name += count.ToString();
+
+                    saveViewModel.saveName = name;
+                    userDataLibrary.Add(saveViewModel.saveName, spec.measurement);
+                }
+
+                spec.measurement.filename = saveViewModel.saveName + ".csv";
+                spec.measurement.notes = saveViewModel.notes;
+
+                if (!fullLibraryOverlayStatus.ContainsKey(saveViewModel.saveName))
+                    fullLibraryOverlayStatus.Add(saveViewModel.saveName, saveViewModel.addToDisplay);
+                else
+                    fullLibraryOverlayStatus[saveViewModel.saveName] = saveViewModel.addToDisplay;
+
+                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(saveViewModel.saveName, saveViewModel.addToDisplay));
+
+                if (saveViewModel.addToLibrary && library.getSample(saveViewModel.saveName) == null)
+                {
+                    library.addSampleToLibrary(saveViewModel.saveName, spec.measurement);
+                }
+
+
+                if (saveViewModel.addToDisplay)
+                {
+
+                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    Measurement m = spec.measurement;
+
+                    if (m != null)
+                    {
+                        for (int i = 0; i < m.wavenumbers.Length; i++)
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(saveViewModel.saveName))
+                            DataOverlays[saveViewModel.saveName] = newOverlay;
+                        else
+                            DataOverlays.Add(saveViewModel.saveName, newOverlay);
+
+                        OverlaysChanged.Invoke(this, this);
+                    }
+
+                }
+
+                var ok = await spec.measurement.saveAsync();
+                if (ok)
+                {
+                    notifyToast?.Invoke($"saved {spec.measurement.filename}");
+                }
+            }
+        }
+
+        if (e.PropertyName == nameof(saveViewModel.toBeSaved) && !popupClosing)
+        {
+            popupClosing = true;
+            await savePopup.CloseAsync();
+        }
     }
 
     // This is required, but I don't remember how / why
@@ -843,7 +1183,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Upload Command
     ////////////////////////////////////////////////////////////////////////
 
-    public Command uploadCmd { get; }
+    public Command uploadCmd { get; private set; }
 
     // the user clicked the "Upload" button on the Scope View
     async Task<bool> doUpload()
@@ -860,13 +1200,71 @@ public class ScopeViewModel : INotifyPropertyChanged
     // Matching
     ////////////////////////////////////////////////////////////////////////
 
-    public Command matchCmd { get; }
+    public Command matchCmd { get; private set; }
+    public bool displayMatch
+    {
+        get { return _displayMatch; }
+        set 
+        {
+            _displayMatch = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(displayMatch)));
+
+            if (!fullLibraryOverlayStatus.ContainsKey(matchCompound))
+                return;
+
+            bool wasDisplayed = fullLibraryOverlayStatus[matchCompound];
+            bool selected = value;
+
+            fullLibraryOverlayStatus[matchCompound] = value;
+
+            if (wasDisplayed != selected)
+            {
+                foreach (var o in overlaysViewModel.overlays)
+                {
+                    if (o.name == matchCompound)
+                        o.selected = selected;
+                }
+
+                if (!wasDisplayed)
+                {
+                    ObservableCollection<ChartDataPoint> newOverlay = new ObservableCollection<ChartDataPoint>();
+                    Measurement m = library.getSample(matchCompound);
+                    if (m == null && userDataLibrary.ContainsKey(matchCompound))
+                    {
+                        m = userDataLibrary[matchCompound];
+
+                    }
+
+                    if (m != null)
+                    {
+                        for (int i = 0; i < m.wavenumbers.Length; i++)
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                        if (DataOverlays.ContainsKey(matchCompound))
+                            DataOverlays[matchCompound] = newOverlay;
+                        else
+                            DataOverlays.Add(matchCompound, newOverlay);
+                    }
+                }
+                else
+                {
+                    DataOverlays.Remove(matchCompound);
+                }
+
+                OverlaysChanged.Invoke(this, this);
+            }
+
+        }
+    }
+    bool _displayMatch;
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
     public bool hasDecon {get; private set;}
     public bool waitingForMatch {get; private set;}
     public string matchResult {get; private set;}
+    string matchCompound = "";
     public string deconResult {get; private set;}
+
+    public const double MATCH_THRESHOLD = 0.6;
 
     async Task<bool> doMatchAsync()
     {
@@ -876,14 +1274,30 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
         var result = await library.findMatch(spec.measurement);
 
-        logger.info("returned from library match function with result {0}", result);
-        
-        matchResult = String.Format("{0} : {1:f4}", result.Item1, result.Item2);
-        hasMatch = true;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+        if (result != null)
+        {
+            logger.info("returned from library match function with result {0}", result);
 
-        if (performDeconvolution)
+            if (result.Item2 >= MATCH_THRESHOLD)
+            {
+                matchCompound = result.Item1;
+                matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
+                hasMatch = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+
+                if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
+                    displayMatch = true;
+            }
+        }
+        else
+        {
+            hasMatch = false;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+        }
+
+        if (spec.performDeconvolution)
         {
 #if USE_DECON
             var matched_spectra = await library.findDeconvolutionMatches(spec.measurement);

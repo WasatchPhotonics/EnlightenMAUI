@@ -463,8 +463,9 @@ public class Measurement : INotifyPropertyChanged
         measurementID = string.Format("enlighten-{0}-{1}",
             timestamp.ToString("yyyyMMdd-HHmmss-ffffff"),
             serialNumber);
-        filename = measurementID + ".csv";
-
+        filename = string.Format("enlighten-{0}-{1}.csv",
+            timestamp.ToString("yyyyMMdd-HHmmss"),
+            serialNumber);
         // location = WhereAmI.getInstance().location;
     }
 
@@ -607,7 +608,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Laser Enable, {0}", spec.laserEnabled || spec.autoDarkEnabled);
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
         sw.WriteLine("Timestamp, {0}", timestamp.ToString());
-        sw.WriteLine("Note, {0}", spec.note);
+        sw.WriteLine("Note, {0}", spec.measurement.notes);
         sw.WriteLine("Pixel Count, {0}", spec.eeprom.activePixelsHoriz);
 
         ////////////////////////////////////////////////////////////////////

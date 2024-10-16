@@ -588,7 +588,7 @@ public class BluetoothSpectrometer : Spectrometer
     // I used to call this at the END of an acquisition, and that worked; 
     // until it didn't.  Now I call it BEFORE each acquisition, and that
     // seems to work better?
-    protected override async Task<bool> updateBatteryAsync()
+    internal override async Task<bool> updateBatteryAsync()
     {
         logger.debug("Spectrometer.updateBatteryAsync: starting");
 

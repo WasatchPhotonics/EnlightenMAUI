@@ -16,9 +16,7 @@
                 AlignItems="Center"
                 JustifyContent="SpaceEvenly">
 
-        <Image Source="enlighten_logo.png" HeightRequest="100" />
-
-        <Label FontSize="22" TextColor="#eee" Text="{Binding appVersion}" />
+        <Image Source="enlighten_logo.png" Margin="20" HorizontalOptions="CenterAndExpand" HeightRequest="100" Aspect="AspectFit" />
 
         <Button Padding="40,10,40,10" 
                 Text="Learn more" 

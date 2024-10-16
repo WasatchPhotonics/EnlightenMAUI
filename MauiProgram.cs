@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
 using Telerik.Maui.Controls.Compatibility;
+using EnlightenMAUI.Popups;
+using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI;
 
