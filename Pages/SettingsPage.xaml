@@ -41,7 +41,7 @@
                         <telerik:RadNumericInput x:Name="gainDb" 
                                                  Value="{Binding gainDb}" 
                                                  StringFormat="{}{0:f1}"
-                                                 Minimum="0" Maximum="32" Step="0.1"
+                                                 Minimum="0" Maximum="30" Step="0.1"
                                                  HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
