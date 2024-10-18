@@ -144,7 +144,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: updating chart");
         updateChart();
 
-        if (spec != null && spec.paired)
+        if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
@@ -196,7 +196,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: updating chart");
         updateChart();
 
-        if (spec != null && spec.paired)
+        if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
