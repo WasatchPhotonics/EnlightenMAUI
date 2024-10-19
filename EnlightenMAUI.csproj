@@ -64,7 +64,6 @@
 		<!-- App Icon -->
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\AppIcon\appicon.svg" Color="#333" BaseSize="300, 300" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
@@ -102,19 +101,19 @@
 
 	<ItemGroup>
 		<PackageReference Include="Accord.Statistics" Version="3.8.0" />
-		<PackageReference Include="CommunityToolkit.Maui" Version="8.0.1" />
-		<PackageReference Include="CommunityToolkit.Maui.Core" Version="8.0.1" />
-		<PackageReference Include="CSparse" Version="4.1.0" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="9.1.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Core" Version="9.1.0" />
+		<PackageReference Include="CSparse" Version="4.2.0" />
 		<PackageReference Include="LibUsbDotNet" Version="2.2.29" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.21" />
-		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.21" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.92" />
+		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.92" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="Microsoft.ML" Version="3.0.1" />
-		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.1" />
+		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.2" />
 		<PackageReference Include="Microsoft.ML.OnnxTransformer" Version="3.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
+		<PackageReference Include="Plugin.BLE" Version="3.1.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
 	</ItemGroup>
 
