@@ -356,7 +356,7 @@ namespace EnlightenMAUI.Models
             return pages;
         }
 
-        protected override async Task<bool> updateBatteryAsync()
+        internal override async Task<bool> updateBatteryAsync()
         {
             uint tmp = Unpack.toUint(await getCmd2Async(Opcodes.GET_BATTERY_STATE, 3));
             battery.parse(tmp);

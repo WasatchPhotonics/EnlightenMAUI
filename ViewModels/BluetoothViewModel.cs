@@ -105,6 +105,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
         adapter.ScanMode = ScanMode.LowLatency;
         adapter.ScanTimeout = 20000;
 
+        adapter.ScanMode = ScanMode.LowLatency;
+        adapter.ScanTimeout = 20000;
+
         logger.debug("BVM.ctor: adding DeviceDiscovered handler");
         adapter.DeviceDiscovered += _bleAdapterDeviceDiscovered;
         logger.debug("BVM.ctor: adding ScanTimeoutElapsed handler");
@@ -595,7 +598,16 @@ public class BluetoothViewModel : INotifyPropertyChanged
             await doConnectAsync(true);
             if (BLEDevice.paired)
             {
-                logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
+                try
+                {
+                    if (Spectrometer.NewConnection != null) 
+                        Spectrometer.NewConnection.Invoke(this, spec);
+                }
+                catch (Exception e) 
+                {
+                    logger.error("spectrometer connect event failed with exception {0}", e.Message);
+                }
+                    logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
                 await Shell.Current.GoToAsync("//ScopePage");
             }
         }
@@ -628,6 +640,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     USBSpectrometer usbSpectrometer = new USBSpectrometer(udc, acc);
                     spec = usbSpectrometer;
                     bool ok = await (spec as USBSpectrometer).initAsync();
+                    if (ok)
+                        Spectrometer.NewConnection.Invoke(this, spec);
+
                     USBSpectrometer.setInstance(usbSpectrometer);
                     USBViewDevice.paired = true;
                     return ok;
@@ -656,6 +671,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 else
                 {
                     (spec as USBSpectrometer).connect();
+                    Spectrometer.NewConnection.Invoke(this, spec);
                     return await (spec as USBSpectrometer).initAsync();
                 }
                 return true;
@@ -892,7 +908,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 var c = pair.Value;
 
                 // disabled until I can troubleshoot with Nic
-                if (c.CanUpdate && (name == "batteryStatus" || name == "laserState"))
+                if (c.CanUpdate && ((name == "batteryStatus" && spec.eeprom.hasBattery) || name == "laserState"))
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
@@ -944,7 +960,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             var c = pair.Value;
 
             // disabled until I can troubleshoot with Nic
-            if (c.CanUpdate && name == "batteryStatus")
+            if (c.CanUpdate && (name == "batteryStatus" && spec.eeprom.hasBattery))
             {
                 logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                 //c.ValueUpdated -= _characteristicUpdated;

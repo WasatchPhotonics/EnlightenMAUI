@@ -49,14 +49,14 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.6.7</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.8.2</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.6.7</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.8.2</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	</PropertyGroup>
 
@@ -64,7 +64,7 @@
 		<!-- App Icon -->
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Images\enlighten_logo.png" Color="#333" BaseSize="300, 300" />
+		<MauiSplashScreen Include="Resources\AppIcon\appicon.svg" Color="#333" BaseSize="300, 300" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
@@ -79,7 +79,11 @@
 
 	<ItemGroup>
 	  <None Remove="Resources\AppIcon\appicon.svg" />
+	  <None Remove="Resources\Images\apeture.svg" />
+	  <None Remove="Resources\Images\bulb_dark.svg" />
 	  <None Remove="Resources\Images\enlighten_logo.png" />
+	  <None Remove="Resources\Images\eraser.svg" />
+	  <None Remove="Resources\Images\eye.svg" />
 	  <None Remove="Resources\Images\ico_bluetooth.png" />
 	  <None Remove="Resources\Images\ico_clipboard.png" />
 	  <None Remove="Resources\Images\ico_gear.png" />
@@ -87,10 +91,9 @@
 	  <None Remove="Resources\Images\ico_page.png" />
 	  <None Remove="Resources\Images\ico_spectra.png" />
 	  <None Remove="Resources\Images\ico_xs.png" />
+	  <None Remove="Resources\Images\laser.svg" />
+	  <None Remove="Resources\Images\triangle_down_underline.svg" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
-	</ItemGroup>
-
-	<ItemGroup>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -143,6 +146,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Popups\OverlaysPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Popups\SaveSpectrumPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\DataPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

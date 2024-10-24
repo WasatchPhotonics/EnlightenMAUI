@@ -79,7 +79,7 @@ public class Settings : INotifyPropertyChanged
     }
     public string hostDescriptionWrapped
     {
-        get => $"{DeviceInfo.Name}\n{DeviceInfo.Manufacturer} {DeviceInfo.Model}\n{DeviceInfo.Platform} {DeviceInfo.VersionString}";
+        get => $"EnlightenMobile {VersionTracking.CurrentVersion}\n{DeviceInfo.Name}\n{DeviceInfo.Manufacturer} {DeviceInfo.Model}\n{DeviceInfo.Platform} {DeviceInfo.VersionString}";
     }
 
     ////////////////////////////////////////////////////////////////////////

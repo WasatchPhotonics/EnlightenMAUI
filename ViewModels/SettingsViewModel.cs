@@ -52,6 +52,108 @@ public class SettingsViewModel : INotifyPropertyChanged
         get => "Application Settings";
     }
 
+
+    ////////////////////////////////////////////////////////////////////////
+    // Acquisition Parameters
+    ////////////////////////////////////////////////////////////////////////
+
+    public UInt32 integrationTimeMS
+    {
+        get => spec.integrationTimeMS;
+        set
+        {
+            spec.integrationTimeMS = value;
+        }
+    }
+
+    public float gainDb
+    {
+        get => spec.gainDb;
+        set
+        {
+            spec.gainDb = value;
+        }
+    }
+
+    public byte scansToAverage
+    {
+        get => spec.scansToAverage;
+        set
+        {
+            spec.scansToAverage = value;
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // misc acquisition parameters
+    ////////////////////////////////////////////////////////////////////////
+
+    // @todo: let the user live-toggle this and update the on-screen spectrum
+    public bool useHorizontalROI
+    {
+        get => spec.useHorizontalROI;
+        set
+        {
+            spec.useHorizontalROI = value;
+        }
+    }
+
+    public bool autoDarkEnabled
+    {
+        get => spec.autoDarkEnabled;
+        set
+        {
+            if (spec.autoDarkEnabled != value)
+                spec.autoDarkEnabled = value;
+            updateLaserProperties();
+        }
+    }
+
+    // @todo: let the user live-toggle this and update the on-screen spectrum
+    public bool useRamanIntensityCorrection
+    {
+        get => spec.useRamanIntensityCorrection;
+        set => spec.useRamanIntensityCorrection = value;
+    }
+
+    public bool useBackgroundRemoval
+    {
+        get => spec.useBackgroundRemoval;
+        set
+        {
+            spec.useBackgroundRemoval = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
+        }
+    }
+    private bool _useBackgroundRemoval = true;
+
+    public bool performMatch
+    {
+        get => spec.performMatch;
+        set
+        {
+            spec.performMatch = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
+        }
+    }
+
+    public bool performDeconvolution
+    {
+        get => spec.performDeconvolution;
+        set
+        {
+            spec.performDeconvolution = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
+        }
+    }
+
+    public void updateLaserProperties()
+    {
+        logger.debug("SVM.updateLaserProperties: start");
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+        logger.debug("SVM.updateLaserProperties: done");
+    }
+
     public bool savePixel 
     {
         get => settings.savePixel;

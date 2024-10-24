@@ -1,5 +1,16 @@
 # Changelog
 
+- 2024-10-16 0.8.0
+    - reworked tab layout
+    - simplified "spectra" tab controls and icon-ized buttons
+    - shuffled other controls and lots of small aesthetic changes
+    - reworked add/save functions and added new UI flow
+    - fixed fairly major bug with general tab flow
+    - other smaller bug fixes
+- 2024-10-11 0.7.0
+	- added background removal option
+	- added deconvolution matching
+	- fixed auto dark mode
 - 2024-09-24 0.6.4
 	- fixed issues in interfacing with auto dark (fka raman) mode
 	- renamed references to auto dark mode to reflect name change
