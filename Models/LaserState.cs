@@ -212,13 +212,12 @@ public class LaserState
         interlockClosed = (data[6] & (byte)BYTE_6_FLAGS.INTERLOCK_CLOSED) != 0;
         laserActive = (data[6] & (byte)BYTE_6_FLAGS.LASER_ACTIVE) != 0;
 
+        if (!laserActive)
+            newEnabled = false;
+
         ////////////////////////////////////////////////////////////////////
         // all fields validated, accept new values
         ////////////////////////////////////////////////////////////////////
-
-
-
-
         type = newType;
         enabled = newEnabled;
         watchdogSec = newWatchdog;
