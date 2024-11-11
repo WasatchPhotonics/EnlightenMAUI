@@ -205,9 +205,10 @@ public class BluetoothSpectrometer : Spectrometer
             int pos = 0;
             for (int subpage = 0; subpage < EEPROM.SUBPAGE_COUNT; subpage++)
             {
-                byte[] request = ToBLEData.convert((byte)page, (byte)subpage);
+                byte[] request = { 0xff, 0x01, 0, (byte)page, (byte)subpage };
+
                 logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {page}, subpage {subpage}");
-                bool ok = 0 == await eepromCmd.WriteAsync(request);
+                bool ok = await writeGenericCharacteristic(request);
                 if (!ok)
                 {
                     logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({page}, {subpage})");
@@ -286,12 +287,15 @@ public class BluetoothSpectrometer : Spectrometer
         }
 
         ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
-        byte[] request = ToBLEData.convert(value, len: 4);
+        byte[] data = ToBLEData.convert(value, len: 4);
+
+        byte[] request = { 0xb2, 0, 0, 0, 0 };
+        Array.Copy(data, 0, request, 1, data.Length);
 
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
 
-        var ok = 0 == await characteristic.WriteAsync(request);
+        var ok = await writeGenericCharacteristic(request);
         if (ok)
         { 
             _lastIntegrationTimeMS = _nextIntegrationTimeMS;
@@ -350,14 +354,29 @@ public class BluetoothSpectrometer : Spectrometer
         ushort value = (ushort)((msb << 8) | lsb);
         ushort len = 2;
 
-        byte[] request = ToBLEData.convert(value, len: len);
+        byte[] data = ToBLEData.convert(value, len: len);
+        byte[] request = { 0xb7, 0, 0 };
+        Array.Copy(data, 0, request, 1, data.Length);
+
+        /*
+        byte[] data = ToBLEData.convert(value, len: 4);
+
+        byte[] request = { 0xb2, 0, 0, 0, 0 };
+        Array.Copy(data, 0, request, 1, data.Length);
+
+        logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
+        logger.hexdump(request, "data: ");
+
+        var ok = await writeGenericCharacteristic(request);
+        */
+
 
         logger.debug($"converting gain {_nextGainDb:f4} to msb 0x{msb:x2}, lsb 0x{lsb:x2}, value 0x{value:x4}, request {request}");
 
         logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
         logger.hexdump(request, "data: ");
 
-        var ok = 0 == await characteristic.WriteAsync(request);
+        var ok = await writeGenericCharacteristic(request);
         if (ok)
         {
             _lastGainDb = _nextGainDb;
