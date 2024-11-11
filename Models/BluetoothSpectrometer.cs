@@ -154,7 +154,9 @@ public class BluetoothSpectrometer : Spectrometer
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
         integrationTimeMS = 400;
+        await Task.Delay(10);
         gainDb = 8;
+        await Task.Delay(10);
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
@@ -187,54 +189,37 @@ public class BluetoothSpectrometer : Spectrometer
         ICharacteristic eepromCmd;
         ICharacteristic eepromData;
 
-        if (characteristicsByName.ContainsKey("eepromCmd") && characteristicsByName.ContainsKey("eepromData"))
-        {
-            eepromCmd = characteristicsByName["eepromCmd"];
-            eepromData = characteristicsByName["eepromData"];
-        }
-        else
-        {
-            logger.error("Can't read EEPROM w/o characteristics");                
-            return null;
-        }
-        logger.debug("Spectrometer.readEEPROMAsync: reading EEPROM");
         List<byte[]> pages = new List<byte[]>();
-        for (int page = 0; page < EEPROM.MAX_PAGES; page++)
+        EEPROMReadComplete = false;
+        EEPROMBytesRead = 0;
+        CurrentEEPROMPage = 0;
+        EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+
+        while (!EEPROMReadComplete)
+        {
+            genericReturned = false;
+
+            logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {CurrentEEPROMPage}, offset {EEPROMBytesRead % EEPROM.PAGE_LENGTH}");
+            byte[] request = { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
+            bool ok = await writeGenericCharacteristic(request);
+            if (!ok)
+            {
+                logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+                return null;
+            }
+
+            while (!genericReturned)
+                await Task.Delay(5);
+        }
+
+        for (int i = 0; i < EEPROM.MAX_PAGES; i++)
         {
             byte[] buf = new byte[EEPROM.PAGE_LENGTH];
-            int pos = 0;
-            for (int subpage = 0; subpage < EEPROM.SUBPAGE_COUNT; subpage++)
-            {
-                byte[] request = { 0xff, 0x01, 0, (byte)page, (byte)subpage };
-
-                logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {page}, subpage {subpage}");
-                bool ok = await writeGenericCharacteristic(request);
-                if (!ok)
-                {
-                    logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({page}, {subpage})");
-                    return null;
-                } 
-
-                try
-                {
-                    logger.debug($"Spectrometer.readEEPROMAsync: reading eepromData");
-                    var response = await eepromData.ReadAsync();
-                    logger.hexdump(response.data, "response: ");
-                    logger.info($"The length of buf is {buf.Length} and length of response is {response.data.Length}");
-
-                    for (int i = 0; i < response.data.Length; i++)
-                        buf[pos++] = response.data[i];
-                }
-                catch(Exception ex)
-                {
-                    logger.error($"Caught exception when trying to read EEPROM characteristic: {ex}");
-                    return null;
-                }
-            }
-            logger.hexdump(buf, $"adding page {page}: ");
+            Array.Copy(EEPROMBuffer, i *  EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
+            logger.hexdump(buf, $"adding page {i}: ");
             pages.Add(buf);
-            raiseConnectionProgress(.15 + .85 * page / EEPROM.MAX_PAGES);
         }
+
         logger.debug($"Spectrometer.readEEPROMAsync: done");
         return pages;
     }
@@ -279,13 +264,6 @@ public class BluetoothSpectrometer : Spectrometer
         if (_nextIntegrationTimeMS == _lastIntegrationTimeMS)
             return true;
 
-        var characteristic = characteristicsByName["integrationTimeMS"];
-        if (characteristic is null)
-        {
-            logger.error("can't find integrationTimeMS characteristic");
-            return false;
-        }
-
         ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
         byte[] data = ToBLEData.convert(value, len: 4);
 
@@ -295,7 +273,13 @@ public class BluetoothSpectrometer : Spectrometer
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
 
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            return false;
+        }
         var ok = await writeGenericCharacteristic(request);
+        sem.Release();
         if (ok)
         { 
             _lastIntegrationTimeMS = _nextIntegrationTimeMS;
@@ -341,13 +325,6 @@ public class BluetoothSpectrometer : Spectrometer
         if (_nextGainDb == _lastGainDb)
             return true;
                         
-        var characteristic = characteristicsByName["gainDb"];
-        if (characteristic is null)
-        {
-            logger.error("gainDb characteristic not found");
-            return false;
-        }
-
         byte msb = (byte)Math.Floor(_nextGainDb);
         byte lsb = (byte)(((byte)Math.Round( (_nextGainDb - msb) * 256.0)) & 0xff);
 
@@ -376,7 +353,13 @@ public class BluetoothSpectrometer : Spectrometer
         logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
         logger.hexdump(request, "data: ");
 
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            return false;
+        }
         var ok = await writeGenericCharacteristic(request);
+        sem.Release();
         if (ok)
         {
             _lastGainDb = _nextGainDb;
@@ -473,9 +456,9 @@ public class BluetoothSpectrometer : Spectrometer
 
     private async Task<bool> writeGenericCharacteristic(byte[] data)
     {
-        if (!paired || characteristicsByName is null)
+        if (characteristicsByName is null)
         {
-            logger.error("writeGenericCharacteristic: not paired or no characteristics");
+            logger.error("writeGenericCharacteristic: no characteristics");
             return false;
         }
 
@@ -888,7 +871,7 @@ public class BluetoothSpectrometer : Spectrometer
         {
             var offset = i * 2;
             ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
-            if (totalPixelsRead > spectrum.Length)
+            if (totalPixelsRead >= spectrum.Length)
                 logger.error("more received data than expected...");
             else
                 spectrum[totalPixelsRead] = intensity;

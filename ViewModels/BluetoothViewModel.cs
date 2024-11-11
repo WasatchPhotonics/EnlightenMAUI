@@ -898,6 +898,32 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
             // populate Spectrometer
             logger.debug("BVM.doConnectAsync: initializing spectrometer");
+
+            foreach (var pair in characteristicsByName)
+            {
+                var name = pair.Key;
+                var c = pair.Value;
+
+                // disabled until I can troubleshoot with Nic
+                if (c.CanUpdate &&  name == "generic")
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += _characteristicUpdated;
+
+                    await c.StartUpdatesAsync();
+                }
+                // disabled until I can troubleshoot with Nic
+                else if (c.CanUpdate && name == "acquireSpectrum")
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += (spec as BluetoothSpectrometer).receiveSpectralUpdate;
+
+                    await c.StartUpdatesAsync();
+                }
+            }
+
             await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
 
             //subscribeToUpdates();
@@ -915,6 +941,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     c.ValueUpdated += _characteristicUpdated;
 
                     await c.StartUpdatesAsync();
+                    await Task.Delay(10);
                 }
                 // disabled until I can troubleshoot with Nic
                 else if (c.CanUpdate && name == "acquireSpectrum")
@@ -960,7 +987,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             var c = pair.Value;
 
             // disabled until I can troubleshoot with Nic
-            if (c.CanUpdate && (name == "batteryStatus" && spec.eeprom.hasBattery))
+            if (c.CanUpdate && (name == "batteryStatus" && spec.eeprom.hasBattery) || name == "generic")
             {
                 logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                 //c.ValueUpdated -= _characteristicUpdated;
@@ -1007,6 +1034,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
             spec.processBatteryNotification(c.Value);
         else if (name == "laserState")
             spec.processLaserStateNotificationAsync(c.Value);
+        else if (name == "generic")
+            spec.processGenericNotification(c.Value);
         else
             logger.error($"no registered processor for {name} notifications");
 

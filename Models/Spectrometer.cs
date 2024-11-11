@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static Android.Provider.ContactsContract.CommonDataKinds;
+using static Android.Telephony.CarrierConfigManager;
 
 namespace EnlightenMAUI.Models
 {
@@ -40,6 +41,12 @@ namespace EnlightenMAUI.Models
         public double[] stretchedDark;
 
         public Measurement measurement;
+
+        protected bool EEPROMReadComplete = false;
+        protected uint EEPROMBytesRead = 0;
+        protected uint CurrentEEPROMPage = 0;
+        protected byte[] EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+        protected bool genericReturned = false;
 
         public Spectrometer() { }
 
@@ -429,6 +436,26 @@ namespace EnlightenMAUI.Models
 
             sem.Release();
         }
+
+        public void processGenericNotification(byte[] data)
+        {
+            if (EEPROMReadComplete)
+                return;
+
+            logger.hexdump(data, "received generic notification: ");
+            logger.info($"the length of notification is {data.Length}");
+
+            int bytesToRead = data.Length - 2;
+            Array.Copy(data, 2, EEPROMBuffer, EEPROMBytesRead, Math.Min(bytesToRead, EEPROM.PAGE_LENGTH));
+            EEPROMBytesRead += (uint)bytesToRead;
+            if (EEPROMBytesRead % EEPROM.PAGE_LENGTH == 0 || bytesToRead > EEPROM.PAGE_LENGTH)
+                ++CurrentEEPROMPage;
+            if (CurrentEEPROMPage == EEPROM.MAX_PAGES)
+                EEPROMReadComplete = true;
+
+            genericReturned = true;
+        }
+
 
         // I'm never sure if this is needed or not
         protected async Task<bool> pauseAsync(string caller)
