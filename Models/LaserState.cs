@@ -4,6 +4,12 @@ namespace EnlightenMAUI.Models;
 public enum LaserMode { MANUAL=0, AUTO_DARK=1, MAX_LASER_MODES=2 };
 public enum LaserType { NORMAL=0, MAX_LASER_TYPES=1 } // add others if/when implemented in FW
 
+public enum BYTE_6_FLAGS
+{
+    INTERLOCK_CLOSED = 0x01,
+    LASER_ACTIVE = 0x02
+}
+
 public class LaserState
 {
     public LaserType type = LaserType.NORMAL;
@@ -11,6 +17,8 @@ public class LaserState
     public bool enabled;
     public byte watchdogSec = 5;
     public ushort laserDelayMS { get; set; } = 0;
+    public bool interlockClosed = false;
+    public bool laserActive = false;
 
     // While we're working out various timing and stabilization issues in FW,
     // we're just going to implment Raman Mode in SW.  However, the FW version
@@ -32,6 +40,8 @@ public class LaserState
         logger.debug($"  enabled = {enabled}");
         logger.debug($"  watchdogSec = {watchdogSec}");
         logger.debug($"  laserDelayMS = {laserDelayMS} ms");
+        logger.debug($"  interlockClosed = {interlockClosed}");
+        logger.debug($"  laserActive = {laserActive}");
     }
 
     public LaserState(byte[] data = null)
@@ -55,6 +65,8 @@ public class LaserState
         enabled = false;
         watchdogSec = 10;
         laserDelayMS = 500;
+        interlockClosed = false;
+        laserActive = false;
         dump();
     }
 
@@ -67,13 +79,14 @@ public class LaserState
     // override these is.
     public byte[] serialize()
     {
-        byte[] data = new byte[6];
+        byte[] data = new byte[4];
 
         data[1] = (byte)type;
         data[0] = (byte)mode;
         data[2] = (byte)(enabled ? 1 : 0);
         data[3] = watchdogSec; 
-
+        //data[4] = 0;
+        //data[5] = 0;
         //data[4] = (byte)((laserDelayMS >> 8) & 0xff);
         //data[5] = (byte)( laserDelayMS       & 0xff);
 
@@ -115,7 +128,7 @@ public class LaserState
     // is rejected and application state is unchanged.
     public bool parse(byte[] data)
     {
-        if (data.Length != 6)
+        if (data.Length != 7)
         {
             logger.error($"rejecting LaserState with invalid payload length {data.Length}");
             return false;
@@ -193,9 +206,18 @@ public class LaserState
         ushort newLaserDelayMS = (ushort)((data[4] << 8) | data[5]);
 
         ////////////////////////////////////////////////////////////////////
+        // Bitmask
+        ////////////////////////////////////////////////////////////////////
+        
+        interlockClosed = (data[6] & (byte)BYTE_6_FLAGS.INTERLOCK_CLOSED) != 0;
+        laserActive = (data[6] & (byte)BYTE_6_FLAGS.LASER_ACTIVE) != 0;
+
+        if (!laserActive)
+            newEnabled = false;
+
+        ////////////////////////////////////////////////////////////////////
         // all fields validated, accept new values
         ////////////////////////////////////////////////////////////////////
-
         type = newType;
         enabled = newEnabled;
         watchdogSec = newWatchdog;

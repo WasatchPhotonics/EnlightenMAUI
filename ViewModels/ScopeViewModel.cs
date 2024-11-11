@@ -599,6 +599,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.updateLaserProperties: start");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserIsAvailable)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
+        updateLaserButton();
         logger.debug("SVM.updateLaserProperties: done");
     }
 
