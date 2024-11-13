@@ -871,6 +871,10 @@ public class BluetoothSpectrometer : Spectrometer
         {
             var offset = i * 2;
             ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
+
+            logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
+            logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
+
             if (totalPixelsRead >= spectrum.Length)
                 logger.error("more received data than expected...");
             else

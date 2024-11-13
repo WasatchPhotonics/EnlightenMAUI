@@ -913,15 +913,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
                     await c.StartUpdatesAsync();
                 }
-                // disabled until I can troubleshoot with Nic
-                else if (c.CanUpdate && name == "acquireSpectrum")
-                {
-                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
-                    //c.ValueUpdated -= _characteristicUpdated;
-                    c.ValueUpdated += (spec as BluetoothSpectrometer).receiveSpectralUpdate;
-
-                    await c.StartUpdatesAsync();
-                }
             }
 
             await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
