@@ -265,9 +265,9 @@ public class BluetoothSpectrometer : Spectrometer
             return true;
 
         ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
-        byte[] data = ToBLEData.convert(value, len: 4);
+        byte[] data = ToBLEData.convert(value, len: 3);
 
-        byte[] request = { 0xb2, 0, 0, 0, 0 };
+        byte[] request = { 0xb2, 0, 0, 0 };
         Array.Copy(data, 0, request, 1, data.Length);
 
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
