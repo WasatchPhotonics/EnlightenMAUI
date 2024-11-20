@@ -607,6 +607,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 }
                     logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
                 await Shell.Current.GoToAsync("//ScopePage");
+                await (spec as BluetoothSpectrometer).timingTest();
             }
         }
         logger.debug("BVM.doConnectOrDisconnect: done");

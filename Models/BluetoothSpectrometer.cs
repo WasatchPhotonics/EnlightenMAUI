@@ -5,6 +5,7 @@ using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using static Android.Widget.GridLayout;
 using Java.Util.Functions;
+using System.Diagnostics;
 
 namespace EnlightenMAUI.Models;
 
@@ -149,8 +150,9 @@ public class BluetoothSpectrometer : Spectrometer
         // for now, ignore EEPROM configuration and hardcode
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
-        integrationTimeMS = 400;
-        gainDb = 8;
+        //integrationTimeMS = 400;
+        //gainDb = 8;
+        //await timingTest();
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
@@ -175,6 +177,25 @@ public class BluetoothSpectrometer : Spectrometer
 
         logger.debug("Spectrometer.initAsync: done");
         return true;
+    }
+
+    public async Task timingTest()
+    {
+        await Task.Delay(5000);
+
+        logger.info("setting to 4x1000");
+        scansToAverage = 4;
+        integrationTimeMS = 1000;
+        autoDarkEnabled = true;
+        Stopwatch watch = Stopwatch.StartNew();
+
+        await takeOneAsync(false);
+
+        watch.Stop();
+
+        logger.info("spectrum returned in {0} seconds", watch.Elapsed.TotalSeconds);
+
+
     }
 
     protected override async Task<List<byte[]>> readEEPROMAsync()
@@ -291,7 +312,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (ok)
         { 
             _lastIntegrationTimeMS = _nextIntegrationTimeMS;
-            await pauseAsync("syncIntegrationTimeMSAsync");
+            //await pauseAsync("syncIntegrationTimeMSAsync");
         }
         else
             logger.error($"Failed to set integrationTimeMS {value}");
@@ -819,7 +840,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         int waitTime = (int)integrationTimeMS * scansToAverage;
         if (laserState.mode == LaserMode.AUTO_DARK)
-            waitTime = (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+            waitTime = (int)integrationTimeMS * scansToAverage; //+ (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
 
         await Task.Delay(waitTime);
 
@@ -911,8 +932,8 @@ public class BluetoothSpectrometer : Spectrometer
             if (crc == lastCRC)
             {
                 logger.error($"received duplicate CRC 0x{crc:x4}, retrying");
-                requestRetry = true;
-                continue;
+                //requestRetry = true;
+                //continue;
             }
 
             lastCRC = crc;

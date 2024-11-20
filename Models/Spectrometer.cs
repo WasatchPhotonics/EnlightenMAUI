@@ -274,7 +274,7 @@ namespace EnlightenMAUI.Models
                 _useHorizontalROI = value;
             }
         }
-        bool _useHorizontalROI = true;
+        bool _useHorizontalROI = false;
 
         public virtual byte laserWatchdogSec
         {
