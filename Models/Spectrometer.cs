@@ -13,6 +13,8 @@ using static Android.Telephony.CarrierConfigManager;
 
 namespace EnlightenMAUI.Models
 {
+    public enum AcquisitionMode { STANDARD=0, AUTO_DARK=1, AUTO_RAMAN=2 };
+
     public abstract class Spectrometer : INotifyPropertyChanged
     {
         public static EventHandler<Spectrometer> NewConnection;
@@ -25,6 +27,7 @@ namespace EnlightenMAUI.Models
         public float laserExcitationNM;
         public EEPROM eeprom = EEPROM.getInstance();
         public Battery battery;
+        public AcquisitionMode acquisitionMode = AcquisitionMode.STANDARD;
 
         ////////////////////////////////////////////////////////////////////////
         // laserState
@@ -225,19 +228,51 @@ namespace EnlightenMAUI.Models
 
         public virtual bool autoDarkEnabled
         {
-            get => laserState.mode == LaserMode.AUTO_DARK;
+            get => acquisitionMode == AcquisitionMode.AUTO_DARK;
             set
             {
-                var mode = value ? LaserMode.AUTO_DARK : LaserMode.MANUAL;
-                if (laserState.mode != mode)
+                if (value && acquisitionMode != AcquisitionMode.AUTO_DARK)
                 {
-                    logger.debug($"Spectrometer.ramanModeEnabled: laserState.mode -> {mode}");
-                    laserState.mode = mode;
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                    acquisitionMode = AcquisitionMode.AUTO_DARK;
                     laserState.enabled = false;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
                 }
-                else
-                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {mode}");
+                else if (!value && !autoRamanEnabled)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                    acquisitionMode = AcquisitionMode.STANDARD;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+                }
+                else if (value)
+                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_DARK}");
+            }
+        }
+
+        public virtual bool autoRamanEnabled
+        {
+            get => acquisitionMode == AcquisitionMode.AUTO_RAMAN;
+            set
+            {
+                if (value && acquisitionMode != AcquisitionMode.AUTO_RAMAN)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                    acquisitionMode = AcquisitionMode.AUTO_RAMAN;
+                    laserState.enabled = false;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+                }
+                else if (!value && !autoDarkEnabled)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                    acquisitionMode = AcquisitionMode.STANDARD;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+                }
+                else if (value)
+                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_RAMAN}");
             }
         }
 
@@ -348,6 +383,232 @@ namespace EnlightenMAUI.Models
         // until it didn't.  Now I call it BEFORE each acquisition, and that
         // seems to work better?
         internal abstract Task<bool> updateBatteryAsync();
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Auto-Raman Parameters
+        ////////////////////////////////////////////////////////////////////////
+
+        public bool holdAutoRamanParameterSet = false;
+
+        public virtual ushort maxCollectionTimeMS
+        {
+            get => _maxCollectionTimeMS;
+            set
+            {
+                if (value != _maxCollectionTimeMS)
+                {
+                    _maxCollectionTimeMS = value;
+                    logger.debug($"Spectrometer.maxCollectionTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxCollectionTimeMS)));
+                }
+            }
+        }
+        protected ushort _maxCollectionTimeMS = 10000;
+        
+        public virtual ushort startIntTimeMS
+        {
+            get => _startIntTimeMS;
+            set
+            {
+                if (value != _startIntTimeMS)
+                {
+                    _startIntTimeMS = value;
+                    logger.debug($"Spectrometer.startIntTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(startIntTimeMS)));
+                }
+            }
+        }
+        protected ushort _startIntTimeMS = 100;
+
+        public virtual byte startGainDb
+        {
+            get => _startGainDB;
+            set
+            {
+                if (0 <= value && value <= 72)
+                {
+                    _startGainDB = value;
+                    logger.debug($"Spectrometer.startGainDb: next = {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(startGainDb)));
+                }
+                else
+                {
+                    logger.error($"ignoring out-of-range gainDb {value}");
+                }
+            }
+        }
+        protected byte _startGainDB = 0;
+
+        public virtual ushort minIntTimeMS
+        {
+            get => _minIntTimeMS;
+            set
+            {
+                if (value != _minIntTimeMS)
+                {
+                    _minIntTimeMS = value;
+                    logger.debug($"Spectrometer.minIntTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minIntTimeMS)));
+                }
+            }
+        }
+        protected ushort _minIntTimeMS = 10;
+        
+        public virtual ushort maxIntTimeMS
+        {
+            get => _maxIntTimeMS;
+            set
+            {
+                if (value != _maxIntTimeMS)
+                {
+                    _maxIntTimeMS = value;
+                    logger.debug($"Spectrometer.maxIntTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxIntTimeMS)));
+                }
+            }
+        }
+        protected ushort _maxIntTimeMS = 2000;
+
+        public virtual byte minGainDb
+        {
+            get => _minGainDb;
+            set
+            {
+                if (0 <= value && value <= 72)
+                {
+                    _minGainDb = value;
+                    logger.debug($"Spectrometer.minGainDb: next = {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minGainDb)));
+                }
+                else
+                {
+                    logger.error($"ignoring out-of-range gainDb {value}");
+                }
+            }
+        }
+        protected byte _minGainDb = 0;
+
+        public virtual byte maxGainDb
+        {
+            get => _maxGainDb;
+            set
+            {
+                if (0 <= value && value <= 72)
+                {
+                    _maxGainDb = value;
+                    logger.debug($"Spectrometer.maxGainDb: next = {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxGainDb)));
+                }
+                else
+                {
+                    logger.error($"ignoring out-of-range gainDb {value}");
+                }
+            }
+        }
+        protected byte _maxGainDb = 32;
+
+        public virtual ushort targetCounts
+        {
+            get => _targetCounts;
+            set
+            {
+                if (value != _targetCounts)
+                {
+                    _targetCounts = value;
+                    logger.debug($"Spectrometer.targetCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(targetCounts)));
+                }
+            }
+        }
+        protected ushort _targetCounts = 45000;
+        
+        public virtual ushort minCounts
+        {
+            get => _minCounts;
+            set
+            {
+                if (value != _minCounts)
+                {
+                    _minCounts = value;
+                    logger.debug($"Spectrometer.minCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minCounts)));
+                }
+            }
+        }
+        protected ushort _minCounts = 40000;
+
+        public virtual ushort maxCounts
+        {
+            get => _maxCounts;
+            set
+            {
+                if (value != _maxCounts)
+                {
+                    _maxCounts = value;
+                    logger.debug($"Spectrometer.maxCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxCounts)));
+                }
+            }
+        }
+        protected ushort _maxCounts = 50000;
+        
+        public virtual byte maxFactor
+        {
+            get => _maxFactor;
+            set
+            {
+                if (value != _maxFactor)
+                {
+                    _maxFactor = value;
+                    logger.debug($"Spectrometer.maxFactor -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxFactor)));
+                }
+            }
+        }
+        protected byte _maxFactor = 5;
+
+        public virtual float dropFactor
+        {
+            get => _dropFactor;
+            set
+            {
+                _dropFactor = value;
+                logger.debug($"Spectrometer.dropFactor: next = {value}");
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(dropFactor)));
+            }
+        }
+        protected float _dropFactor = 0.5f;
+
+        public virtual ushort saturationCounts
+        {
+            get => _saturationCounts;
+            set
+            {
+                if (value != _saturationCounts)
+                {
+                    _saturationCounts = value;
+                    logger.debug($"Spectrometer.saturationCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saturationCounts)));
+                }
+            }
+        }
+        protected ushort _saturationCounts = 65000;
+
+        public virtual byte maxAverage
+        {
+            get => _maxAverage;
+            set
+            {
+                if (value != _maxAverage)
+                {
+                    _maxAverage = value;
+                    logger.debug($"Spectrometer.maxAverage -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxAverage)));
+                }
+            }
+        }
+        protected byte _maxAverage = 100;
 
         ////////////////////////////////////////////////////////////////////////
         // dark

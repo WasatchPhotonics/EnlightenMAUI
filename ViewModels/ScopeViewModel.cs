@@ -508,9 +508,9 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         get
         {
-            var available = !spec.autoDarkEnabled && spec.battery.level >= 5;
+            var available = !spec.autoRamanEnabled && !spec.autoDarkEnabled && spec.battery.level >= 5;
             if (!available)
-                logger.debug($"laser not available because ramanModeEnabled ({spec.autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
+                logger.debug($"laser not available because ramanModeEnabled ({spec.autoRamanEnabled}) or autoDark enabled ({spec.autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
             return available;
         }
     }
@@ -736,7 +736,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && spec.dark != null)
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
 
         return ok;
@@ -889,7 +889,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         uint pixels = (uint)spec.measurement.processed.Length;
         double[] intensities = spec.measurement.processed;
 
-        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.measurement.dark != null;
+        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
         try
         {

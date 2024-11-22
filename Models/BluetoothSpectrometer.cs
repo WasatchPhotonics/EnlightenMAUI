@@ -58,6 +58,7 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug("Spectrometer.disconnect: start");
         laserEnabled = false;
         autoDarkEnabled = false;
+        autoRamanEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
     }
@@ -178,6 +179,9 @@ public class BluetoothSpectrometer : Spectrometer
         // at this point we know the user has already granted location privs.
         //
         // whereAmI = WhereAmI.getInstance();
+
+        //test set
+        //dropFactor = 0.8f;
 
         logger.debug("Spectrometer.initAsync: done");
         return true;
@@ -447,7 +451,300 @@ public class BluetoothSpectrometer : Spectrometer
             _laserWarningDelaySec = value;
         }
     }
-   
+
+    ////////////////////////////////////////////////////////////////////////
+    // Auto-Raman Parameters
+    ////////////////////////////////////////////////////////////////////////
+
+    public override ushort maxCollectionTimeMS
+    {
+        get => _maxCollectionTimeMS;
+        set
+        {
+            if (value != _maxCollectionTimeMS)
+            {
+                _maxCollectionTimeMS = value;
+                logger.debug($"Spectrometer.maxTimeMS -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override ushort startIntTimeMS
+    {
+        get => _startIntTimeMS;
+        set
+        {
+            if (value != _startIntTimeMS)
+            {
+                _startIntTimeMS = value;
+                logger.debug($"Spectrometer.startIntTimeMS -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override byte startGainDb
+    {
+        get => _startGainDB;
+        set
+        {
+            if (0 <= value && value <= 72)
+            {
+                _startGainDB = value;
+                logger.debug($"Spectrometer.startGainDb: next = {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+            else
+            {
+                logger.error($"ignoring out-of-range gainDb {value}");
+            }
+        }
+    }
+
+    public override ushort minIntTimeMS
+    {
+        get => _minIntTimeMS;
+        set
+        {
+            if (value != _minIntTimeMS)
+            {
+                _minIntTimeMS = value;
+                logger.debug($"Spectrometer.minIntTimeMS -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override ushort maxIntTimeMS
+    {
+        get => _maxIntTimeMS;
+        set
+        {
+            if (value != _maxIntTimeMS)
+            {
+                _maxIntTimeMS = value;
+                logger.debug($"Spectrometer.maxIntTimeMS -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override byte minGainDb
+    {
+        get => _minGainDb;
+        set
+        {
+            if (0 <= value && value <= 72)
+            {
+                _minGainDb = value;
+                logger.debug($"Spectrometer.minGainDb: next = {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+            else
+            {
+                logger.error($"ignoring out-of-range gainDb {value}");
+            }
+        }
+    }
+
+    public override byte maxGainDb
+    {
+        get => _maxGainDb;
+        set
+        {
+            if (0 <= value && value <= 72)
+            {
+                _maxGainDb = value;
+                logger.debug($"Spectrometer.maxGainDb: next = {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+            else
+            {
+                logger.error($"ignoring out-of-range gainDb {value}");
+            }
+        }
+    }
+
+    public override ushort targetCounts
+    {
+        get => _targetCounts;
+        set
+        {
+            if (value != _targetCounts)
+            {
+                _targetCounts = value;
+                logger.debug($"Spectrometer.targetCounts -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override ushort minCounts
+    {
+        get => _minCounts;
+        set
+        {
+            if (value != _minCounts)
+            {
+                _minCounts = value;
+                logger.debug($"Spectrometer.minCounts -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override ushort maxCounts
+    {
+        get => _maxCounts;
+        set
+        {
+            if (value != _maxCounts)
+            {
+                _maxCounts = value;
+                logger.debug($"Spectrometer.maxCounts -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override byte maxFactor
+    {
+        get => _maxFactor;
+        set
+        {
+            if (value != _maxFactor)
+            {
+                _maxFactor = value;
+                logger.debug($"Spectrometer.maxFactor -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override float dropFactor
+    {
+        get => _dropFactor;
+        set
+        {
+            _dropFactor = value;
+            logger.debug($"Spectrometer.dropFactor: next = {value}");
+            _ = syncAutoRamanParameters();
+            NotifyPropertyChanged();
+        }
+    }
+
+    public override ushort saturationCounts
+    {
+        get => _saturationCounts;
+        set
+        {
+            if (value != _saturationCounts)
+            {
+                _saturationCounts = value;
+                logger.debug($"Spectrometer.saturationCounts -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public override byte maxAverage
+    {
+        get => _maxAverage;
+        set
+        {
+            if (value != _maxAverage)
+            {
+                _maxAverage = value;
+                logger.debug($"Spectrometer.maxAverage -> {value}");
+                _ = syncAutoRamanParameters();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    async Task<bool> syncAutoRamanParameters()
+    {
+        if (!paired || characteristicsByName is null || holdAutoRamanParameterSet)
+            return false;
+
+        byte[] paramPack = packAutoRamanParameters();
+
+        byte[] request = new byte[paramPack.Length + 2];
+        request[0] = 0xff;    
+        request[1] = 0xfd;    
+        Array.Copy(paramPack, 0, request, 2, paramPack.Length);
+        logger.hexdump(request, "data: ");
+
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.syncAutoRamanParameters: couldn't get semaphore");
+            return false;
+        }
+        var ok = await writeGenericCharacteristic(request);
+        sem.Release();
+        if (ok)
+        {
+            await pauseAsync("syncAutoRamanParameters");
+        }
+        else
+            logger.error($"Failed to set auto raman params");
+
+        // kludge
+        if (!ok)
+        {
+            logger.error("KLUDGE: ignoring auto params failure");
+            ok = true;
+        }
+
+        return ok;
+    }
+
+    byte[] packAutoRamanParameters()
+    {
+        List<byte> data = new List<byte>();
+
+        data.Add((byte)(maxCollectionTimeMS & 0xFF));
+        data.Add((byte)((maxCollectionTimeMS >> 8) & 0xFF));
+        data.Add((byte)(startIntTimeMS & 0xFF));
+        data.Add((byte)((startIntTimeMS >> 8) & 0xFF));
+        data.Add((byte)(startGainDb & 0xFF));
+        data.Add((byte)(maxIntTimeMS & 0xFF));
+        data.Add((byte)((maxIntTimeMS >> 8) & 0xFF));
+        data.Add((byte)(minIntTimeMS & 0xFF));
+        data.Add((byte)((minIntTimeMS >> 8) & 0xFF));
+        data.Add((byte)(maxGainDb & 0xFF));
+        data.Add((byte)(minGainDb & 0xFF));
+        data.Add((byte)(targetCounts & 0xFF));
+        data.Add((byte)((targetCounts >> 8) & 0xFF));
+        data.Add((byte)(maxCounts & 0xFF));
+        data.Add((byte)((maxCounts >> 8) & 0xFF));
+        data.Add((byte)(minCounts & 0xFF));
+        data.Add((byte)((minCounts >> 8) & 0xFF));
+        data.Add((byte)(maxFactor & 0xFF));
+        data.Add((byte)((int)dropFactor & 0xFF));
+        data.Add((byte)((int)((dropFactor - (int)dropFactor) * 0x100) & 0xFF));
+        data.Add((byte)(saturationCounts & 0xFF));
+        data.Add((byte)((saturationCounts >> 8) & 0xFF));
+        data.Add((byte)(maxAverage & 0xFF));
+
+
+        byte[] serializedParams = data.ToArray();
+        return serializedParams;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // genericCharacteristic
     ////////////////////////////////////////////////////////////////////////
@@ -486,20 +783,53 @@ public class BluetoothSpectrometer : Spectrometer
 
     public override bool autoDarkEnabled
     {
-        get => laserState.mode == LaserMode.AUTO_DARK;
+        get => acquisitionMode == AcquisitionMode.AUTO_DARK;
         set
         {
-            var mode = value ? LaserMode.AUTO_DARK : LaserMode.MANUAL;
-            if (laserState.mode != mode)
-            { 
-                logger.debug($"Spectrometer.ramanModeEnabled: laserState.mode -> {mode}");
-                laserState.mode = mode;
+            if (value && acquisitionMode != AcquisitionMode.AUTO_DARK)
+            {
+                logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                acquisitionMode = AcquisitionMode.AUTO_DARK;
                 laserState.enabled = false;
                 _ = syncLaserStateAsync();
-                NotifyPropertyChanged();
+                NotifyPropertyChanged(nameof(autoRamanEnabled));
+                NotifyPropertyChanged(nameof(autoDarkEnabled));
             }
-            else
-                logger.debug($"Spectrometer.ramanModeEnabled: mode already {mode}");
+            else if (!value && !autoRamanEnabled)
+            {
+                logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                acquisitionMode = AcquisitionMode.STANDARD;
+                NotifyPropertyChanged(nameof(autoRamanEnabled));
+                NotifyPropertyChanged(nameof(autoDarkEnabled));
+            }
+            else if (value)
+                logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_DARK}");
+        }
+    }
+
+    public override bool autoRamanEnabled
+    {
+        get => acquisitionMode == AcquisitionMode.AUTO_RAMAN;
+        set
+        {
+            if (value && acquisitionMode != AcquisitionMode.AUTO_RAMAN)
+            {
+                logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                acquisitionMode = AcquisitionMode.AUTO_RAMAN;
+                laserState.enabled = false;
+                _ = syncLaserStateAsync();
+                NotifyPropertyChanged(nameof(autoRamanEnabled));
+                NotifyPropertyChanged(nameof(autoDarkEnabled));
+            }
+            else if (!value && !autoDarkEnabled)
+            {
+                logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                acquisitionMode = AcquisitionMode.STANDARD;
+                NotifyPropertyChanged(nameof(autoRamanEnabled));
+                NotifyPropertyChanged(nameof(autoDarkEnabled));
+            }
+            else if (value)
+                logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_RAMAN}");
         }
     }
 
@@ -736,7 +1066,7 @@ public class BluetoothSpectrometer : Spectrometer
         applyRamanIntensityCorrection(spectrum);
 
 
-        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && dark != null)
+        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
         {
             logger.info("Performing background removal");
             for (int i = 0; i < spectrum.Length; ++i)
@@ -803,7 +1133,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
-        byte[] request = ToBLEData.convert(autoDarkEnabled);
+        byte[] request = new byte[] { (byte)acquisitionMode };
         if (0 != await acquireChar.WriteAsync(request))
         {
             logger.error("failed to send acquire");
