@@ -7,7 +7,7 @@ namespace EnlightenMAUI.Models;
 // encapsulate battery processing
 public class Battery 
 {
-    ushort raw;
+    uint raw;
     byte rawLevel;
     byte rawState;
     public bool initialized = false;
@@ -38,27 +38,33 @@ public class Battery
             return;
         }
 
-        if (response.Length != 2)
+        if (response.Length != 3)
         {
             logger.error("Battery: invalid response");
             return;
         }
 
-        ushort raw = ParseData.toUInt16(response, 0);
-        this.raw = raw; // store for debugging, as toString() outputs this
+        //uint raw = ParseData.toUInt32(response, 0);
+        //this.raw = raw; // store for debugging, as toString() outputs this
+        raw = 0;
+        raw = raw | (uint)response[0];
+        raw = raw | (uint)(response[1] << 8);
+        raw = raw | (uint)(response[2] << 8);
 
         // reversed from SiG-290?
-        rawLevel = (byte)((raw & 0xff00) >> 8);
+        rawLevel = (byte)response[1];
+
         rawState = (byte)(raw & 0xff);
 
         level = (double)rawLevel;
-        
+        level += ((double)response[2] / 256);
+
         charging = (rawState & 1) == 1;
 
         lastChecked = DateTime.Now;
         initialized = true;
 
-        logger.debug($"Battery.parse: {this}");
+        logger.debug($"Battery.parse: {level}");
     }
 
     public void parse(uint response)
@@ -82,7 +88,7 @@ public class Battery
         if (!initialized)
             return "???";
 
-        logger.debug($"Battery: raw 0x{raw:x4} (lvl {rawLevel}, st 0x{rawState:x2}) = {level:f2}");
+        logger.debug($"Battery: raw 0x{raw:x8} (lvl {rawLevel}, pct {level - rawLevel}, st 0x{rawState:x2}) = {level:f2}");
 
         int intLevel = (int)Math.Round(level);
         return charging ? $"{intLevel}%>" : $"<{intLevel}%";
