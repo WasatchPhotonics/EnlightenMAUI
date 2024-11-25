@@ -33,6 +33,13 @@ public class BluetoothSpectrometer : Spectrometer
     const int MAX_RETRIES = 5;
     const int THROWAWAY_SPECTRA = 9;
 
+    const int AUTO_OPT_TARGET_RATIO = 32;
+    const int AUTO_TAKING_DARK = 33;
+    const int AUTO_LASER_WARNING_DELAY = 34;
+    const int AUTO_LASER_WARMUP = 35;
+    const int AUTO_TAKING_RAMAN = 36;
+
+
     uint totalPixelsToRead;
     uint totalPixelsRead;
     double[] spectrum;
@@ -1195,25 +1202,52 @@ public class BluetoothSpectrometer : Spectrometer
         var c = characteristicUpdatedEventArgs.Characteristic;
 
         byte[] data = c.Value;
-        int pixelsInPacket = (int)data.Length / 2 - 1;
-        logger.debug("reading {0} pixels", pixelsInPacket);
-        for (int i = 1; i <= pixelsInPacket; i++)
+
+        if (data[0] == 0xff && data[1] == 0xff)
         {
-            var offset = i * 2;
-            ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
-
-            logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
-            logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
-
-            if (totalPixelsRead >= spectrum.Length)
-                logger.error("more received data than expected...");
-            else
-                spectrum[totalPixelsRead] = intensity;
-            totalPixelsRead += 1;
+            if (data[2] == AUTO_OPT_TARGET_RATIO)
+            {
+                logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
+            }
+            else if (data[2] == AUTO_TAKING_DARK)
+            {
+                logger.debug("dark collection progress at {0} of {1}", data[3], data[4]);
+            }
+            else if (data[2] == AUTO_LASER_WARNING_DELAY)
+            {
+                logger.debug("laser warning progress at {0} of {1}", data[3], data[4]);
+            }
+            else if (data[2] == AUTO_LASER_WARMUP)
+            {
+                logger.debug("laser warmup progress at {0} of {1}", data[3], data[4]);
+            }
+            else if (data[2] == AUTO_TAKING_RAMAN)
+            {
+                logger.debug("raman collection progress at {0} of {1}", data[3], data[4]);
+            }
         }
+        else
+        {
+            int pixelsInPacket = (int)data.Length / 2 - 1;
+            logger.debug("reading {0} pixels", pixelsInPacket);
+            for (int i = 1; i <= pixelsInPacket; i++)
+            {
+                var offset = i * 2;
+                ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
 
-        raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
-        logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
+                logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
+                logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
+
+                if (totalPixelsRead >= spectrum.Length)
+                    logger.error("more received data than expected...");
+                else
+                    spectrum[totalPixelsRead] = intensity;
+                totalPixelsRead += 1;
+            }
+
+            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+            logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
+        }
         //characteristicUpdatedEventArgs.Characteristic.
     }
 }
