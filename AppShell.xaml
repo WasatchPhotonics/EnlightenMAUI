@@ -23,22 +23,22 @@
         <!-- Scope -->
         <ShellContent x:Name="ScopeTab" Title="Spectra" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
 
+        <ShellContent x:Name="AnalysisTab" Title="Anlysis" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:AnalysisPage}" Route="AnalysisPage"/>
+
+        <!-- Application Settings -->
+        <ShellContent x:Name="SettingsTab" Title="Configuration" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
+
+        <!-- Hardware -->
+        <ShellContent x:Name="HardwareTab" Title="Hardware" Icon="Images/ico_xs.png" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
+
+        <!-- Log -->
+        <ShellContent x:Name="LogTab" Title="Log" Icon="Images/ico_page.png" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
+
         <!-- Clipboard -->
         <!-- 
         <ShellContent x:Name="ClipboardTab" Title="Clipboard" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:ClipboardPage}" Route="ClipboardPage"/> 
         -->
 
-        <Tab Title="Settings" Icon="Images/ico_gear.png">
-            
-            <!-- Hardware -->
-            <ShellContent x:Name="HardwareTab" Title="Hardware" Icon="Images/ico_xs.png" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
-
-            <!-- Application Settings -->
-            <ShellContent x:Name="SettingsTab" Title="Configuration" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
-
-            <!-- Log -->
-            <ShellContent x:Name="LogTab" Title="Log" Icon="Images/ico_page.png" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
-        </Tab>
     </TabBar>
         
 

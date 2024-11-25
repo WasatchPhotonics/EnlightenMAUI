@@ -146,6 +146,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Pages\AnalysisPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Popups\OverlaysPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
