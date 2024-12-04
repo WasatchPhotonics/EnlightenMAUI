@@ -1076,10 +1076,13 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
         {
-            logger.info("Performing background removal");
-            for (int i = 0; i < spectrum.Length; ++i)
+            if (dark != null)
             {
-                spectrum[i] -= dark[i];
+                logger.info("Performing background removal");
+                for (int i = 0; i < spectrum.Length; ++i)
+                {
+                    spectrum[i] -= dark[i];
+                }
             }
 
             double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
