@@ -184,6 +184,10 @@ namespace EnlightenMAUI.Models
         Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
         public event EventHandler<Library> LoadFinished;
 
+        public string mostRecentCompound;
+        public double mostRecentScore;
+        public Measurement mostRecentMeasurement;
+
         Logger logger = Logger.getInstance();
         Task libraryLoader;
 
@@ -610,6 +614,10 @@ namespace EnlightenMAUI.Models
             }
 
             logger.info($"best match {finalSample} with score {maxScore}");
+
+            mostRecentCompound = finalSample;
+            mostRecentScore = maxScore;
+            mostRecentMeasurement = library[finalSample];
 
             if (finalSample != "")
                 return new Tuple<string, double>(finalSample, maxScore);

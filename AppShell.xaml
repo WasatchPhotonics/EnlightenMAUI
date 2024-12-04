@@ -23,7 +23,7 @@
         <!-- Scope -->
         <ShellContent x:Name="ScopeTab" Title="Spectra" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
 
-        <ShellContent x:Name="AnalysisTab" Title="Anlysis" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:AnalysisPage}" Route="AnalysisPage"/>
+        <ShellContent x:Name="AnalysisTab" Title="Analysis" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:AnalysisPage}" Route="AnalysisPage"/>
 
         <!-- Application Settings -->
         <ShellContent x:Name="SettingsTab" Title="Configuration" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>

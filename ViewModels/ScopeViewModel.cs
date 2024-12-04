@@ -101,7 +101,11 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            libraryLoader = Task.Run(() => library = new Library("library", spec));
+            libraryLoader = Task.Run(() =>
+            { 
+                library = new Library("library", spec); 
+                AnalysisViewModel.getInstance().library = library;
+            });
             libraryLoader.Wait();
             library.LoadFinished += Library_LoadFinished;
             Task.Run(() => findUserFiles());
@@ -165,7 +169,11 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            libraryLoader = Task.Run(() => library = new Library("library", spec));
+            libraryLoader = Task.Run(() =>
+            {
+                library = new Library("library", spec);
+                AnalysisViewModel.getInstance().library = library;
+            });
             libraryLoader.Wait();
             library.LoadFinished += Library_LoadFinished;
             Task.Run(() => findUserFiles());
@@ -738,6 +746,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
+        else
+            AnalysisViewModel.getInstance().SetData(spec.measurement, null);
 
         return ok;
     }
@@ -1289,13 +1299,24 @@ public class ScopeViewModel : INotifyPropertyChanged
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
 
-                if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
-                    displayMatch = true;
+
+                AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
+
+                await Shell.Current.GoToAsync("//AnalysisPage");
+
+                //if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
+                    //displayMatch = true;
             }
+            else
+            {
+                AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+            }
+
         }
         else
         {
             hasMatch = false;
+            AnalysisViewModel.getInstance().SetData(spec.measurement, null);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
         }
@@ -1348,7 +1369,6 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         waitingForMatch = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
-
 
         return true;
     }
