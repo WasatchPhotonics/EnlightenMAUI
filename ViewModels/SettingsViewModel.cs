@@ -417,5 +417,16 @@ namespace EnlightenMAUI.ViewModels
                 Preferences.Set("verticalROIStopLine", value);
             }
         }
+
+        public bool advancedModeEnabled
+        {
+            get => settings.advancedModeEnabled;
+            set
+            {
+                settings.advancedModeEnabled = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeEnabled)));
+            }
+        }
+
     }
 }

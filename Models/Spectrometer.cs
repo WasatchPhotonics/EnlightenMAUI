@@ -27,7 +27,7 @@ namespace EnlightenMAUI.Models
         public float laserExcitationNM;
         public EEPROM eeprom = EEPROM.getInstance();
         public Battery battery;
-        public AcquisitionMode acquisitionMode = AcquisitionMode.STANDARD;
+        public AcquisitionMode acquisitionMode = AcquisitionMode.AUTO_RAMAN;
 
         ////////////////////////////////////////////////////////////////////////
         // laserState

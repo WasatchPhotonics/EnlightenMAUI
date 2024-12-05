@@ -151,6 +151,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
 
+        spec.autoRamanEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
     }
@@ -534,12 +535,24 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => Settings.getInstance().authenticated;
     }
 
+    public bool advancedModeEnabled
+    {
+        get => settings.advancedModeEnabled;
+    }
+
+    public bool advancedModeDisabled
+    {
+        get => !settings.advancedModeEnabled;
+    }
+
     // Provided so any changes to Settings.authenticated will immediately
     // take effect on our View.
     void handleSettingsChange(object sender, PropertyChangedEventArgs e)
     {
         logger.debug($"SVM.handleSettingsChange: received notification from {sender}, so refreshing isAuthenticated");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeEnabled)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeDisabled)));
 
         updateLaserProperties();
     }

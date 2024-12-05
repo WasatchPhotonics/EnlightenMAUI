@@ -122,6 +122,21 @@ public class Settings : INotifyPropertyChanged
     }
     bool _authenticated;
 
+    public bool advancedModeEnabled
+    {
+        get => _advancedModeEnabled;
+        set
+        {
+            _advancedModeEnabled = value;
+            Preferences.Set("advancedModeEnabled", value);
+            // notify anyone listening to Settings.advancedModeEnabled, such as
+            // ScopeViewModel (which uses this to decide whether to show the
+            // laserFiring switch, etc)
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeEnabled)));
+        }
+    }
+    bool _advancedModeEnabled = false;
+
     // The user entered a new password on the SettingsView, and hit
     // return, so the View asked the ViewModel to authenticate it.  The
     // SettingsViewModel then asked the Model to authenticate it.
