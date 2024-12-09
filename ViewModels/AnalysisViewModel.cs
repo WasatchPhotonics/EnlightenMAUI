@@ -1,6 +1,8 @@
 ﻿using Accord.Statistics.Testing.Power;
+using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
+using EnlightenMAUI.Popups;
 using Google.Android.Material.Shape;
 using MathNet.Numerics.Statistics;
 using System;
@@ -20,12 +22,16 @@ namespace EnlightenMAUI.ViewModels
     {
         public event PropertyChangedEventHandler PropertyChanged;
         public event EventHandler<AnalysisViewModel> SpectraChanged;
-
+        public delegate void ToastNotification(string msg);
+        public event ToastNotification notifyToast;
 
         Logger logger = Logger.getInstance();
         public Library library;
         public Spectrometer spec;
-        static AnalysisViewModel instance = null;
+        static AnalysisViewModel instance = null; 
+        SaveSpectrumPopupViewModel saveViewModel;
+        SaveSpectrumPopup savePopup;
+        bool popupClosing = false;
         double[] xAxis;
 
         static public AnalysisViewModel getInstance()
@@ -98,6 +104,47 @@ namespace EnlightenMAUI.ViewModels
             foreach (ChartDataPoint point in instance.referenceData)
                 referenceData.Add(point);
         }
+
+        async Task<bool> doSave()
+        {
+            DisplayPopup();
+            return true;
+        }
+
+        public void DisplayPopup()
+        {
+            //this.popupService.ShowPopup<SaveSpectrumPopupViewModel>();
+            saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
+            saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
+            savePopup = new SaveSpectrumPopup(saveViewModel);
+            popupClosing = false;
+            Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
+        }
+
+        private async void SaveViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (saveViewModel != null)
+            {
+                if (e.PropertyName == nameof(saveViewModel.toBeSaved) && saveViewModel.toBeSaved)
+                {
+                    spec.measurement.filename = saveViewModel.saveName + ".csv";
+                    spec.measurement.notes = saveViewModel.notes;
+                    library.addSampleToLibrary(saveViewModel.saveName, spec.measurement);
+                    var ok = await spec.measurement.saveAsync();
+                    if (ok)
+                    {
+                        notifyToast?.Invoke($"{saveViewModel.saveName} added to library");
+                    }
+                }
+            }
+
+            if (e.PropertyName == nameof(saveViewModel.toBeSaved) && !popupClosing)
+            {
+                popupClosing = true;
+                await savePopup.CloseAsync();
+            }
+        }
+
 
         private void AnalysisViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {

@@ -146,6 +146,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Popups\AddToLibraryPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Pages\AnalysisPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

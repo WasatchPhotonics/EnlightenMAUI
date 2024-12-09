@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="EnlightenMAUI.Popups.AddToLibraryPopup">
+    <Border  BackgroundColor="#666" 
+             Padding="2" 
+             HorizontalOptions="Fill">
+
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="10,10,10,10" />
+        </Border.StrokeShape>
+
+        <StackLayout Orientation="Vertical" 
+                     HorizontalOptions="Fill"
+                     VerticalOptions="Center">
+
+            <Label HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   Margin="5"
+                   Text="Spectrum Name"/>
+            <Entry x:Name="saveEntry"
+                   HorizontalOptions="FillAndExpand"
+                   Margin="5"
+                   TextColor="Black"
+                   VerticalOptions="Center"
+                   MaxLength="50"
+                   Text="{Binding saveName}"
+                   Focused="saveEntry_Focused"/>
+            <Label HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   Margin="5"
+                   Text="Notes"/>
+            <Editor x:Name="notes"
+                   HorizontalOptions="FillAndExpand"
+                    HeightRequest="60"
+                   Margin="5"
+                   TextColor="Black"
+                   VerticalOptions="Center"
+                   Text="{Binding notes}"/>
+
+            <FlexLayout Wrap="Wrap" AlignItems="Stretch"  
+                        VerticalOptions="Fill"
+                        Margin="5"
+                        JustifyContent="SpaceEvenly">
+                <Button VerticalOptions="Start"
+                        WidthRequest="55"
+                        FontSize="12"
+                        Padding="5"
+                        Text="Cancel"
+                        Command="{Binding cancelCmd}"/>
+                <Button WidthRequest="55"
+                        FontSize="12"
+                        VerticalOptions="Start"
+                        Padding="5"
+                        Text="Save"
+                        Command="{Binding saveCmd}"/>
+            </FlexLayout>
+        </StackLayout>
+    </Border>
+</toolkit:Popup>
