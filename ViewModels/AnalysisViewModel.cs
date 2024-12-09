@@ -1,6 +1,7 @@
 ﻿using Accord.Statistics.Testing.Power;
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
+using Google.Android.Material.Shape;
 using MathNet.Numerics.Statistics;
 using System;
 using System.Collections.Generic;
@@ -40,6 +41,8 @@ namespace EnlightenMAUI.ViewModels
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
+            shareCmd = new Command(() => { _ = ShareSpectrum(); });
+
             if (instance != null)
                 updateFromInstance();
             else
@@ -56,6 +59,8 @@ namespace EnlightenMAUI.ViewModels
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
+            shareCmd = new Command(() => { _ = ShareSpectrum(); });
+
             SetData(null, null);
 
             Spectrometer.NewConnection += handleNewSpectrometer;
@@ -65,6 +70,8 @@ namespace EnlightenMAUI.ViewModels
                 getInstance().SpectraChanged += AnalysisViewModel_SpectraChanged;
             }
         }
+
+        public Command shareCmd { get; private set; }
 
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {
@@ -109,6 +116,29 @@ namespace EnlightenMAUI.ViewModels
         void handleNewSpectrometer(object sender, Spectrometer e)
         {
             refreshSpec();
+        }
+
+        async Task ShareSpectrum()
+        {
+            var ok = await spec.measurement.saveAsync();
+
+            if (ok)
+            {
+                string savePath = Settings.getInstance().getSavePath();
+                string pathname = Path.Join(savePath, spec.measurement.filename);
+                try
+                {
+                    await Share.Default.RequestAsync(new ShareFileRequest
+                    {
+                        Title = spec.measurement.filename + " " + matchString,
+                        File = new ShareFile(pathname)
+                    });
+                }
+                catch (Exception ex)
+                {
+                    logger.error("Share failed with exception {0}", ex.Message);
+                }
+            }
         }
 
         public void refreshSpec()

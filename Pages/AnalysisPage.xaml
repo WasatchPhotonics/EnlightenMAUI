@@ -104,6 +104,7 @@
                         WidthRequest="150"
                         HeightRequest="50"
                         Text="Share"
+                        Command="{Binding shareCmd}"
                         BackgroundColor="#515151"/>
                 <Button Margin="2" 
                         CornerRadius="10"
