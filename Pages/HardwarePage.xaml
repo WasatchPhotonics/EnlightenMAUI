@@ -40,11 +40,11 @@
                     <Label Text="{Binding softwareRevision}"/>
                 </FlexLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="FPGA FW Revision"/>
+                    <Label Text="Firmware Revision"/>
                     <Label Text="{Binding firmwareRevision}"/>
                 </FlexLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="Hardware Revision"/>
+                    <Label Text="STM FW Revision"/>
                     <Label Text="{Binding hardwareRevision}"/>
                 </FlexLayout>
             </StackLayout>

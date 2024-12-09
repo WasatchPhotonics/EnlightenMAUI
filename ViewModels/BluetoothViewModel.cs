@@ -906,7 +906,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 var c = pair.Value;
 
                 // disabled until I can troubleshoot with Nic
-                if (c.CanUpdate && (name == "batteryStatus" && spec.eeprom.hasBattery))
+                if (c.CanUpdate && ((name == "batteryStatus" && spec.eeprom.hasBattery) || name == "laserState"))
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
