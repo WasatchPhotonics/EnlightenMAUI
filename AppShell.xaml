@@ -15,15 +15,15 @@
         -->
 
         <!-- About -->
-        <ShellContent x:Name="AboutTab" Title="About" Icon="Images/ico_info.png" ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
+        <ShellContent x:Name="AboutTab" Title="About" Icon="Images/about_icon.png" ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
 
         <!-- Bluetooth -->
-        <ShellContent x:Name="BluetoothTab" Title="Pair" Icon="IMages/ico_bluetooth.png" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
+        <ShellContent x:Name="BluetoothTab" Title="Pair" Icon="IMages/pairing_icon.png" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
 
         <!-- Scope -->
-        <ShellContent x:Name="ScopeTab" Title="Spectra" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
+        <ShellContent x:Name="ScopeTab" Title="Spectra" Icon="Images/spectra_icon.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
 
-        <ShellContent x:Name="AnalysisTab" Title="Analysis" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:AnalysisPage}" Route="AnalysisPage"/>
+        <ShellContent x:Name="AnalysisTab" Title="Analysis" Icon="Images/analysis_icon.png" ContentTemplate="{DataTemplate local:AnalysisPage}" Route="AnalysisPage"/>
 
         <!-- Application Settings -->
         <ShellContent x:Name="SettingsTab" Title="Configuration" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>

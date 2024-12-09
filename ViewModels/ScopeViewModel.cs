@@ -724,6 +724,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => !spec.battery.charging && spec.battery.level >= 87;
     }
 
+    public bool ble3Bar
+    {
+        get => spec is BluetoothSpectrometer && (spec as BluetoothSpectrometer).rssi >= -60; 
+    }
+    
+    public bool ble2Bar
+    {
+        get => spec is BluetoothSpectrometer && (spec as BluetoothSpectrometer).rssi >= -85 && (spec as BluetoothSpectrometer).rssi < -60;
+    }
+    
+    public bool ble1Bar
+    {
+        get => spec is BluetoothSpectrometer && (spec as BluetoothSpectrometer).rssi < -85;
+    }
+
 
     public string qrText
     {
@@ -1334,6 +1349,13 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
+        else if (name == "rssi")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ble1Bar)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ble2Bar)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ble3Bar)));
+        }
+
 
     }
 

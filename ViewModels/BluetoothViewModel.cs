@@ -950,6 +950,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             ////////////////////////////////////////////////////////////////////
 
             (spec as BluetoothSpectrometer).bleDevice = bleDevice;
+            (spec as BluetoothSpectrometer).updateRSSI();
             BLEDevice.paired = true;
         }
         else

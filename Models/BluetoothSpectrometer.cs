@@ -26,7 +26,7 @@ public class BluetoothSpectrometer : Spectrometer
     // WhereAmI whereAmI;
 
     public BLEDeviceInfo bleDeviceInfo = new BLEDeviceInfo();
-    public BLEDevice bleDevice = null;
+    public BLEDevice bleDevice { get; set; } = null;
 
     ushort lastCRC;
 
@@ -190,6 +190,8 @@ public class BluetoothSpectrometer : Spectrometer
         //test set
         //dropFactor = 0.8f;
         await syncAutoRamanParameters();
+
+        //updateRSSI();
 
         logger.debug("Spectrometer.initAsync: done");
         return true;
@@ -980,6 +982,22 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug("Spectrometer.updateBatteryAsync: done");
         sem.Release();
         return true;
+    }
+
+    public async Task updateRSSI()
+    {
+        while (paired)
+        {
+            logger.debug("current RSSI {0}", rssi);
+            NotifyPropertyChanged("rssi");
+            await Task.Delay(500); 
+
+        }
+    }
+
+    public double rssi
+    {
+        get => bleDevice.rssi;
     }
 
     ////////////////////////////////////////////////////////////////////////

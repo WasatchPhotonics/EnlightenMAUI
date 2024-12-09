@@ -62,7 +62,12 @@ public class BLEDevice : INotifyPropertyChanged
 
     public double rssi
     {
-        get => device.Rssi;
+        get
+        {
+            if (paired)
+                device.UpdateRssiAsync();
+            return device.Rssi;
+        }
     }
 
     public string name
