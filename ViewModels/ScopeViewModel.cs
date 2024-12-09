@@ -153,7 +153,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
         if (spec != null && spec.paired)
-        spec.autoRamanEnabled = true;
+            spec.autoRamanEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
     }

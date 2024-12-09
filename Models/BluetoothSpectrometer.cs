@@ -988,8 +988,10 @@ public class BluetoothSpectrometer : Spectrometer
     {
         while (paired)
         {
+            /*
             logger.debug("current RSSI {0}", rssi);
             NotifyPropertyChanged("rssi");
+            */
             await Task.Delay(500); 
 
         }

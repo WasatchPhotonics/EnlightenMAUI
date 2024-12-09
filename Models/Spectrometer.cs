@@ -506,7 +506,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxGainDb = 32;
+        protected byte _maxGainDb = 30;
 
         public virtual ushort targetCounts
         {
@@ -700,11 +700,11 @@ namespace EnlightenMAUI.Models
 
         public void processGenericNotification(byte[] data)
         {
-            if (EEPROMReadComplete)
-                return;
-
             logger.hexdump(data, "received generic notification: ");
             logger.info($"the length of notification is {data.Length}");
+
+            if (EEPROMReadComplete)
+                return;
 
             int bytesToRead = data.Length - 2;
             Array.Copy(data, 2, EEPROMBuffer, EEPROMBytesRead, Math.Min(bytesToRead, EEPROM.PAGE_LENGTH));
