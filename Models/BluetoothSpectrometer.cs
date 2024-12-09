@@ -26,7 +26,7 @@ public class BluetoothSpectrometer : Spectrometer
     // WhereAmI whereAmI;
 
     public BLEDeviceInfo bleDeviceInfo = new BLEDeviceInfo();
-    public BLEDevice bleDevice = null;
+    public BLEDevice bleDevice { get; set; } = null;
 
     ushort lastCRC;
 
@@ -189,6 +189,9 @@ public class BluetoothSpectrometer : Spectrometer
 
         //test set
         //dropFactor = 0.8f;
+        await syncAutoRamanParameters();
+
+        //updateRSSI();
 
         logger.debug("Spectrometer.initAsync: done");
         return true;
@@ -690,12 +693,12 @@ public class BluetoothSpectrometer : Spectrometer
         byte[] paramPack = packAutoRamanParameters();
 
         byte[] request = new byte[paramPack.Length + 2];
-        request[0] = 0xff;    
-        request[1] = 0xfd;    
-        Array.Copy(paramPack, 0, request, 2, paramPack.Length);
+        request[0] = 0x95;    
+        //request[1] = 0xfd;    
+        Array.Copy(paramPack, 0, request, 1, paramPack.Length);
         logger.hexdump(request, "data: ");
 
-        if (!await sem.WaitAsync(100))
+        if (!await sem.WaitAsync(1000))
         {
             logger.error("Spectrometer.syncAutoRamanParameters: couldn't get semaphore");
             return false;
@@ -981,6 +984,22 @@ public class BluetoothSpectrometer : Spectrometer
         return true;
     }
 
+    public async Task updateRSSI()
+    {
+        while (paired)
+        {
+            logger.debug("current RSSI {0}", rssi);
+            NotifyPropertyChanged("rssi");
+            await Task.Delay(500); 
+
+        }
+    }
+
+    public double rssi
+    {
+        get => bleDevice.rssi;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // spectra
     ////////////////////////////////////////////////////////////////////////
@@ -1075,10 +1094,13 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
         {
-            logger.info("Performing background removal");
-            for (int i = 0; i < spectrum.Length; ++i)
+            if (dark != null)
             {
-                spectrum[i] -= dark[i];
+                logger.info("Performing background removal");
+                for (int i = 0; i < spectrum.Length; ++i)
+                {
+                    spectrum[i] -= dark[i];
+                }
             }
 
             double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
@@ -1174,8 +1196,13 @@ public class BluetoothSpectrometer : Spectrometer
         int bufferTime = 10000;
 
         int waitTime = (int)integrationTimeMS + bufferTime;
-        if (laserState.mode == LaserMode.AUTO_DARK)
+        if (acquisitionMode == AcquisitionMode.AUTO_DARK)
             waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+        else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
+        {
+            waitTime = 20000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+        }
+
 
         int timeout = waitTime * 2;
 
@@ -1205,25 +1232,34 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (data[0] == 0xff && data[1] == 0xff)
         {
+            logger.hexdump(data, "collection status update: ");
+
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
                 logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
             }
-            else if (data[2] == AUTO_TAKING_DARK)
+            else if (data[2] > AUTO_OPT_TARGET_RATIO) 
             {
-                logger.debug("dark collection progress at {0} of {1}", data[3], data[4]);
-            }
-            else if (data[2] == AUTO_LASER_WARNING_DELAY)
-            {
-                logger.debug("laser warning progress at {0} of {1}", data[3], data[4]);
-            }
-            else if (data[2] == AUTO_LASER_WARMUP)
-            {
-                logger.debug("laser warmup progress at {0} of {1}", data[3], data[4]);
-            }
-            else if (data[2] == AUTO_TAKING_RAMAN)
-            {
-                logger.debug("raman collection progress at {0} of {1}", data[3], data[4]);
+                UInt16 complete = (UInt16)((data[3] << 8) | data[4]);
+                UInt16 total = (UInt16)((data[5] << 8) | data[6]);
+
+
+                if (data[2] == AUTO_TAKING_DARK)
+                {
+                    logger.debug("dark collection progress at {0} of {1}", complete, total);
+                }
+                else if (data[2] == AUTO_LASER_WARNING_DELAY)
+                {
+                    logger.debug("laser warning progress at {0} of {1}", complete, total);
+                }
+                else if (data[2] == AUTO_LASER_WARMUP)
+                {
+                    logger.debug("laser warmup progress at {0} of {1}", complete, total);
+                }
+                else if (data[2] == AUTO_TAKING_RAMAN)
+                {
+                    logger.debug("raman collection progress at {0} of {1}", complete, total);
+                }
             }
         }
         else
