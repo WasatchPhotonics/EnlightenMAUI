@@ -15,7 +15,7 @@ public class Battery
     // valid range should be (0, 100)
     public double level { get; private set; }
     
-    bool charging;
+    public bool charging;
     DateTime? lastChecked;
 
     Logger logger = Logger.getInstance();

@@ -20,6 +20,7 @@ using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using System.Reflection.Metadata;
 using System.Text;
+using Xamarin.Google.Crypto.Tink.Signature;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -693,6 +694,37 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => spec.battery.level > 20 ? "#eee" : "#f33";
     }
 
+    public bool batteryCharging
+    {
+        get => spec.battery.charging;
+    }
+
+    public bool batteryCritical
+    {
+        get => !spec.battery.charging && spec.battery.level < 15;
+    }
+
+    public bool battery25
+    {
+        get => !spec.battery.charging && spec.battery.level >= 15 && spec.battery.level < 39;
+    }
+
+    public bool battery50
+    {
+        get => !spec.battery.charging && spec.battery.level >= 39 && spec.battery.level < 63;
+    }
+    
+    public bool battery75
+    {
+        get => !spec.battery.charging && spec.battery.level >= 63 && spec.battery.level < 87;
+    }
+
+    public bool battery100
+    {
+        get => !spec.battery.charging && spec.battery.level >= 87;
+    }
+
+
     public string qrText
     {
         get => spec.qrValue;
@@ -722,6 +754,12 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryState)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryCharging)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryCritical)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery25)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery50)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery75)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery100)));
     }
 
     ////////////////////////////////////////////////////////////////////////
