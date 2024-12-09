@@ -130,6 +130,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         // bind ScopePage Commands
         laserCmd = new Command(() => { _ = doLaser(); });
+        laserWarningCmd = new Command(() => { _ = advanceLaserWarning(); });
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); });
         darkCmd = new Command(() => { _ = doDark(); });
@@ -150,7 +151,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
-
+        if (spec != null && spec.paired)
         spec.autoRamanEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
@@ -207,6 +208,9 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
+
+        if (spec != null && spec.paired)
+            spec.autoRamanEnabled = true;
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
 
@@ -467,6 +471,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public Command laserCmd { get; private set; }
+    public Command laserWarningCmd { get; private set; }
 
     public string laserButtonForegroundColor
     {
@@ -474,6 +479,11 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     public string laserButtonBackgroundColor
+    {
+        get => spec.laserEnabled ? "#ba0a0a" : "#515151";
+    }
+
+    public string laserWarningBackgroundColor
     {
         get => spec.laserEnabled ? "#ba0a0a" : "#515151";
     }
@@ -493,6 +503,90 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.doLaser: done");
         return true;
     }
+
+    bool advanceLaserWarning()
+    {
+        switch (laserWarningStep)
+        {
+            case 0:
+                laserWarningStep = 1;
+                laserWarningText = "Onboard Class 3B Laser";
+                break;
+            case 1: 
+                laserWarningStep = 2;
+                laserWarningText = "Avoid eye exposure";
+                break;
+            case 2: 
+                laserWarningStep = 3;
+                laserWarningText = "Acknowledge to Arm Laser";
+                break;
+            case 3: 
+                laserWarningStep = 4;
+                laserArmed = true;
+                laserWarningText = "WARNING: Laser Armed";
+                break;
+            case 4:
+                laserWarningStep = 0;
+                laserArmed = false;
+                laserWarningText = "Click for Laser Warnings";
+                break;
+        }
+        
+        return true;
+    }
+
+
+
+    public string laserWarningText
+    {
+        get
+        {
+            return _laserWarningText;
+        }
+        set
+        {
+            _laserWarningText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningText)));
+        }
+    }
+    string _laserWarningText = "Click for Laser Warnings";
+
+    public bool laserArmIncomplete
+    {
+        get
+        {
+            return laserWarningStep != 4;
+        }
+    }
+
+    public bool laserArmed
+    {
+        get
+        {
+            return _laserArmed;
+        }
+        set
+        {
+            _laserArmed = value; 
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmed)));
+        }
+    }
+    bool _laserArmed;
+
+    public int laserWarningStep
+    { 
+        get
+        { 
+            return _laserWarningStep; 
+        }
+        set
+        {
+            _laserWarningStep = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningStep)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmIncomplete)));
+        }
+    }
+    int _laserWarningStep = 0;
 
     public string laserButtonText
     {
