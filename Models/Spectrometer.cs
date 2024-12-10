@@ -714,6 +714,8 @@ namespace EnlightenMAUI.Models
             if (CurrentEEPROMPage == EEPROM.MAX_PAGES)
                 EEPROMReadComplete = true;
 
+            raiseConnectionProgress(.15 + .85 * CurrentEEPROMPage / EEPROM.MAX_PAGES);
+
             genericReturned = true;
         }
 

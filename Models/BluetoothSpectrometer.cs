@@ -39,6 +39,7 @@ public class BluetoothSpectrometer : Spectrometer
     const int AUTO_LASER_WARMUP = 35;
     const int AUTO_TAKING_RAMAN = 36;
 
+    bool dataCollectingStarted = false;
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
@@ -1162,6 +1163,8 @@ public class BluetoothSpectrometer : Spectrometer
         totalPixelsRead = 0;
         totalPixelsToRead = pixels;
 
+        dataCollectingStarted = false;
+
         // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
         byte[] request = new byte[] { (byte)acquisitionMode };
@@ -1238,6 +1241,8 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
+                raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / 100));
+
                 logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
             }
             else if (data[2] > AUTO_OPT_TARGET_RATIO) 
@@ -1245,6 +1250,20 @@ public class BluetoothSpectrometer : Spectrometer
                 UInt16 complete = (UInt16)((data[3] << 8) | data[4]);
                 UInt16 total = (UInt16)((data[5] << 8) | data[6]);
 
+                if (!dataCollectingStarted)
+                {
+                    if (autoRamanEnabled)
+                        raiseAcquisitionProgress(0.25);
+                    dataCollectingStarted = true;
+                }
+
+                int completeProg = complete - 4;
+                int totalProg = total - 5;
+
+                if (autoDarkEnabled)
+                    raiseAcquisitionProgress(0.75 * (completeProg / totalProg));
+                else if (autoRamanEnabled)
+                    raiseAcquisitionProgress(0.25 + 0.5 * (completeProg / totalProg));
 
                 if (data[2] == AUTO_TAKING_DARK)
                 {
@@ -1283,7 +1302,10 @@ public class BluetoothSpectrometer : Spectrometer
                 totalPixelsRead += 1;
             }
 
-            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+            if (autoRamanEnabled || autoDarkEnabled)
+                raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
+            else
+                raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
             logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
         }
         //characteristicUpdatedEventArgs.Characteristic.
