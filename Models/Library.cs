@@ -581,15 +581,18 @@ namespace EnlightenMAUI.Models
 
             foreach (string sample in library.Keys)
             {
+                double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                logger.info($"{sample} score: {score}");
+                scores[sample] = score;
+                /*
                 logger.info($"trying to match {sample}");
                 matchTasks.Add(Task.Run(() =>
                 {
-                    double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
-                    logger.info($"{sample} score: {score}");
-                    scores[sample] = score;
                 }));
+                */
             }
 
+            /*
             logger.info("waiting for matches");
             int i = 0;
             foreach (Task t in matchTasks)
@@ -598,6 +601,7 @@ namespace EnlightenMAUI.Models
                 await t;
                 ++i;
             }
+            */
             logger.info("matches complete");
 
             double maxScore = double.MinValue;
