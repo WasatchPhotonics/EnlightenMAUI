@@ -98,7 +98,7 @@
                 
             </VerticalStackLayout>
 
-            <StackLayout IsVisible="{Binding matchFound}" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
+            <StackLayout IsVisible="{Binding spectrumCollected}" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
                 <Button Margin="2" 
                         CornerRadius="10"
                         WidthRequest="150"
@@ -111,6 +111,7 @@
                         WidthRequest="150"
                         HeightRequest="50"
                         Text="Add To Library"
+                        Command="{Binding saveCmd}"
                         BackgroundColor="#515151"/>
 
             </StackLayout>

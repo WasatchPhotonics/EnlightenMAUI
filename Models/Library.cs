@@ -604,7 +604,7 @@ namespace EnlightenMAUI.Models
             string finalSample = "";
             foreach (string sample in scores.Keys)
             {
-                //logger.info($"matched {sample} with score {scores[sample]:f4}");
+                logger.info($"matched {sample} with score {scores[sample]:f4}");
 
                 if (scores[sample] > maxScore)
                 {

@@ -30,7 +30,7 @@ namespace EnlightenMAUI.ViewModels
         public Spectrometer spec;
         static AnalysisViewModel instance = null; 
         SaveSpectrumPopupViewModel saveViewModel;
-        SaveSpectrumPopup savePopup;
+        AddToLibraryPopup savePopup;
         bool popupClosing = false;
         double[] xAxis;
 
@@ -48,6 +48,7 @@ namespace EnlightenMAUI.ViewModels
                 spec = USBSpectrometer.getInstance();
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
+            saveCmd = new Command(() => { _ = doSave(); });
 
             if (instance != null)
                 updateFromInstance();
@@ -78,6 +79,7 @@ namespace EnlightenMAUI.ViewModels
         }
 
         public Command shareCmd { get; private set; }
+        public Command saveCmd { get; private set; }
 
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {
@@ -93,6 +95,7 @@ namespace EnlightenMAUI.ViewModels
             matchString = instance.matchString;
             scoreString = instance.scoreString;
             _matchFound = instance.matchFound;
+            spectrumCollected = instance.spectrumCollected;
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchFound)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));
@@ -116,9 +119,9 @@ namespace EnlightenMAUI.ViewModels
             //this.popupService.ShowPopup<SaveSpectrumPopupViewModel>();
             saveViewModel = new SaveSpectrumPopupViewModel(spec.measurement.filename.Split('.')[0]);
             saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
-            savePopup = new SaveSpectrumPopup(saveViewModel);
+            savePopup = new AddToLibraryPopup(saveViewModel);
             popupClosing = false;
-            Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
+            Shell.Current.ShowPopup<AddToLibraryPopup>(savePopup);
         }
 
         private async void SaveViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -228,6 +231,12 @@ namespace EnlightenMAUI.ViewModels
                         chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
                     }
                 }
+
+                spectrumCollected = false;
+            }
+            else
+            {
+                spectrumCollected = true;
             }
 
             if (reference != null && sample != null)
@@ -406,7 +415,6 @@ namespace EnlightenMAUI.ViewModels
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));
             }
 
-
             logger.debug("refreshChartData: done");
             SpectraChanged?.Invoke(this, this);
         }
@@ -465,6 +473,17 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         string _scoreString = "TBD";
+
+        public bool spectrumCollected
+        {
+            get { return _spectrumCollected; }
+            set 
+            {
+                _spectrumCollected = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumCollected)));
+            }
+        }
+        bool _spectrumCollected = false;
 
         public bool matchFound
         {
