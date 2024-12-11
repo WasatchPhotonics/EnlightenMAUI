@@ -40,6 +40,7 @@ public class BluetoothSpectrometer : Spectrometer
     const int AUTO_TAKING_RAMAN = 36;
 
     bool dataCollectingStarted = false;
+    bool optimizationDone = false;
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
@@ -989,10 +990,9 @@ public class BluetoothSpectrometer : Spectrometer
     {
         while (paired)
         {
-            /*
-            logger.debug("current RSSI {0}", rssi);
+            
+            //logger.debug("current RSSI {0}", rssi);
             NotifyPropertyChanged("rssi");
-            */
             await Task.Delay(500); 
 
         }
@@ -1164,6 +1164,7 @@ public class BluetoothSpectrometer : Spectrometer
         totalPixelsToRead = pixels;
 
         dataCollectingStarted = false;
+        optimizationDone = false;
 
         // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
@@ -1205,11 +1206,10 @@ public class BluetoothSpectrometer : Spectrometer
             waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
         {
-            waitTime = 20000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+            waitTime = 30000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         }
 
-
-        int timeout = waitTime * 2;
+        int timeout = waitTime * 2 + 4000;
 
         Stopwatch sw = Stopwatch.StartNew();
         sw.Start();
@@ -1241,29 +1241,39 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
-                raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / 100));
+                raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));
 
                 logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
+
+                if (Math.Abs(100 - data[3]) < 5)
+                    optimizationDone = true;
             }
             else if (data[2] > AUTO_OPT_TARGET_RATIO) 
             {
                 UInt16 complete = (UInt16)((data[3] << 8) | data[4]);
                 UInt16 total = (UInt16)((data[5] << 8) | data[6]);
 
-                if (!dataCollectingStarted)
+                if (optimizationDone && !dataCollectingStarted)
                 {
                     if (autoRamanEnabled)
                         raiseAcquisitionProgress(0.25);
                     dataCollectingStarted = true;
                 }
 
-                int completeProg = complete - 4;
-                int totalProg = total - 5;
+                if (total > 0)
+                {
+                    int completeProg = complete;
+                    if (autoRamanEnabled)
+                            completeProg = complete - 4;
+                    int totalProg = total;
+                    if (autoRamanEnabled)
+                        totalProg = total - 5;
 
-                if (autoDarkEnabled)
-                    raiseAcquisitionProgress(0.75 * (completeProg / totalProg));
-                else if (autoRamanEnabled)
-                    raiseAcquisitionProgress(0.25 + 0.5 * (completeProg / totalProg));
+                    if (autoDarkEnabled)
+                        raiseAcquisitionProgress(0.75 * (completeProg / totalProg));
+                    else if (autoRamanEnabled)
+                        raiseAcquisitionProgress(0.25 + 0.5 * ((double)completeProg / totalProg));
+                }
 
                 if (data[2] == AUTO_TAKING_DARK)
                 {
@@ -1295,7 +1305,7 @@ public class BluetoothSpectrometer : Spectrometer
                 logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
                 logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
 
-                if (totalPixelsRead >= spectrum.Length)
+                 if (totalPixelsRead >= spectrum.Length)
                     logger.error("more received data than expected...");
                 else
                     spectrum[totalPixelsRead] = intensity;
