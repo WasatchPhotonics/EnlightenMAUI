@@ -39,6 +39,7 @@ namespace EnlightenMAUI.Models
         public double[] wavenumbers;
         public double[] xAxisPixels;
 
+        public double[] lastRaw;
         public double[] lastSpectrum;
         public double[] dark;
         public double[] stretchedDark;

@@ -204,6 +204,7 @@ public class Measurement : INotifyPropertyChanged
     double[] postProcessed_;
 
     public double[] wavelengths { get; set; }
+    public double[] rawWavenumbers { get; set; }
     public double[] wavenumbers { get; set; }
     public string spectrometer { get; set; }
     public double excitationNM { get; set; }
@@ -654,8 +655,8 @@ public class Measurement : INotifyPropertyChanged
             List<string> values = new List<string>();
 
             if (settings.savePixel) values.Add(i.ToString());
-            if (settings.saveWavelength) values.Add(render(spec.wavelengths, i));
-            if (settings.saveWavenumber) values.Add(render(spec.wavenumbers, i));
+            if (settings.saveWavelength) values.Add(render(wavelengths, i));
+            if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
             values.Add(render(processed, i, fmt));
             if (settings.saveRaw) values.Add(render(raw, i));
             if (settings.saveDark) values.Add(render(dark, i));

@@ -1095,6 +1095,8 @@ public class BluetoothSpectrometer : Spectrometer
         applyRamanIntensityCorrection(spectrum);
 
 
+        lastRaw = spectrum;
+
         if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
         {
             if (dark != null)
