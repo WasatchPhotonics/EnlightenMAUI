@@ -95,7 +95,7 @@
             </StackLayout>
 
             <!-- Command buttons -->
-            <StackLayout IsVisible="{Binding advancedModeEnabled}" Grid.Row="2" Grid.Column="0" Margin="10, 0, 10, 10">
+            <StackLayout IsVisible="{Binding manualModeEnabled}" Grid.Row="2" Grid.Column="0" Margin="10, 0, 10, 10">
                 <FlexLayout Wrap="Wrap" AlignItems="Stretch"  VerticalOptions="Start" JustifyContent="SpaceBetween">
 
                     <!-- Laser -->
@@ -174,7 +174,7 @@
 
             <!-- Command buttons -->
             <Grid   HorizontalOptions="CenterAndExpand" 
-                    IsVisible="{Binding advancedModeDisabled}" 
+                    IsVisible="{Binding manualModeDisabled}" 
                     Grid.Row="2" 
                     Grid.Column="0" 
                     Margin="10, 0, 10, 0">
@@ -187,7 +187,7 @@
                 
                 <Button IsVisible="{Binding laserArmIncomplete}"
                         Text="{Binding laserWarningText}"
-                        FontSize="18"
+                        FontSize="17"
                         Margin="10,0,5,5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
@@ -195,7 +195,7 @@
                         Command="{Binding laserWarningCmd}"
                         BackgroundColor="{Binding laserWarningBackgroundColor}"
                         MinimumWidthRequest="100"
-                        HeightRequest="100"
+                        HeightRequest="80"
                         LineBreakMode="WordWrap"
                         ImageSource="Images/laser.svg"
                         ContentLayout="Right, 3"/>
@@ -256,16 +256,19 @@
                              HorizontalOptions="Start"
                              Spacing="5">
 
-                    <Image Source="Images/wp_enlighten_charging.png" IsVisible="{Binding batteryCharging}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_critical.png" IsVisible="{Binding batteryCritical}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_25.png" IsVisible="{Binding battery25}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_50.png" IsVisible="{Binding battery50}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_75.png" IsVisible="{Binding battery75}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_100.png" IsVisible="{Binding battery100}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+                    <StackLayout Orientation="Vertical" Padding="0,20,0,0" VerticalOptions="Start">
+                    <Image Source="Images/wp_enlighten_charging.png" IsVisible="{Binding batteryCharging}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_critical.png" IsVisible="{Binding batteryCritical}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_25.png" IsVisible="{Binding battery25}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_50.png" IsVisible="{Binding battery50}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_75.png" IsVisible="{Binding battery75}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_100.png" IsVisible="{Binding battery100}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Label TextColor="#eee" FontSize="10" HorizontalOptions="Center" Text="{Binding batteryState}"/>
+                    </StackLayout>
 
-                    <Image Source="Images/wp_enlighten_signal_bars1.png" IsVisible="{Binding ble1Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_signal_bars2.png" IsVisible="{Binding ble2Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_signal_bars3.png" IsVisible="{Binding ble3Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_signal_bars1.png" VerticalOptions="Center" IsVisible="{Binding ble1Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_signal_bars2.png" VerticalOptions="Center" IsVisible="{Binding ble2Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_signal_bars3.png" VerticalOptions="Center" IsVisible="{Binding ble3Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
 
                 </StackLayout>
 
@@ -293,7 +296,7 @@
             <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
                 <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
                     <Label TextColor="#eee" Text="Battery"/>
-                    <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}"/>
+                    <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}" />
                 </StackLayout>
             </Frame>
         </Frame>

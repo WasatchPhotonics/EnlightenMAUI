@@ -630,14 +630,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => Settings.getInstance().authenticated;
     }
 
-    public bool advancedModeEnabled
+    public bool manualModeEnabled
     {
-        get => settings.advancedModeEnabled;
+        get => spec.acquisitionMode == AcquisitionMode.STANDARD;
     }
 
-    public bool advancedModeDisabled
+    public bool manualModeDisabled
     {
-        get => !settings.advancedModeEnabled;
+        get => spec.acquisitionMode != AcquisitionMode.STANDARD;
     }
 
     // Provided so any changes to Settings.authenticated will immediately
@@ -646,8 +646,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         logger.debug($"SVM.handleSettingsChange: received notification from {sender}, so refreshing isAuthenticated");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeEnabled)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeDisabled)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(manualModeEnabled)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(manualModeDisabled)));
 
         updateLaserProperties();
     }
@@ -696,12 +696,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool batteryCharging
     {
-        get => spec.battery.charging;
+        get => spec.battery.charging && spec.battery.level > 15;
     }
 
     public bool batteryCritical
     {
-        get => !spec.battery.charging && spec.battery.level < 15;
+        get => spec.battery.level < 15;
     }
 
     public bool battery25

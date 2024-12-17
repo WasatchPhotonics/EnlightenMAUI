@@ -221,6 +221,11 @@ namespace EnlightenMAUI.ViewModels
             {
                 if (spec.autoDarkEnabled != value)
                     spec.autoDarkEnabled = value;
+
+                if (spec.acquisitionMode == AcquisitionMode.STANDARD)
+                    assertSettings();
+
+                advancedModeEnabled = advancedModeEnabled;
                 updateLaserProperties();
             }
         }
@@ -232,11 +237,21 @@ namespace EnlightenMAUI.ViewModels
             {
                 if (spec.autoRamanEnabled != value)
                     spec.autoRamanEnabled = value;
+
+                if (spec.acquisitionMode == AcquisitionMode.STANDARD)
+                    assertSettings();
+
+                advancedModeEnabled = advancedModeEnabled;
                 updateLaserProperties();
             }
         }
 
-
+        void assertSettings()
+        {
+            spec.scansToAverage = spec.scansToAverage;
+            spec.integrationTimeMS = spec.integrationTimeMS;
+            spec.gainDb = spec.gainDb;
+        }
 
         // @todo: let the user live-toggle this and update the on-screen spectrum
         public bool useRamanIntensityCorrection

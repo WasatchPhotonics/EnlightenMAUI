@@ -91,6 +91,6 @@ public class Battery
         logger.debug($"Battery: raw 0x{raw:x8} (lvl {rawLevel}, pct {level - rawLevel}, st 0x{rawState:x2}) = {level:f2}");
 
         int intLevel = (int)Math.Round(level);
-        return charging ? $"{intLevel}%>" : $"<{intLevel}%";
+        return $"{intLevel}%";
     }
 }
