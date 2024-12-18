@@ -14,6 +14,7 @@ using Android.OS;
 using Android.Webkit;
 using AndroidX.DocumentFile.Provider;
 using Java.IO;
+using Newtonsoft.Json;
 namespace EnlightenMAUI.Platforms;
 
 
@@ -37,6 +38,7 @@ internal class PlatformUtil
     static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
     static PredictionEngine<ModelInput, Prediction> engine;
+    static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
     static ITransformer transformer;
     public static bool transformerLoaded = false;
     public static int REQUEST_TREE = 85;
@@ -182,13 +184,28 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string path)
+    public async static Task loadONNXModel(string path, string correctionPath)
     {
         try
         {
             string fullPath = null;
 
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            foreach (var cDir in cacheDirs)
+            {
+                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                fullPath = recurseAndFindPath(cDir, correctionPath);
+                if (fullPath != null)
+                    break;
+            }
+
+            if (fullPath != null)
+            {
+                loadCorrections(fullPath);
+                fullPath = null;
+            }
+
+            cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             foreach (var cDir in cacheDirs)
             {
                 logger.debug("recursing down dir {0}", cDir.AbsolutePath);
@@ -219,10 +236,38 @@ internal class PlatformUtil
         }
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts)
+
+    static async Task loadCorrections(string file)
+    {
+        logger.info("start loading correction factors from {0}", file);
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file);
+        StreamReader sr = new StreamReader(s);
+        string blob = await sr.ReadToEndAsync();
+
+        try
+        {
+            correctionFactors = JsonConvert.DeserializeObject<Dictionary<string, double[]>>(blob);
+            logger.info("finished loading correction factor from {0}", file);
+        }
+        catch (Exception ex)
+        {
+            logger.error("correction load failed with error {0}", ex.Message);
+        }
+    }
+
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial)
     {
         try
         {
+            if (correctionFactors != null && correctionFactors.ContainsKey(serial))
+            {
+                double[] corrections = correctionFactors[serial];
+                for (int i = 0; i < counts.Length; i++)
+                    counts[i] /= corrections[i];
+            }
+
             double[] targetWavenum = new double[2376];
             for (int i = 0; i < targetWavenum.Length; i++)
             {

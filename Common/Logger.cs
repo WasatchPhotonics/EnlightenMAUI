@@ -3,6 +3,7 @@ using System.Text;
 using System.IO;
 using System.Globalization;
 using System.ComponentModel;
+using EnlightenMAUI.Models;
 
 namespace EnlightenMAUI
 {
@@ -75,24 +76,24 @@ namespace EnlightenMAUI
 
         public void logString(LogLevel lvl, string msg) => log(lvl, msg);
 
-        public void save(string pathname=null)
+        public string save(string pathname=null)
         {
             Console.WriteLine("Logger.save: starting");
 
             if (history is null)
             {
                 Console.WriteLine("Can't save w/o history");
-                return;
+                return null;
             }
-            /*
+            
             if (pathname is null)
             {
-                Settings Settings = Settings.getInstance();
-                var dir = Settings.getSavePath();
+                Settings settings = Settings.getInstance();
+                var dir = settings.getSavePath();
                 if (dir is null)
                 {
                     Console.WriteLine("no path available to save log");
-                    return;
+                    return null;
                 }
 
                 var filename = string.Format("EnlightenMobile-{0}.log", 
@@ -100,18 +101,21 @@ namespace EnlightenMAUI
 
                 pathname = $"{dir}/{filename}";
             }
-           */
+           
             try
             {
                 TextWriter tw = new StreamWriter(pathname);
                 tw.Write(history);
                 tw.Close();
+                return pathname;
                 // Util.toast($"saved {pathname}");
             }
             catch (Exception e)
             {
                 Console.WriteLine("can't write {0}: {1}", pathname, e.Message);
             }
+
+            return null;
         }
 
         public void hexdump(byte[] buf, string prefix = "", LogLevel lvl=LogLevel.DEBUG)

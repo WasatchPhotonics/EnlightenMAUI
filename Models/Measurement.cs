@@ -470,6 +470,23 @@ public class Measurement : INotifyPropertyChanged
         // location = WhereAmI.getInstance().location;
     }
 
+    public void zero(Spectrometer spec)
+    {
+        logger.debug("Measurement.reload: zeroing spectrum");
+        // default measurement is zeroed out
+        // double halfMax = 50000.0 / 2.0;
+        raw = new double[spec.pixels];
+        for (int x = 0; x < raw.Length; x++)
+            raw[x] = 0;
+
+        processed = (double[])raw.Clone(); // MZ: needed?
+        timestamp = DateTime.Now;
+
+        dark = null;
+
+        postProcess();
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // Post-Processing
     ////////////////////////////////////////////////////////////////////////

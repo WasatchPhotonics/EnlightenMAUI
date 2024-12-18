@@ -418,7 +418,7 @@ namespace EnlightenMAUI.Models
 
             if (PlatformUtil.transformerLoaded && useBackgroundRemoval)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum);
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber);
                 wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 spectrum = smoothed;
             }

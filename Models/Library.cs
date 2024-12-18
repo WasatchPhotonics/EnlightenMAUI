@@ -12,6 +12,8 @@ using System.Xml.XPath;
 using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
+using System.Reflection.Metadata;
+
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
 #endif
@@ -277,9 +279,8 @@ namespace EnlightenMAUI.Models
             library[name] = sample;
         }
 
-        async Task loadFiles(string root)
+        async Task loadFiles(string root, string correctionFileName = "etalon_correction.json")
         {
-
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
             foreach (var cDir in cacheDirs)
@@ -293,6 +294,7 @@ namespace EnlightenMAUI.Models
                         break;
                     }
                 }
+
             }
 
             if (libraryFolder == null)
@@ -431,7 +433,7 @@ namespace EnlightenMAUI.Models
 
             if (false)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "");
                 double[]  wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 Measurement updated = new Measurement();
                 updated.wavenumbers = wavenumbers;
@@ -539,7 +541,7 @@ namespace EnlightenMAUI.Models
 
             if (PlatformUtil.transformerLoaded)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "");
                 double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 Measurement updated = new Measurement();
                 updated.wavenumbers = wavenumbers;

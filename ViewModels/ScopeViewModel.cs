@@ -96,7 +96,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        Task loader = PlatformUtil.loadONNXModel("background_model.onnx");
+        Task loader = PlatformUtil.loadONNXModel("background_model.onnx", "etalon_correction.json");
         loader.Wait();
         //Thread.Sleep(100);
 
@@ -346,7 +346,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -880,6 +880,12 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         // take a fresh Measurement
         var startTime = DateTime.Now;
+        if (spec.autoDarkEnabled || spec.autoRamanEnabled)
+        {
+            spec.measurement.zero(spec);
+            updateChart();
+        }
+
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
