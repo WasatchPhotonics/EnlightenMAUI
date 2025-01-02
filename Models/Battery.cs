@@ -67,6 +67,37 @@ public class Battery
         logger.debug($"Battery.parse: {level}");
     }
 
+    public void parseAPI6(byte[] response)
+    {
+        if (response is null)
+        {
+            logger.error("Battery: no response");
+            return;
+        }
+
+        if (response.Length != 2)
+        {
+            logger.error("Battery: invalid response");
+            return;
+        }
+
+        ushort raw = ParseData.toUInt16(response, 0);
+        this.raw = raw; // store for debugging, as toString() outputs this
+
+        // reversed from SiG-290?
+        rawLevel = (byte)((raw & 0xff00) >> 8);
+        rawState = (byte)(raw & 0xff);
+
+        level = (double)rawLevel;
+
+        charging = (rawState & 1) == 1;
+
+        lastChecked = DateTime.Now;
+        initialized = true;
+
+        logger.debug($"Battery.parse: {this}");
+    }
+
     public void parse(uint response)
     {
         uint lsb = (byte)(response & 0xff);

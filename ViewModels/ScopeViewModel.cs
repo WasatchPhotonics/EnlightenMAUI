@@ -94,6 +94,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
+            spec = API6BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
         Task loader = PlatformUtil.loadONNXModel("background_model.onnx", "etalon_correction.json");
@@ -726,19 +728,18 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool ble3Bar
     {
-        get => spec is BluetoothSpectrometer && (spec as BluetoothSpectrometer).rssi >= -60; 
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -60; 
     }
     
     public bool ble2Bar
     {
-        get => spec is BluetoothSpectrometer && (spec as BluetoothSpectrometer).rssi >= -85 && (spec as BluetoothSpectrometer).rssi < -60;
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -85 && spec.rssi < -60;
     }
     
     public bool ble1Bar
     {
-        get => spec is BluetoothSpectrometer && (spec as BluetoothSpectrometer).rssi < -85;
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi < -85;
     }
-
 
     public string qrText
     {

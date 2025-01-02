@@ -8,7 +8,7 @@ namespace EnlightenMAUI.ViewModels;
 
 public class HardwareViewModel : INotifyPropertyChanged
 {
-    BluetoothSpectrometer spec = BluetoothSpectrometer.getInstance();
+    Spectrometer spec = BluetoothSpectrometer.getInstance();
     EEPROM eeprom = EEPROM.getInstance();
 
     // HardwarePage binds to data through its ViewModel (this file).
@@ -25,16 +25,30 @@ public class HardwareViewModel : INotifyPropertyChanged
     Logger logger = Logger.getInstance();
 
     public event PropertyChangedEventHandler PropertyChanged;
-    
+
     public HardwareViewModel()
     {
         logger.debug("HVM.ctor: start");
 
         eepromFields = new ObservableCollection<ViewableSetting>(eeprom.viewableSettings);
 
-        logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
-        spec.bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
+        if (spec == null || !spec.paired)
+            spec = API6BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
+            spec = USBSpectrometer.getInstance();
+
+        if (spec is BluetoothSpectrometer)
+        {
+            logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
+            (spec as BluetoothSpectrometer).bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
+        }
+        else if (spec is API6BLESpectrometer)
+        {
+            logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
+            (spec as API6BLESpectrometer).bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
+        }
     }
+
 
     private void refreshEEPROMFields()
     {

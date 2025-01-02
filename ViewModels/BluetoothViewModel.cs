@@ -899,13 +899,21 @@ public class BluetoothViewModel : INotifyPropertyChanged
             // populate Spectrometer
             logger.debug("BVM.doConnectAsync: initializing spectrometer");
 
+            if (isAPI6((spec as BluetoothSpectrometer).bleDeviceInfo.softwareRevision))
+            {
+                Spectrometer tempSpec = API6BLESpectrometer.getInstance();
+                (tempSpec as API6BLESpectrometer).bleDevice = (spec as BluetoothSpectrometer).bleDevice;
+                spec = tempSpec;
+                spec.showConnectionProgress += showSpectrometerConnectionProgress;
+            }
+
             foreach (var pair in characteristicsByName)
             {
                 var name = pair.Key;
                 var c = pair.Value;
 
                 // disabled until I can troubleshoot with Nic
-                if (c.CanUpdate &&  name == "generic")
+                if (c.CanUpdate && name == "generic")
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
@@ -915,7 +923,12 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 }
             }
 
-            await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
+            if (spec is API6BLESpectrometer)
+            {
+                await (spec as API6BLESpectrometer).initAsync(characteristicsByName);
+            }
+            else
+                await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
 
             //subscribeToUpdates();
             // start notifications
@@ -924,7 +937,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 var name = pair.Key;
                 var c = pair.Value;
 
-                // disabled until I can troubleshoot with Nic
                 if (c.CanUpdate && ((name == "batteryStatus" && spec.eeprom.hasBattery) || name == "laserState"))
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
@@ -934,8 +946,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     await c.StartUpdatesAsync();
                     await Task.Delay(10);
                 }
-                // disabled until I can troubleshoot with Nic
-                else if (c.CanUpdate && name == "acquireSpectrum")
+                else if (c.CanUpdate && name == "acquireSpectrum" && spec is BluetoothSpectrometer)
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
@@ -948,9 +959,17 @@ public class BluetoothViewModel : INotifyPropertyChanged
             ////////////////////////////////////////////////////////////////////
             // all done
             ////////////////////////////////////////////////////////////////////
+            if (spec is BluetoothSpectrometer)
+            {
+                (spec as BluetoothSpectrometer).bleDevice = bleDevice;
+                (spec as BluetoothSpectrometer).updateRSSI();
+            }
+            else if (spec is API6BLESpectrometer)
+            {
+                (spec as API6BLESpectrometer).bleDevice = bleDevice;
+                (spec as API6BLESpectrometer).updateRSSI();
+            }
 
-            (spec as BluetoothSpectrometer).bleDevice = bleDevice;
-            (spec as BluetoothSpectrometer).updateRSSI();
             BLEDevice.paired = true;
         }
         else
@@ -965,6 +984,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         logger.debug("BVM.doConnectAsync: done");
         return true;
+    }
+
+    static bool isAPI6(string versionString)
+    {
+        string[] parts = versionString.Split('.');
+        if (Int16.Parse(parts[1]) <= 9)
+            return true;
+        else
+            return false;
     }
 
 

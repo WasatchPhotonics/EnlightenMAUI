@@ -30,7 +30,7 @@ namespace EnlightenMAUI.ViewModels
 
         Settings settings = Settings.getInstance();
 
-        BluetoothSpectrometer spec = BluetoothSpectrometer.getInstance();
+        Spectrometer spec = BluetoothSpectrometer.getInstance();
         Logger logger = Logger.getInstance();
 
         Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
@@ -134,6 +134,11 @@ namespace EnlightenMAUI.ViewModels
         {
             laserWatchdogTimeoutSec = 0;
             laserWarningDelaySec = 0;
+
+            if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
+                spec = USBSpectrometer.getInstance();
         }
 
         public void loadSettings()

@@ -19,6 +19,7 @@ namespace EnlightenMAUI.Models
     {
         public static EventHandler<Spectrometer> NewConnection;
         protected Logger logger = Logger.getInstance();
+        public BLEDeviceInfo bleDeviceInfo = new BLEDeviceInfo();
         // @see https://forums.xamarin.com/discussion/93330/mutex-is-bugged-in-xamarin
         protected static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1);
 
@@ -331,7 +332,8 @@ namespace EnlightenMAUI.Models
                 else
                     logger.debug($"Spectrometer.laserWatchdogSec: already {value}");
             }
-        }
+        }   
+        public virtual double rssi { get; }
 
         public void toggleLaser()
         {
