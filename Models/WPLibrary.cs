@@ -176,20 +176,42 @@ namespace EnlightenMAUI.Models
         public enum ErrorTypes { SUCCESS, NULL_STREAM, INVALID_STATE, NO_INTENSITIES };
     }
 
-    internal class Library
+
+    abstract class Library
     {
 #if USE_DECON
-        Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
+        protected Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
 #endif
-        Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
-        Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
-        Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
-        public event EventHandler<Library> LoadFinished;
+        protected Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
+        protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
+        protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
 
         public string mostRecentCompound;
         public double mostRecentScore;
         public Measurement mostRecentMeasurement;
+        public event EventHandler<Library> LoadFinished;
+        public List<string> samples => library.Keys.ToList();
 
+        public Library(string root, Spectrometer spec) { }
+
+        public abstract Task<Tuple<string, double>> findMatch(Measurement spectrum);
+        public abstract Measurement getSample(string name);
+        public abstract void addSampleToLibrary(string name, Measurement sample);
+
+        protected void InvokeLoadFinished()
+        {
+            LoadFinished.Invoke(this, this);
+        }
+
+
+#if USE_DECON
+        public abstract Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum);
+#endif
+    }
+
+
+    internal class WPLibrary : Library
+    {
         Logger logger = Logger.getInstance();
         Task libraryLoader;
 
@@ -197,7 +219,7 @@ namespace EnlightenMAUI.Models
         int roiStart = 0;
         int roiEnd = 0;
 
-        public Library(string root, Spectrometer spec)
+        public WPLibrary(string root, Spectrometer spec) : base(root, spec) 
         {
             logger.debug($"instantiating Library from {root}");
 
@@ -252,9 +274,7 @@ namespace EnlightenMAUI.Models
 
         }
 
-        public List<string> samples => library.Keys.ToList();
-
-        public Measurement getSample(string name)
+        public override Measurement getSample(string name)
         {
             if (library.ContainsKey(name))
                 return library[name];
@@ -262,7 +282,7 @@ namespace EnlightenMAUI.Models
                 return null;
         }
 
-        public void addSampleToLibrary(string name, Measurement sample)
+        public override void addSampleToLibrary(string name, Measurement sample)
         {
             Measurement adjusted = sample;
             if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
@@ -330,9 +350,8 @@ namespace EnlightenMAUI.Models
                     }
                 }
             }
-            logger.debug("finished loading library files"); 
-            LoadFinished.Invoke(this, this);
-
+            logger.debug("finished loading library files");
+            InvokeLoadFinished();
             logger.debug("prepping data for decon");
 
 
@@ -348,7 +367,6 @@ namespace EnlightenMAUI.Models
 
             logger.debug("finished prepping data for decon");
         }
-
         async Task loadCSV(string path)
         {
             string name = path.Split('/').Last().Split('.').First();
@@ -569,8 +587,7 @@ namespace EnlightenMAUI.Models
 
             logger.info("finish loading library file from {0}", file.AbsolutePath);
         }
-
-        public async Task<Tuple<string,double>> findMatch(Measurement spectrum)
+        public override async Task<Tuple<string,double>> findMatch(Measurement spectrum)
         {
             logger.debug("Library.findMatch: trying to match spectrum");
 
@@ -631,9 +648,8 @@ namespace EnlightenMAUI.Models
                 return null;
         }
 
-
 #if USE_DECON
-        public async Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)
+        public override async Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)
         {
             List<double> intensities = new List<double>(spectrum.processed);
             List<double> wavenumbers = new List<double>(spectrum.wavenumbers);

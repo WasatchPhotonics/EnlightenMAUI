@@ -78,6 +78,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="libdpSDK.so" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\apeture.svg" />
 	  <None Remove="Resources\Images\bulb_dark.svg" />
@@ -94,6 +95,12 @@
 	  <None Remove="Resources\Images\laser.svg" />
 	  <None Remove="Resources\Images\triangle_down_underline.svg" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSDK.so">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </AndroidNativeLibrary>
 	</ItemGroup>
 
 	<ItemGroup>

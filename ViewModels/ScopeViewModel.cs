@@ -105,8 +105,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
         {
             libraryLoader = Task.Run(() =>
-            { 
-                library = new Library("library", spec); 
+            {
+                library = new DPLibrary("60999-622-2_Raman-Demo.idex", spec);
+                //library = new WPLibrary("library", spec); 
                 AnalysisViewModel.getInstance().library = library;
             });
             libraryLoader.Wait();
@@ -176,7 +177,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new Library("library", spec);
+                library = new WPLibrary("library", spec);
                 AnalysisViewModel.getInstance().library = library;
             });
             libraryLoader.Wait();
