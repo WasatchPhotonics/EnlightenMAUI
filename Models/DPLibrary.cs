@@ -1,4 +1,5 @@
-﻿using EnlightenMAUI.Platforms;
+﻿using Android.Content;
+using EnlightenMAUI.Platforms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,14 @@ namespace EnlightenMAUI.Models
         public bool loaded;
         Logger logger = Logger.getInstance();
 
+        public class DPCR : Android.Content.ContentResolver
+        {
+            public DPCR(Context context) : base(context)
+            {
+
+            }
+        }
+
         public DPLibrary(string root, Spectrometer spec) : base(root, spec)
         {
             try
@@ -45,7 +54,22 @@ namespace EnlightenMAUI.Models
                         {
                             if (sub.AbsolutePath.Split('/').Last() == root)
                             {
-                                fullPath = sub.AbsolutePath;    
+                                //fullPath = sub.AbsolutePath;
+                                fullPath = sub.CanonicalPath;
+
+                                var uri = Android.Net.Uri.FromFile(sub);
+                                DPCR cr = new DPCR(Platform.AppContext);
+                                var parcelFD = cr.OpenFileDescriptor(uri, "r");
+                                if (parcelFD != null)
+                                {
+                                    int fd = parcelFD.Fd;
+                                    fullPath = "/proc/self/fd/" + fd;
+                                }    
+
+
+                                //var mParcelFileDescriptor = Android.Content.ContentResolver.;
+
+
                                 fullPathFound = true;
                                 break;
                             }
