@@ -1093,8 +1093,11 @@ public class BluetoothSpectrometer : Spectrometer
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
 
+        lastRaw = spectrum; 
+        lastSpectrum = spectrum;
 
-        lastRaw = spectrum;
+        measurement.reset();
+        measurement.reload(this);
 
         if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
         {
@@ -1110,11 +1113,14 @@ public class BluetoothSpectrometer : Spectrometer
             double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             stretchedDark = new double[smoothed.Length];
-            spectrum = smoothed;
+            measurement.rawDark = dark;
+            measurement.dark = stretchedDark;
+            measurement.postProcessed = smoothed;
         }
         else
         {
             measurement.wavenumbers = wavenumbers;
+            measurement.postProcessed = spectrum;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1122,10 +1128,7 @@ public class BluetoothSpectrometer : Spectrometer
         ////////////////////////////////////////////////////////////////////////
 
         logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
-        lastSpectrum = spectrum;
-   
-        measurement.reset();
-        measurement.reload(this);
+        
         logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
 
         logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}", 

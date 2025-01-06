@@ -1,4 +1,5 @@
 ﻿// using Bumptech.Glide.Util;
+using EnlightenMAUI.Platforms;
 using System.ComponentModel;
 using System.Text;
 using static Android.Widget.GridLayout;
@@ -158,6 +159,17 @@ public class Measurement : INotifyPropertyChanged
         }
     }
     double[] dark_;
+    
+    public double[] rawDark
+    {
+        get { return rawDark_; }
+        set
+        {
+            rawDark_ = value;
+            postProcess();
+        }
+    }
+    double[] rawDark_;
 
     public double[] reference
     {
@@ -457,6 +469,8 @@ public class Measurement : INotifyPropertyChanged
 
         postProcess();
 
+        rawDark = spec.dark;
+        rawWavenumbers = wavenumbers = spec.wavenumbers;
         roiStart = spec is null ? 0 : (uint)spec.eeprom.ROIHorizStart;
         roiEnd = spec is null ? pixels - 1 : (uint)spec.eeprom.ROIHorizEnd;
 
@@ -657,27 +671,42 @@ public class Measurement : INotifyPropertyChanged
         if (settings.savePixel) headers.Add("Pixel");
         if (settings.saveWavelength) headers.Add("Wavelength");
         if (settings.saveWavenumber) headers.Add("Wavenumber");
-        headers.Add("Processed");
+        headers.Add("Spectrum");
         if (settings.saveRaw) headers.Add("Raw");
         if (settings.saveDark) headers.Add("Dark");
         if (settings.saveReference) headers.Add("Reference");
-
+        if (rawWavenumbers[0] != wavenumbers[0])
+        {
+            headers.Add("");
+            if (settings.savePixel) headers.Add("Processed Data Point");
+            if (settings.saveWavenumber) headers.Add("Processed Wavenumber");
+            headers.Add("Processed Spectrum");
+        }
         // reference-based techniques should output higher precision
         string fmt = reference is null ? "f2" : "f5";
 
         sw.WriteLine(string.Join(", ", headers));
 
-        for (int i = 0; i < processed.Length; i++)
+        for (int i = 0; i < Math.Max(postProcessed.Length, processed.Length); i++)
         {
             List<string> values = new List<string>();
 
-            if (settings.savePixel) values.Add(i.ToString());
+            if (settings.savePixel && i < processed.Length) values.Add(i.ToString());
+            else if (settings.savePixel) values.Add("");
             if (settings.saveWavelength) values.Add(render(wavelengths, i));
-            if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
+            if (settings.saveWavenumber) values.Add(render(rawWavenumbers, i));
             values.Add(render(processed, i, fmt));
             if (settings.saveRaw) values.Add(render(raw, i));
-            if (settings.saveDark) values.Add(render(dark, i));
+            if (settings.saveDark) values.Add(render(rawDark, i));
             if (settings.saveReference) values.Add(render(reference, i));
+            if (rawWavenumbers[0] != wavenumbers[0])
+            {
+                values.Add(render(null, i));
+                if (settings.savePixel && i < postProcessed.Length) values.Add(i.ToString());
+                else if (settings.savePixel) values.Add("");
+                if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
+                values.Add(render(postProcessed, i));
+            }
 
             sw.WriteLine(string.Join(", ", values));
         }

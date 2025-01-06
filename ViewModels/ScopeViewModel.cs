@@ -1063,8 +1063,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("refreshChartData: start");
 
         // use last Measurement from the Spectrometer
-        uint pixels = (uint)spec.measurement.processed.Length;
-        double[] intensities = spec.measurement.processed;
+        uint pixels = (uint)spec.measurement.postProcessed.Length;
+        double[] intensities = spec.measurement.postProcessed;
 
         bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
@@ -1310,7 +1310,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     if (m != null)
                     {
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.postProcessed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(saveViewModel.saveName))
                             DataOverlays[saveViewModel.saveName] = newOverlay;
                         else
@@ -1425,7 +1425,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     if (m != null)
                     {
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.postProcessed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(matchCompound))
                             DataOverlays[matchCompound] = newOverlay;
                         else

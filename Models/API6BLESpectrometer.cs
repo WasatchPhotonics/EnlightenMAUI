@@ -778,23 +778,33 @@ public class API6BLESpectrometer : Spectrometer
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
 
+        lastRaw = spectrum;
+        lastSpectrum = spectrum;
 
-        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && dark != null)
+        measurement.reset();
+        measurement.reload(this);
+
+        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
         {
-            logger.info("Performing background removal");
-            for (int i = 0; i < spectrum.Length; ++i)
+            if (dark != null)
             {
-                spectrum[i] -= dark[i];
+                logger.info("Performing background removal");
+                for (int i = 0; i < spectrum.Length; ++i)
+                {
+                    spectrum[i] -= dark[i];
+                }
             }
 
             double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             stretchedDark = new double[smoothed.Length];
-            spectrum = smoothed;
+            measurement.dark = stretchedDark;
+            measurement.postProcessed = smoothed;
         }
         else
         {
             measurement.wavenumbers = wavenumbers;
+            measurement.postProcessed = spectrum;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -802,10 +812,7 @@ public class API6BLESpectrometer : Spectrometer
         ////////////////////////////////////////////////////////////////////////
 
         logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
-        lastSpectrum = spectrum;
 
-        measurement.reset();
-        measurement.reload(this);
         logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
 
         logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}",
