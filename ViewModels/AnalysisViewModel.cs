@@ -45,6 +45,8 @@ namespace EnlightenMAUI.ViewModels
         {
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
@@ -63,6 +65,8 @@ namespace EnlightenMAUI.ViewModels
         public AnalysisViewModel(bool isInstance = false)
         {
             spec = BluetoothSpectrometer.getInstance();
+            if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
@@ -194,6 +198,8 @@ namespace EnlightenMAUI.ViewModels
         public void refreshSpec()
         {
             spec = BluetoothSpectrometer.getInstance();
+            if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 

@@ -1075,7 +1075,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
             {
-                if (usingRemovalAxis)
+                if (usingRemovalAxis && spec.measurement.wavenumbers != null)
                     xAxis = spec.measurement.wavenumbers;
                 else
                     xAxis = spec.wavenumbers;

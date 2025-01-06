@@ -264,9 +264,12 @@ namespace EnlightenMAUI.Models
 
         public void addSampleToLibrary(string name, Measurement sample)
         {
-            Measurement adjusted = sample;
+            Measurement adjusted = new Measurement();
+            
             if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
-                adjusted = sample;
+            {
+                adjusted = sample.copy();
+            }
             else
             {
                 double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
@@ -276,7 +279,7 @@ namespace EnlightenMAUI.Models
                 adjusted.raw = newIntensities;
             }
 
-            library[name] = sample;
+            library[name] = adjusted;
         }
 
         async Task loadFiles(string root, string correctionFileName = "etalon_correction.json")
