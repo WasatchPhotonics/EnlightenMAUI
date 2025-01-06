@@ -213,13 +213,13 @@ namespace EnlightenMAUI.Models
     internal class WPLibrary : Library
     {
         Logger logger = Logger.getInstance();
-        Task libraryLoader;
+        protected Task libraryLoader;
 
-        Wavecal wavecal;
-        int roiStart = 0;
-        int roiEnd = 0;
+        protected Wavecal wavecal;
+        protected int roiStart = 0;
+        protected int roiEnd = 0;
 
-        public WPLibrary(string root, Spectrometer spec) : base(root, spec) 
+        public WPLibrary(string root, Spectrometer spec, bool doLoad = true) : base(root, spec) 
         {
             logger.debug($"instantiating Library from {root}");
 
@@ -230,7 +230,8 @@ namespace EnlightenMAUI.Models
             roiStart = spec.eeprom.ROIHorizStart;
             roiEnd = spec.eeprom.ROIHorizEnd;
 
-            libraryLoader = loadFiles(root);
+            if (doLoad)
+                libraryLoader = loadFiles(root);
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -284,9 +285,12 @@ namespace EnlightenMAUI.Models
 
         public override void addSampleToLibrary(string name, Measurement sample)
         {
-            Measurement adjusted = sample;
+            Measurement adjusted = new Measurement();
+            
             if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
-                adjusted = sample;
+            {
+                adjusted = sample.copy();
+            }
             else
             {
                 double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
@@ -296,7 +300,7 @@ namespace EnlightenMAUI.Models
                 adjusted.raw = newIntensities;
             }
 
-            library[name] = sample;
+            library[name] = adjusted;
         }
 
         async Task loadFiles(string root, string correctionFileName = "etalon_correction.json")

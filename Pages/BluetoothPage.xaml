@@ -93,7 +93,9 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <ViewCell x:DataType="local:Models.USBViewDevice">
-                                <Label TextColor="#2994d3" VerticalOptions="Center" Text="{Binding name}" FontSize="Large"/>
+                                <StackLayout Orientation="Horizontal" BackgroundColor="{Binding backgroundColor}">
+                                    <Label TextColor="#2994d3"  Margin="5, 10, 0, 10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Large"/>
+                                </StackLayout>
                             </ViewCell>
                         </DataTemplate>
                     </ListView.ItemTemplate>

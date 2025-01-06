@@ -107,7 +107,7 @@ public class Util
         if (smooth)
         {
             //logger.info("smoothing sample and library");
-            double[] yIn = AirPLS.smooth(sampleM.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
+            double[] yIn = AirPLS.smooth(sampleM.postProcessed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
             //double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
             double[] array = library.processed.Skip((int)sampleM.roiStart).Take(yIn.Length).ToArray();
 
@@ -135,7 +135,7 @@ public class Util
         }
         else
         {
-            double[] yIn = sampleM.processed;
+            double[] yIn = sampleM.postProcessed;
             double[] array = library.processed;
 
             return MathNet.Numerics.Statistics.Correlation.Pearson(yIn, array);

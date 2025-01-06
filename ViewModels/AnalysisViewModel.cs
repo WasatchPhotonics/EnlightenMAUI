@@ -45,6 +45,8 @@ namespace EnlightenMAUI.ViewModels
         {
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
@@ -63,6 +65,8 @@ namespace EnlightenMAUI.ViewModels
         public AnalysisViewModel(bool isInstance = false)
         {
             spec = BluetoothSpectrometer.getInstance();
+            if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
@@ -195,6 +199,8 @@ namespace EnlightenMAUI.ViewModels
         {
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
             if (spec != null && spec.paired)
@@ -247,20 +253,20 @@ namespace EnlightenMAUI.ViewModels
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd)
                 {
                     double refScale = reference.processed.Skip(spec.eeprom.ROIHorizStart).Take(spec.eeprom.ROIHorizEnd - spec.eeprom.ROIHorizStart).Max();
-                    double samScale = sample.processed.Skip(spec.eeprom.ROIHorizStart).Take(spec.eeprom.ROIHorizEnd - spec.eeprom.ROIHorizStart).Max();
+                    double samScale = sample.postProcessed.Skip(spec.eeprom.ROIHorizStart).Take(spec.eeprom.ROIHorizEnd - spec.eeprom.ROIHorizStart).Max();
                     scaleFactor = refScale / samScale;
                 }
                 else
                 {
                     double refScale = reference.processed.Maximum();
-                    double samScale = sample.processed.Maximum();
+                    double samScale = sample.postProcessed.Maximum();
                     scaleFactor = refScale / samScale;
                 }
             }
             if (sample != null)
             {
                 uint pixels = sample.pixels;
-                double[] intensities = sample.processed;
+                double[] intensities = sample.postProcessed;
 
                 try
                 {

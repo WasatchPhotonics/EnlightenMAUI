@@ -8,8 +8,10 @@ using Android.Hardware.Usb;
 using CommunityToolkit.Maui.Converters;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
+using Microsoft.Extensions.Logging.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
+using static Android.InputMethodServices.Keyboard;
 using static Android.Provider.ContactsContract.CommonDataKinds;
 using static Android.Telephony.CarrierConfigManager;
 
@@ -77,7 +79,9 @@ namespace EnlightenMAUI.Models
 
         public async Task<bool> initAsync()
         {
+            raiseConnectionProgress(0.175);
             connect();
+            raiseConnectionProgress(0.2);
             var pages = await readEEPROMAsync();
             if (pages is null)
             {
@@ -91,6 +95,7 @@ namespace EnlightenMAUI.Models
                 logger.error("Spectrometer.initAsync: failed to parse EEPROM");
                 return false;
             }
+            raiseConnectionProgress(0.925);
 
             ////////////////////////////////////////////////////////////////////
             // post-process EEPROM
@@ -110,6 +115,7 @@ namespace EnlightenMAUI.Models
 
             logger.debug("Spectrometer.initAsync: generating pixel axis");
             generatePixelAxis();
+            raiseConnectionProgress(0.95);
 
             // set this early so battery and other BLE calls can progress
             paired = true;
@@ -124,6 +130,7 @@ namespace EnlightenMAUI.Models
             pixels = eeprom.activePixelsHoriz;
 
             await updateBatteryAsync();
+            raiseConnectionProgress(0.975);
 
             // for now, ignore EEPROM configuration and hardcode
             // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
@@ -198,11 +205,25 @@ namespace EnlightenMAUI.Models
 
             note = "your text here";
             acquiring = false;
-            scansToAverage = 1;
+            _scansToAverage = 1;
 
             battery = new Battery();
             logger.debug("Spectrometer.reset: done");
         }
+
+        public override byte scansToAverage
+        {
+            get => _scansToAverage;
+            set
+            {
+                _scansToAverage = value;
+                logger.debug($"Spectrometer.scansToAvg: next = {value}");
+                sendCmd2(Opcodes.SET_SCANS_TO_AVERAGE, (ushort)(_scansToAverage = value));
+                NotifyPropertyChanged(nameof(scansToAverage));
+            }
+        }
+        byte _scansToAverage = 1;
+
 
         public override uint integrationTimeMS
         {
@@ -332,6 +353,61 @@ namespace EnlightenMAUI.Models
             }
         }
 
+        public override bool autoDarkEnabled
+        {
+            get => acquisitionMode == AcquisitionMode.AUTO_DARK;
+            set
+            {
+                if (value && acquisitionMode != AcquisitionMode.AUTO_DARK)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                    acquisitionMode = AcquisitionMode.AUTO_DARK;
+                    laserState.enabled = false;
+                    NotifyPropertyChanged(nameof(autoRamanEnabled));
+                    NotifyPropertyChanged(nameof(autoDarkEnabled));
+                }
+                else if (!value && !autoRamanEnabled)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                    acquisitionMode = AcquisitionMode.STANDARD;
+                    NotifyPropertyChanged(nameof(autoRamanEnabled));
+                    NotifyPropertyChanged(nameof(autoDarkEnabled));
+                }
+                else if (value)
+                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_DARK}");
+            }
+        }
+
+        public override bool autoRamanEnabled
+        {
+            get => acquisitionMode == AcquisitionMode.AUTO_RAMAN;
+            set
+            {
+                if (value && acquisitionMode != AcquisitionMode.AUTO_RAMAN)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                    acquisitionMode = AcquisitionMode.AUTO_RAMAN;
+                    laserState.enabled = false;
+                    NotifyPropertyChanged(nameof(autoRamanEnabled));
+                    NotifyPropertyChanged(nameof(autoDarkEnabled));
+                }
+                else if (!value && !autoDarkEnabled)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                    acquisitionMode = AcquisitionMode.STANDARD;
+                    NotifyPropertyChanged(nameof(autoRamanEnabled));
+                    NotifyPropertyChanged(nameof(autoDarkEnabled));
+                }
+                else if (value)
+                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_RAMAN}");
+            }
+        }
+
+        protected override void processGeneric(byte[] data)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override async Task<List<byte[]>> readEEPROMAsync()
         {
             logger.info("reading EEPROM");
@@ -350,7 +426,7 @@ namespace EnlightenMAUI.Models
 
                 logger.hexdump(buf, $"adding page {page}: ");
                 pages.Add(buf);
-                //raiseConnectionProgress(.15 + .85 * page / 8);
+                raiseConnectionProgress(.2 + .7 * (page + 1) / 8);
             }
             logger.debug($"Spectrometer.readEEPROMAsync: done");
             return pages;
@@ -368,47 +444,11 @@ namespace EnlightenMAUI.Models
 
         public override async Task<bool> takeOneAveragedAsync()
         {
+            acquiring = true;
             await updateBatteryAsync();
 
             double[] spectrum = new double[pixels];
-            if (scansToAverage > 1)
-            {
-                // logger.debug("getSpectrum: getting additional spectra for averaging");
-                for (uint i = 1; i < scansToAverage; i++)
-                {
-                    // don't send a new SW trigger if using continuous acquisition
-                    double[] tmp;
-                    while (true)
-                    {
-                        tmp = await takeOneAsync(false);
-
-                        if (tmp != null)
-                            break;
-
-                        if (retries++ < acquisitionMaxRetries)
-                        {
-                            // retry the whole thing (including ACQUIRE)
-                            logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                            continue;
-                        }
-
-                        return false;
-                    }
-                    if (tmp is null)
-                        return false;
-
-                    for (int px = 0; px < spectrum.Length; px++)
-                        spectrum[px] += tmp[px];
-                }
-
-                for (int px = 0; px < spectrum.Length; px++)
-                    spectrum[px] /= scansToAverage;
-            }
-            else
-            {
-                spectrum = await takeOneAsync(false);
-            }
-
+            spectrum = await takeOneAsync(false);
 
             // Bin2x2
             apply2x2Binning(spectrum);
@@ -416,11 +456,34 @@ namespace EnlightenMAUI.Models
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
 
-            if (PlatformUtil.transformerLoaded && useBackgroundRemoval)
+            lastRaw = spectrum;
+            lastSpectrum = spectrum;
+
+            measurement.reset();
+            measurement.reload(this);
+
+            if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
             {
+                if (dark != null)
+                {
+                    logger.info("Performing background removal");
+                    for (int i = 0; i < spectrum.Length; ++i)
+                    {
+                        spectrum[i] -= dark[i];
+                    }
+                }
+
                 double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber);
-                wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
-                spectrum = smoothed;
+                measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                stretchedDark = new double[smoothed.Length];
+                measurement.rawDark = dark;
+                measurement.dark = stretchedDark;
+                measurement.postProcessed = smoothed;
+            }
+            else
+            {
+                measurement.wavenumbers = wavenumbers;
+                measurement.postProcessed = spectrum;
             }
 
             ////////////////////////////////////////////////////////////////////////
@@ -428,10 +491,7 @@ namespace EnlightenMAUI.Models
             ////////////////////////////////////////////////////////////////////////
 
             logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
-            lastSpectrum = spectrum;
 
-            measurement.reset();
-            measurement.reload(this);
             logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
 
             logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}",
@@ -447,18 +507,81 @@ namespace EnlightenMAUI.Models
             return true;
         }
 
+        DateTime startTime;
+        DateTime endTime;
+        bool acqDone = false;
+
+
+        public async Task<bool> monitorAcqProgress()
+        {
+            logger.debug("monitor auto starting at {0}", startTime.ToString("hh:mm:ss.fff"));
+            logger.debug("initial end estimate at {0}", endTime.ToString("hh:mm:ss.fff"));
+
+            while (true)
+            {
+                DateTime now = DateTime.Now;
+                double estimatedMilliseconds = (endTime - startTime).TotalMilliseconds;
+                double progress = (now - startTime).TotalMilliseconds / estimatedMilliseconds;
+
+                logger.debug("estimated progress currently at {0:f3}", progress);
+                if (progress > 0) 
+                    raiseAcquisitionProgress(0.95 * progress);
+
+                if (progress >= 1 || acqDone)
+                {
+                    logger.debug("exiting acq monitor loop");
+                    break;
+                }
+
+                await Task.Delay(33);
+            }
+
+            return true;
+        }
+
+
         protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
         {
+            startTime = DateTime.Now;
+            if (acquisitionMode == AcquisitionMode.STANDARD)
+                endTime = DateTime.Now.AddMilliseconds(integrationTimeMS * scansToAverage);
+            else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
+                endTime = DateTime.Now.AddMilliseconds(maxCollectionTimeMS * 3);
+            acqDone = false;
+            Task monitor = monitorAcqProgress();
+            Task<int> transfer = null;
+
             logger.info("sending spectrum trigger");
             byte[] buf = null;
             if (isARM)
                 buf = new byte[8];
 
-            logger.debug("sending SW trigger");
-            await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM, 0, buf: buf);
+            int okI = 0;
+            byte[] spectrumBuff = null;
 
-            byte[] spectrumBuff = new byte[pixels * 2];
-            int okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+            if (acquisitionMode == AcquisitionMode.STANDARD)
+            {
+                logger.debug("sending SW trigger");
+                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf);
+                spectrumBuff = new byte[pixels * 2];
+                okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+
+            }
+            else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
+            {
+                byte[] autoParams = packAutoRamanParameters();
+                bool autoOk = await sendCmdAsync(Opcodes.SET_ACQUIRE_AUTO_RAMAN, 0, buf: autoParams);
+                if (autoOk)
+                {
+                    logger.debug("auto raman params and trigger set successfully");
+                    int autoTimeout = maxCollectionTimeMS * 10;
+                    spectrumBuff = new byte[pixels * 2];
+                    transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
+                }
+            }
+
+            await Task.WhenAll([transfer, monitor]);
+            raiseAcquisitionProgress(0.95);
 
             if (okI >= 0)
             {
@@ -477,6 +600,8 @@ namespace EnlightenMAUI.Models
 
             for (int i = 0; i < pixels; i++)
                 spec[i] = subspectrum[i];
+
+            raiseAcquisitionProgress(1);
 
             return spec;
         }
@@ -621,6 +746,12 @@ namespace EnlightenMAUI.Models
             }
 
             int okI = await udc.ControlTransferAsync((UsbAddressing)HOST_TO_DEVICE, cmd[opcode], wValue, wIndex, buf, wLength, 100);
+
+            if (opcode == Opcodes.ACQUIRE_SPECTRUM)
+            {
+                logger.info("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
+                    opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, okI, expectedSuccessResult);
+            }
 
             if (expectedSuccessResult != null && okI < 0)
             {

@@ -545,7 +545,24 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         status = await Permissions.RequestAsync<Permissions.StorageRead>();
         if (status != PermissionStatus.Granted)
+
             logger.debug("ENLIGHTEN requires StorageRead permission to load spectra.");
+
+        /*
+        try
+        {
+
+            Android.Net.Uri uri = Android.Net.Uri.Parse("package:" + Android.App.Application.Context.ApplicationInfo.PackageName); 
+            Intent intent = new Intent(Android.Provider.Settings.ActionManageAppAllFilesAccessPermission,uri);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Context con = Android.App.Application.Context;
+            con.StartActivity(intent);
+        }
+        catch (Exception ex)
+        {
+            logger.info("lost permission with exception", ex.Message);
+        }
+        */
 
         return true;
     }
@@ -595,7 +612,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         else
         {
             logger.debug("BVM.doConnectOrDisconnect: connecting");
-            await doConnectAsync(true);
+            await doConnectBluetoothAsync(true);
             if (BLEDevice.paired)
             {
                 try
@@ -622,29 +639,48 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             try
             {
+                buttonConnectEnabled = false;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
                 Context con = Android.App.Application.Context;
                 UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
+                connectionProgress = 0.025;
                 int interfaces = acc.InterfaceCount;
+                connectionProgress = 0.05;
 
                 logger.info("usb device has {0} interfaces", interfaces);
                 for (int i = 0; i < interfaces; i++)
                 {
                     logger.info("interface {0} has {1} endpoints", i, acc.GetInterface(i).EndpointCount);
                 }
+                connectionProgress = 0.075;
 
                 UsbDeviceConnection udc = manager.OpenDevice(acc);
+                connectionProgress = 0.1;
                 logger.info("device has {0} configurations", acc.ConfigurationCount);
                 if (udc != null)
                 {
                     logger.info("successfully opened device");
                     USBSpectrometer usbSpectrometer = new USBSpectrometer(udc, acc);
+                    connectionProgress = 0.125;
                     spec = usbSpectrometer;
+                    spec.showConnectionProgress += showSpectrometerConnectionProgress;
+
+                    connectionProgress = 0.15;
                     bool ok = await (spec as USBSpectrometer).initAsync();
                     if (ok)
-                        Spectrometer.NewConnection.Invoke(this, spec);
-
+                    {
+                        logger.debug("invoking new connection");
+                        if (Spectrometer.NewConnection != null)
+                            Spectrometer.NewConnection.Invoke(this, spec);
+                    }
+                    logger.debug("init complete setting instance and paired");
                     USBSpectrometer.setInstance(usbSpectrometer);
                     USBViewDevice.paired = true;
+                    connectionProgress = 1;
+                    buttonConnectEnabled = true;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+                    await Shell.Current.GoToAsync("//ScopePage");
+                    connectionProgress = 0;
                     return ok;
                 }
                 else
@@ -737,7 +773,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /*
      *  I personally think this should probably live in a model class since nothing going on here needs to be displayed
      */
-    async Task<bool> doConnectAsync(bool isBluetooth)
+    async Task<bool> doConnectBluetoothAsync(bool isBluetooth)
     {
         logger.debug("BVM.doConnectAsync: start");
         buttonConnectEnabled = false;

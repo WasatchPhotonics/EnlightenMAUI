@@ -106,7 +106,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new DPLibrary("60999-622-2_Raman-Demo.idex", spec);
+                library = new DPLibrary("database", spec);
                 //library = new WPLibrary("library", spec); 
                 AnalysisViewModel.getInstance().library = library;
             });
@@ -153,10 +153,18 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: updating chart");
         updateChart();
 
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
+       if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
         if (spec != null && spec.paired)
-            spec.autoRamanEnabled = true;
+        {
+            if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
+                spec.autoRamanEnabled = true;
+            else
+            {
+                spec.autoRamanEnabled = false;
+                spec.autoDarkEnabled = false;
+            }
+        }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
     }
@@ -173,6 +181,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        logger.debug("refreshing from USB spec");
+
         if (spec != null && spec.paired)
         {
             libraryLoader = Task.Run(() =>
@@ -184,6 +194,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             library.LoadFinished += Library_LoadFinished;
             Task.Run(() => findUserFiles());
         }
+
+        logger.debug("finished loading library in refresh");
 
         overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
 
@@ -1064,8 +1076,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("refreshChartData: start");
 
         // use last Measurement from the Spectrometer
-        uint pixels = (uint)spec.measurement.processed.Length;
-        double[] intensities = spec.measurement.processed;
+        uint pixels = (uint)spec.measurement.postProcessed.Length;
+        double[] intensities = spec.measurement.postProcessed;
 
         bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
@@ -1076,7 +1088,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
             {
-                if (usingRemovalAxis)
+                if (usingRemovalAxis && spec.measurement.wavenumbers != null)
                     xAxis = spec.measurement.wavenumbers;
                 else
                     xAxis = spec.wavenumbers;
@@ -1311,7 +1323,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     if (m != null)
                     {
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.postProcessed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(saveViewModel.saveName))
                             DataOverlays[saveViewModel.saveName] = newOverlay;
                         else
@@ -1426,7 +1438,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     if (m != null)
                     {
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.postProcessed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(matchCompound))
                             DataOverlays[matchCompound] = newOverlay;
                         else
