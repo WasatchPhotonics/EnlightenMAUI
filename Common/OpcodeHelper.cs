@@ -81,6 +81,7 @@ namespace EnlightenMAUI.Common
         SECOND_TIER_COMMAND,
         SET_ACCESSORY_ENABLE,
         SET_AREA_SCAN_ENABLE,
+        SET_ACQUIRE_AUTO_RAMAN,
         SET_CF_SELECT,
         SET_COLLECTION_MODE,
         SET_CONTINUOUS_ACQUISITION,
@@ -264,6 +265,7 @@ namespace EnlightenMAUI.Common
             cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM] = 0x2a;
             cmd[Opcodes.GET_BLE_FW_VER_INFO] = 0x2d;
             cmd[Opcodes.SET_SCANS_TO_AVERAGE] = 0x62;
+            cmd[Opcodes.SET_ACQUIRE_AUTO_RAMAN] = 0xFD;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //

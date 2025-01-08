@@ -613,6 +613,39 @@ namespace EnlightenMAUI.Models
         }
         protected byte _maxAverage = 100;
 
+        protected byte[] packAutoRamanParameters()
+        {
+            List<byte> data = new List<byte>();
+
+            data.Add((byte)(maxCollectionTimeMS & 0xFF));
+            data.Add((byte)((maxCollectionTimeMS >> 8) & 0xFF));
+            data.Add((byte)(startIntTimeMS & 0xFF));
+            data.Add((byte)((startIntTimeMS >> 8) & 0xFF));
+            data.Add((byte)(startGainDb & 0xFF));
+            data.Add((byte)(maxIntTimeMS & 0xFF));
+            data.Add((byte)((maxIntTimeMS >> 8) & 0xFF));
+            data.Add((byte)(minIntTimeMS & 0xFF));
+            data.Add((byte)((minIntTimeMS >> 8) & 0xFF));
+            data.Add((byte)(maxGainDb & 0xFF));
+            data.Add((byte)(minGainDb & 0xFF));
+            data.Add((byte)(targetCounts & 0xFF));
+            data.Add((byte)((targetCounts >> 8) & 0xFF));
+            data.Add((byte)(maxCounts & 0xFF));
+            data.Add((byte)((maxCounts >> 8) & 0xFF));
+            data.Add((byte)(minCounts & 0xFF));
+            data.Add((byte)((minCounts >> 8) & 0xFF));
+            data.Add((byte)(maxFactor & 0xFF));
+            data.Add((byte)((int)dropFactor & 0xFF));
+            data.Add((byte)((int)((dropFactor - (int)dropFactor) * 0x100) & 0xFF));
+            data.Add((byte)(saturationCounts & 0xFF));
+            data.Add((byte)((saturationCounts >> 8) & 0xFF));
+            data.Add((byte)(maxAverage & 0xFF));
+
+
+            byte[] serializedParams = data.ToArray();
+            return serializedParams;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // dark
         ////////////////////////////////////////////////////////////////////////

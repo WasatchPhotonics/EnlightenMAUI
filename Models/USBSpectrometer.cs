@@ -8,6 +8,7 @@ using Android.Hardware.Usb;
 using CommunityToolkit.Maui.Converters;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
+using Microsoft.Extensions.Logging.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using static Android.Provider.ContactsContract.CommonDataKinds;
@@ -502,11 +503,28 @@ namespace EnlightenMAUI.Models
             if (isARM)
                 buf = new byte[8];
 
-            logger.debug("sending SW trigger");
-            await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM, (ushort)acquisitionMode, buf: buf);
+            int okI = 0;
+            byte[] spectrumBuff = null;
 
-            byte[] spectrumBuff = new byte[pixels * 2];
-            int okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+            if (acquisitionMode == AcquisitionMode.STANDARD)
+            {
+                logger.debug("sending SW trigger");
+                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf);
+                spectrumBuff = new byte[pixels * 2];
+                okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+            }
+            else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
+            {
+                byte[] autoParams = packAutoRamanParameters();
+                bool autoOk = await sendCmdAsync(Opcodes.SET_ACQUIRE_AUTO_RAMAN, 0, buf: autoParams);
+                if (autoOk)
+                {
+                    logger.debug("auto raman params and trigger set successfully");
+                    int autoTimeout = maxCollectionTimeMS * 10;
+                    spectrumBuff = new byte[pixels * 2];
+                    okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
+                }
+            }
 
             if (okI >= 0)
             {
