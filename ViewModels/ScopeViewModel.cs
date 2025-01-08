@@ -152,7 +152,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: updating chart");
         updateChart();
 
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
+       if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
         if (spec != null && spec.paired)
             spec.autoRamanEnabled = true;
@@ -172,6 +172,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        logger.debug("refreshing from USB spec");
+
         if (spec != null && spec.paired)
         {
             libraryLoader = Task.Run(() =>
@@ -183,6 +185,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             library.LoadFinished += Library_LoadFinished;
             Task.Run(() => findUserFiles());
         }
+
+        logger.debug("finished loading library in refresh");
 
         overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
 

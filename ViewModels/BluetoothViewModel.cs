@@ -641,10 +641,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     spec = usbSpectrometer;
                     bool ok = await (spec as USBSpectrometer).initAsync();
                     if (ok)
-                        Spectrometer.NewConnection.Invoke(this, spec);
-
+                    {
+                        logger.debug("invoking new connection");
+                        if (Spectrometer.NewConnection != null)
+                            Spectrometer.NewConnection.Invoke(this, spec);
+                    }
+                    logger.debug("init complete setting instance and paired");
                     USBSpectrometer.setInstance(usbSpectrometer);
                     USBViewDevice.paired = true;
+                    await Shell.Current.GoToAsync("//ScopePage");
                     return ok;
                 }
                 else

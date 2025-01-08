@@ -116,6 +116,7 @@ namespace EnlightenMAUI.Common
         SET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
         SET_MODEL_CONFIG_ARM,
         SET_MODEL_CONFIG_FX2,
+        SET_SCANS_TO_AVERAGE,
         SET_SELECTED_ADC,
         SET_TEST_PATTERN,
         SET_TRIGGER_DELAY,
@@ -262,6 +263,7 @@ namespace EnlightenMAUI.Common
             cmd[Opcodes.PROCESS_LIBRARY] = 0x29;
             cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM] = 0x2a;
             cmd[Opcodes.GET_BLE_FW_VER_INFO] = 0x2d;
+            cmd[Opcodes.SET_SCANS_TO_AVERAGE] = 0x62;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //
