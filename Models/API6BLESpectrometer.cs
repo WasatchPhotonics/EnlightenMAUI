@@ -372,6 +372,11 @@ public class API6BLESpectrometer : Spectrometer
         return ok;
     }
 
+    protected override void processGeneric(byte[] data)
+    {
+        throw new NotImplementedException();
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // Vertical ROI Start/Stop
     ////////////////////////////////////////////////////////////////////////

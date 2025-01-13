@@ -29,6 +29,7 @@ namespace EnlightenMAUI.Models
         public EEPROM eeprom = EEPROM.getInstance();
         public Battery battery;
         public AcquisitionMode acquisitionMode = AcquisitionMode.AUTO_RAMAN;
+        public Opcodes lastRequest;
 
         ////////////////////////////////////////////////////////////////////////
         // laserState
@@ -734,14 +735,19 @@ namespace EnlightenMAUI.Models
             sem.Release();
         }
 
+        protected abstract void processGeneric(byte[] data);
+
         public void processGenericNotification(byte[] data)
         {
             logger.hexdump(data, "received generic notification: ");
             logger.info($"the length of notification is {data.Length}");
 
             if (EEPROMReadComplete)
+            {
+                processGeneric(data);
                 return;
-
+            }
+            
             int bytesToRead = data.Length - 2;
             Array.Copy(data, 2, EEPROMBuffer, EEPROMBytesRead, Math.Min(bytesToRead, EEPROM.PAGE_LENGTH));
             EEPROMBytesRead += (uint)bytesToRead;

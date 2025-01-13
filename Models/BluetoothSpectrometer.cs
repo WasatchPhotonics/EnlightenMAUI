@@ -40,6 +40,8 @@ public class BluetoothSpectrometer : Spectrometer
 
     bool dataCollectingStarted = false;
     bool optimizationDone = false;
+    bool waitingForGeneric = false;
+    bool acqSynced = false;
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
@@ -306,6 +308,67 @@ public class BluetoothSpectrometer : Spectrometer
         return ok;
     }
 
+    async Task<bool> syncAcqParams()
+    {
+        byte[] request = { 0xbf };
+        lastRequest = Opcodes.GET_INTEGRATION_TIME;
+
+        logger.hexdump(request, "sync acq int time data: ");
+
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+        }
+        var ok = await writeGenericCharacteristic(request);
+        sem.Release();
+
+        waitingForGeneric = true;
+        while (waitingForGeneric)
+        {
+            await Task.Delay(10);
+        } 
+        
+        request = new byte[]{ 0xff, 0x63 };
+        lastRequest = Opcodes.GET_SCANS_TO_AVERAGE;
+
+        logger.hexdump(request, "sync acq avg data: ");
+
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+        }
+        ok = await writeGenericCharacteristic(request);
+        sem.Release();
+
+        waitingForGeneric = true;
+        while (waitingForGeneric)
+        {
+            await Task.Delay(10);
+        }
+        
+        request = new byte[]{ 0xc5 };
+        lastRequest = Opcodes.GET_DETECTOR_GAIN;
+
+        logger.hexdump(request, "sync acq gain data: ");
+
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+        }
+        ok = await writeGenericCharacteristic(request);
+        sem.Release();
+
+        waitingForGeneric = true;
+        while (waitingForGeneric)
+        {
+            await Task.Delay(10);
+        }
+
+        acqSynced = true;
+
+        return true;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // gainDb
     ////////////////////////////////////////////////////////////////////////
@@ -393,6 +456,42 @@ public class BluetoothSpectrometer : Spectrometer
 
         return ok;
     }
+
+    protected override void processGeneric(byte[] data)
+    {
+        byte[] payload = new byte[data.Length - 2];
+
+        logger.debug("BLE Generic process copying payload");
+        Array.Copy(data, 2, payload, 0, data.Length - 2);
+        logger.debug("BLE Generic process copied payload");
+
+        UInt64 val = ToBLEData.toUInt64(payload);
+        logger.debug("BLE Generic process value parsed as {0} with last request as {1}", val, lastRequest.ToString());
+
+        if (lastRequest == Opcodes.GET_INTEGRATION_TIME)
+        {
+            _nextIntegrationTimeMS = (uint)val;
+            logger.debug("generic integration time getter returned {0}", val);
+            NotifyPropertyChanged(nameof(integrationTimeMS));
+        }
+        else if (lastRequest == Opcodes.GET_SCANS_TO_AVERAGE)
+        {
+            _scansToAverage = (byte)val;
+            logger.debug("generic scans to average getter returned {0}", val);
+            NotifyPropertyChanged(nameof(scansToAverage));
+        }
+        else if (lastRequest == Opcodes.GET_DETECTOR_GAIN)
+        {
+            float gain = data[2];
+            gain += (data[3] / 256f);
+            _lastGainDb = gain;
+            logger.debug("generic gain getter returned {0}", val);
+            NotifyPropertyChanged(nameof(gainDb));
+        }
+
+        waitingForGeneric = false;
+    }
+
 
     ////////////////////////////////////////////////////////////////////////
     // Vertical ROI Start/Stop
@@ -1028,16 +1127,8 @@ public class BluetoothSpectrometer : Spectrometer
 
         bool disableLaserAfterFirstPacket = swRamanMode;
 
-        if (!await sem.WaitAsync(100))
-        {
-            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
-            return false;                        
-        }
-
         double[] spectrum = await takeOneAsync(disableLaserAfterFirstPacket);
         logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
-
-        sem.Release();
 
         if (spectrum is null)
         {
@@ -1136,16 +1227,27 @@ public class BluetoothSpectrometer : Spectrometer
 
         dataCollectingStarted = false;
         optimizationDone = false;
+        acqSynced = false;
+        collectionsCompleted = 0;  
+        prevUpdate = DateTime.MinValue;
+        prevValue = 0;
 
         // send acquire command
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            return null;
+        }
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
         byte[] request = new byte[] { (byte)acquisitionMode };
         if (0 != await acquireChar.WriteAsync(request))
         {
             logger.error("failed to send acquire");
+            sem.Release();
             return null;
         }
-
+        sem.Release();
+        monitorAutoRamanProgress();
         logger.debug("waiting for spectral data");
         bool ok = await monitorSpectrumAcquire();
         if (!ok)
@@ -1196,6 +1298,83 @@ public class BluetoothSpectrometer : Spectrometer
         return false;
     }
 
+    DateTime autoStart;
+    DateTime autoEnd;
+    int collectionsCompleted = 0;
+
+    public async Task<bool> monitorAutoRamanProgress()
+    {
+        DateTime now = autoStart = DateTime.Now;
+        logger.debug("monitor auto starting at {0}", autoStart.ToString("hh:mm:ss.fff"));
+        double estimatedSeconds = 15 + maxCollectionTimeMS / 1000 + 2;
+        double estimatedMilliseconds = estimatedSeconds * 1000;
+        double prevProgress = 0;
+        autoEnd = autoStart.AddSeconds(estimatedSeconds);
+        logger.debug("initial auto end estimate at {0}", autoEnd.ToString("hh:mm:ss.fff"));
+
+        await Task.Delay(67);
+
+        while (true)
+        {
+            if (totalPixelsRead > 0)
+                break;
+
+            now = DateTime.Now;
+            estimatedMilliseconds = (autoEnd - autoStart).TotalMilliseconds;
+            double progress = (now - autoStart).TotalMilliseconds / estimatedMilliseconds;
+
+            logger.debug("estimated progress currently at {0:f3}", progress);
+
+            if (progress > prevProgress )
+                raiseAcquisitionProgress(0.75 * progress);
+
+            prevProgress = progress;
+            await Task.Delay(67);
+        }
+
+        return true;
+    }
+
+    public async Task<bool> monitorAutoDarkProgresS()
+    {
+
+        return true;
+    }
+
+    DateTime prevUpdate = DateTime.MinValue;
+    int prevValue = 0;
+
+    void updateAutoEstimate(int autoStep, int arg)
+    {
+        //double estimatedSeconds = 15 + maxCollectionTimeMS * 1000;
+        //double estimatedMilliseconds = estimatedSeconds * 1000;
+        //autoEnd = autoStart.AddSeconds(estimatedSeconds);
+        if (autoStep == AUTO_OPT_TARGET_RATIO)
+        {
+            DateTime now = DateTime.Now;
+            if (prevUpdate.Year != DateTime.MinValue.Year)
+            {
+                double slope = (now - prevUpdate).TotalMilliseconds / (arg - prevValue);
+                double estMSToGo = slope * (90 - arg);
+                double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS + 2000);
+                autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+            }
+
+            prevUpdate = now;
+            prevValue = arg;
+        }
+        else if (autoStep > AUTO_OPT_TARGET_RATIO)
+        {
+            if (acqSynced)
+            {
+                double estimatedMilliseconds = (scansToAverage * 2 - arg) * integrationTimeMS + 2000;
+                autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+            }
+        }
+
+        logger.debug("after update auto end estimate at {0}", autoEnd.ToString("hh:mm:ss.fff"));
+    }
+
 
     public void receiveSpectralUpdate(
             object sender,
@@ -1212,22 +1391,26 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
-                raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));
+                //raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));
+                updateAutoEstimate(data[2], data[3]);
 
                 logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
 
-                if (Math.Abs(100 - data[3]) < 5)
+                if (Math.Abs(100 - data[3]) <= 11)
+                {
                     optimizationDone = true;
+                    syncAcqParams();
+                }
             }
-            else if (data[2] > AUTO_OPT_TARGET_RATIO) 
+            else if (data[2] > AUTO_OPT_TARGET_RATIO)
             {
                 UInt16 complete = (UInt16)((data[3] << 8) | data[4]);
                 UInt16 total = (UInt16)((data[5] << 8) | data[6]);
 
                 if (optimizationDone && !dataCollectingStarted)
                 {
-                    if (autoRamanEnabled)
-                        raiseAcquisitionProgress(0.25);
+                    //if (autoRamanEnabled)
+                    //    raiseAcquisitionProgress(0.25);
                     dataCollectingStarted = true;
                 }
 
@@ -1235,15 +1418,18 @@ public class BluetoothSpectrometer : Spectrometer
                 {
                     int completeProg = complete;
                     if (autoRamanEnabled)
-                            completeProg = complete - 4;
+                        completeProg = complete - 4;
                     int totalProg = total;
                     if (autoRamanEnabled)
                         totalProg = total - 5;
+                    updateAutoEstimate(data[2], completeProg);
 
+                    /*
                     if (autoDarkEnabled)
                         raiseAcquisitionProgress(0.75 * (completeProg / totalProg));
                     else if (autoRamanEnabled)
                         raiseAcquisitionProgress(0.25 + 0.5 * ((double)completeProg / totalProg));
+                    */
                 }
 
                 if (data[2] == AUTO_TAKING_DARK)

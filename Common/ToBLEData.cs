@@ -34,4 +34,17 @@ public class ToBLEData
         }
         return data;
     }
+
+    public static UInt64 toUInt64(byte[] data)
+    {
+        UInt64 v = 0;
+        for (int i = 0; i < data.Length; i++)
+        {
+            v |= ((UInt64)data[data.Length - 1 - i] << (8 * i));
+        }
+
+        return v;
+    }
+
+
 }

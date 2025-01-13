@@ -397,6 +397,10 @@ namespace EnlightenMAUI.Models
             }
         }
 
+        protected override void processGeneric(byte[] data)
+        {
+            throw new NotImplementedException();
+        }
 
         protected override async Task<List<byte[]>> readEEPROMAsync()
         {
