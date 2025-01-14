@@ -520,15 +520,18 @@ namespace EnlightenMAUI.Models
             while (true)
             {
                 DateTime now = DateTime.Now;
-                double estimatedMilliseconds = (startTime - endTime).TotalMilliseconds;
+                double estimatedMilliseconds = (endTime - startTime).TotalMilliseconds;
                 double progress = (now - startTime).TotalMilliseconds / estimatedMilliseconds;
 
                 logger.debug("estimated progress currently at {0:f3}", progress);
                 if (progress > 0) 
                     raiseAcquisitionProgress(0.95 * progress);
 
-                if (progress == 1 || acqDone)
+                if (progress >= 1 || acqDone)
+                {
+                    logger.debug("exiting acq monitor loop");
                     break;
+                }
 
                 await Task.Delay(33);
             }
@@ -576,9 +579,7 @@ namespace EnlightenMAUI.Models
                 }
             }
 
-            okI = await transfer;
-            acqDone = true;
-            await monitor;
+            await Task.WhenAll([transfer, monitor]);
             raiseAcquisitionProgress(0.95);
 
             if (okI >= 0)
