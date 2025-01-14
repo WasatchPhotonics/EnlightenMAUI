@@ -11,6 +11,7 @@ using EnlightenMAUI.Platforms;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
+using static Android.InputMethodServices.Keyboard;
 using static Android.Provider.ContactsContract.CommonDataKinds;
 using static Android.Telephony.CarrierConfigManager;
 
@@ -78,7 +79,9 @@ namespace EnlightenMAUI.Models
 
         public async Task<bool> initAsync()
         {
+            raiseConnectionProgress(0.175);
             connect();
+            raiseConnectionProgress(0.2);
             var pages = await readEEPROMAsync();
             if (pages is null)
             {
@@ -92,6 +95,7 @@ namespace EnlightenMAUI.Models
                 logger.error("Spectrometer.initAsync: failed to parse EEPROM");
                 return false;
             }
+            raiseConnectionProgress(0.925);
 
             ////////////////////////////////////////////////////////////////////
             // post-process EEPROM
@@ -111,6 +115,7 @@ namespace EnlightenMAUI.Models
 
             logger.debug("Spectrometer.initAsync: generating pixel axis");
             generatePixelAxis();
+            raiseConnectionProgress(0.95);
 
             // set this early so battery and other BLE calls can progress
             paired = true;
@@ -125,6 +130,7 @@ namespace EnlightenMAUI.Models
             pixels = eeprom.activePixelsHoriz;
 
             await updateBatteryAsync();
+            raiseConnectionProgress(0.975);
 
             // for now, ignore EEPROM configuration and hardcode
             // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
@@ -420,7 +426,7 @@ namespace EnlightenMAUI.Models
 
                 logger.hexdump(buf, $"adding page {page}: ");
                 pages.Add(buf);
-                //raiseConnectionProgress(.15 + .85 * page / 8);
+                raiseConnectionProgress(.2 + .7 * (page + 1) / 8);
             }
             logger.debug($"Spectrometer.readEEPROMAsync: done");
             return pages;
@@ -438,6 +444,7 @@ namespace EnlightenMAUI.Models
 
         public override async Task<bool> takeOneAveragedAsync()
         {
+            acquiring = true;
             await updateBatteryAsync();
 
             double[] spectrum = new double[pixels];
@@ -500,8 +507,47 @@ namespace EnlightenMAUI.Models
             return true;
         }
 
+        DateTime startTime;
+        DateTime endTime;
+        bool acqDone = false;
+
+
+        public async Task<bool> monitorAcqProgress()
+        {
+            logger.debug("monitor auto starting at {0}", startTime.ToString("hh:mm:ss.fff"));
+            logger.debug("initial end estimate at {0}", endTime.ToString("hh:mm:ss.fff"));
+
+            while (true)
+            {
+                DateTime now = DateTime.Now;
+                double estimatedMilliseconds = (startTime - endTime).TotalMilliseconds;
+                double progress = (now - startTime).TotalMilliseconds / estimatedMilliseconds;
+
+                logger.debug("estimated progress currently at {0:f3}", progress);
+                if (progress > 0) 
+                    raiseAcquisitionProgress(0.95 * progress);
+
+                if (progress == 1 || acqDone)
+                    break;
+
+                await Task.Delay(33);
+            }
+
+            return true;
+        }
+
+
         protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
         {
+            startTime = DateTime.Now;
+            if (acquisitionMode == AcquisitionMode.STANDARD)
+                endTime = DateTime.Now.AddMilliseconds(integrationTimeMS * scansToAverage);
+            else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
+                endTime = DateTime.Now.AddMilliseconds(maxCollectionTimeMS * 3);
+            acqDone = false;
+            Task monitor = monitorAcqProgress();
+            Task<int> transfer = null;
+
             logger.info("sending spectrum trigger");
             byte[] buf = null;
             if (isARM)
@@ -513,9 +559,9 @@ namespace EnlightenMAUI.Models
             if (acquisitionMode == AcquisitionMode.STANDARD)
             {
                 logger.debug("sending SW trigger");
-                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf);
+                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf); 
                 spectrumBuff = new byte[pixels * 2];
-                okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+                transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
             }
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
             {
@@ -526,9 +572,14 @@ namespace EnlightenMAUI.Models
                     logger.debug("auto raman params and trigger set successfully");
                     int autoTimeout = maxCollectionTimeMS * 10;
                     spectrumBuff = new byte[pixels * 2];
-                    okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
+                    transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
                 }
             }
+
+            okI = await transfer;
+            acqDone = true;
+            await monitor;
+            raiseAcquisitionProgress(0.95);
 
             if (okI >= 0)
             {
@@ -547,6 +598,8 @@ namespace EnlightenMAUI.Models
 
             for (int i = 0; i < pixels; i++)
                 spec[i] = subspectrum[i];
+
+            raiseAcquisitionProgress(1);
 
             return spec;
         }
