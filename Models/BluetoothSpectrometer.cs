@@ -1231,6 +1231,8 @@ public class BluetoothSpectrometer : Spectrometer
         collectionsCompleted = 0;  
         prevUpdate = DateTime.MinValue;
         prevValue = 0;
+        firstCollect = true;
+        delta = 0;
 
         // send acquire command
         if (!await sem.WaitAsync(100))
@@ -1306,7 +1308,7 @@ public class BluetoothSpectrometer : Spectrometer
     {
         DateTime now = autoStart = DateTime.Now;
         logger.debug("monitor auto starting at {0}", autoStart.ToString("hh:mm:ss.fff"));
-        double estimatedSeconds = 15 + maxCollectionTimeMS / 1000 + 2;
+        double estimatedSeconds = 15 + maxCollectionTimeMS / 1000;
         double estimatedMilliseconds = estimatedSeconds * 1000;
         double prevProgress = 0;
         autoEnd = autoStart.AddSeconds(estimatedSeconds);
@@ -1325,11 +1327,14 @@ public class BluetoothSpectrometer : Spectrometer
 
             logger.debug("estimated progress currently at {0:f3}", progress);
 
-            if (progress > prevProgress )
+            if (progress > prevProgress && progress <= 1)
+            {
                 raiseAcquisitionProgress(0.75 * progress);
 
-            prevProgress = progress;
-            await Task.Delay(67);
+                prevProgress = progress;
+            }
+
+            await Task.Delay(33);
         }
 
         return true;
@@ -1356,7 +1361,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 double slope = (now - prevUpdate).TotalMilliseconds / (arg - prevValue);
                 double estMSToGo = slope * (90 - arg);
-                double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS + 2000);
+                double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS + 2500);
                 autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
             }
 
@@ -1365,9 +1370,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else if (autoStep > AUTO_OPT_TARGET_RATIO)
         {
+            logger.debug("{0} scans to average with {1} remaining in arg at {2} int time", scansToAverage, arg, integrationTimeMS);
+
             if (acqSynced)
             {
-                double estimatedMilliseconds = (scansToAverage * 2 - arg) * integrationTimeMS + 2000;
+                double estimatedMilliseconds = arg * integrationTimeMS;
+                if (autoStep == AUTO_TAKING_RAMAN)
+                    estimatedMilliseconds += 1700;
+                logger.debug("scan completion estimated in {0} ms", estimatedMilliseconds);
                 autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
             }
         }
@@ -1375,6 +1385,8 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug("after update auto end estimate at {0}", autoEnd.ToString("hh:mm:ss.fff"));
     }
 
+    bool firstCollect = true;
+    int delta = 0;
 
     public void receiveSpectralUpdate(
             object sender,
@@ -1392,14 +1404,19 @@ public class BluetoothSpectrometer : Spectrometer
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
                 //raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));
-                updateAutoEstimate(data[2], data[3]);
 
                 logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
 
                 if (Math.Abs(100 - data[3]) <= 11)
                 {
                     optimizationDone = true;
+                    double estimatedMilliseconds = (maxCollectionTimeMS + 2500);
+                    autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
                     syncAcqParams();
+                }
+                else
+                {
+                    updateAutoEstimate(data[2], data[3]);
                 }
             }
             else if (data[2] > AUTO_OPT_TARGET_RATIO)
@@ -1416,13 +1433,23 @@ public class BluetoothSpectrometer : Spectrometer
 
                 if (total > 0)
                 {
+                    if (firstCollect)
+                    {
+                        firstCollect = false;
+                        delta = total - complete + 1;
+                    }
+
                     int completeProg = complete;
                     if (autoRamanEnabled)
-                        completeProg = complete - 4;
+                        completeProg = complete - delta;
                     int totalProg = total;
                     if (autoRamanEnabled)
                         totalProg = total - 5;
-                    updateAutoEstimate(data[2], completeProg);
+
+                    if (data[2] == AUTO_TAKING_RAMAN)
+                        updateAutoEstimate(data[2], total - complete - 1);
+                    else if (data[2] == AUTO_TAKING_DARK)
+                        updateAutoEstimate(data[2], total - complete);
 
                     /*
                     if (autoDarkEnabled)

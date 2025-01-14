@@ -744,7 +744,8 @@ namespace EnlightenMAUI.Models
 
             if (EEPROMReadComplete)
             {
-                processGeneric(data);
+                if (data.Length > 2)
+                    processGeneric(data);
                 return;
             }
             
