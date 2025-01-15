@@ -155,7 +155,15 @@ public class ScopeViewModel : INotifyPropertyChanged
        if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
         if (spec != null && spec.paired)
-            spec.autoRamanEnabled = true;
+        {
+            if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
+                spec.autoRamanEnabled = true;
+            else
+            {
+                spec.autoRamanEnabled = false;
+                spec.autoDarkEnabled = false;
+            }
+        }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
     }
