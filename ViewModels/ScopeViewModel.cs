@@ -98,7 +98,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        Task loader = PlatformUtil.loadONNXModel("background_model.onnx", "etalon_correction.json");
+        Task loader = PlatformUtil.loadONNXModel("onnx", "etalon_correction.json");
         loader.Wait();
         //Thread.Sleep(100);
 

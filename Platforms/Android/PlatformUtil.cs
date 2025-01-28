@@ -2,6 +2,7 @@
 using Android.Content.Res;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Transforms.Onnx;
@@ -183,8 +184,44 @@ internal class PlatformUtil
             return null;
         }
     }
+    
+    public static string recurseAndFindPath(Java.IO.File directory, Regex regex)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
 
-    public async static Task loadONNXModel(string path, string correctionPath)
+            string finalBlob = null;
+
+            if (paths != null)
+            {
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    string tempBlob = recurseAndFindPath(path, regex);
+                    if (tempBlob != null && finalBlob == null)
+                        finalBlob = tempBlob;
+                }
+
+                return finalBlob;
+            }
+
+            return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath) && regex.IsMatch(directory.AbsolutePath.Split('/').Last()))
+            {
+                return directory.AbsolutePath;
+            }
+
+            return null;
+        }
+    }
+
+    public async static Task loadONNXModel(string extension, string correctionPath)
     {
         try
         {
@@ -205,11 +242,12 @@ internal class PlatformUtil
                 fullPath = null;
             }
 
+            Regex extensionReg = new Regex(@".*\." + extension + @"$");
             cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             foreach (var cDir in cacheDirs)
             {
                 logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                fullPath = recurseAndFindPath(cDir, path);
+                fullPath = recurseAndFindPath(cDir, extensionReg);
                 if (fullPath != null)
                     break;
             }
