@@ -562,10 +562,9 @@ namespace EnlightenMAUI.Models
             if (acquisitionMode == AcquisitionMode.STANDARD)
             {
                 logger.debug("sending SW trigger");
-                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf);
+                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf); 
                 spectrumBuff = new byte[pixels * 2];
-                okI = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
-
+                transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
             }
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
             {
