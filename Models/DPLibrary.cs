@@ -28,7 +28,8 @@ namespace EnlightenMAUI.Models
         private int _lib = 0;
         private byte[] _data = new byte[250000];
         public dpSpectrum spectrum = new dpSpectrum();
-        public bool loaded;
+        public bool loaded = false;
+        public bool isLoading = false;
         Logger logger = Logger.getInstance();
 
         public class DPCR : Android.Content.ContentResolver
@@ -46,6 +47,7 @@ namespace EnlightenMAUI.Models
             spectrum.xstep = 2.0F;
             spectrum.npoints = 0;
 
+            isLoading = true;
             libraryLoader = loadFiles(root);
         }
 
@@ -57,7 +59,7 @@ namespace EnlightenMAUI.Models
 
                 var dir = Platform.AppContext.GetExternalFilesDir(null);
 
-                Java.IO.File[] paths = dir.ListFiles();
+                Java.IO.File[] paths = await dir.ListFilesAsync();
                 foreach (Java.IO.File path in paths)
                 {
                     string file = path.AbsolutePath.Split('/').Last();
@@ -72,6 +74,15 @@ namespace EnlightenMAUI.Models
 
                 if (_lib != 0)
                     _dpLIBClose(_lib);
+
+
+                if (finalFullPath.Length == 0)
+                {
+                    logger.info("dplibrary failed to load");
+                    isLoading = false;
+                    InvokeLoadFinished();
+                    return;
+                }
 
                 if (_lib == 0)
                 {
@@ -153,16 +164,30 @@ namespace EnlightenMAUI.Models
                     }
 
                     logger.info("library loaded successfully");
+                    isLoading = false;
+                    InvokeLoadFinished();
                 }
                 else
                 {
                     logger.info("dplibrary failed to load");
+                    isLoading = false;
+                    InvokeLoadFinished();
                 }
             }
             catch (Exception e)
             {
                 logger.error("DPLibrary init failed out with issue: {0}", e.Message);
+                isLoading = false;
+                InvokeLoadFinished();
             }
+
+            isLoading = false;
+        }
+
+        public async Task<bool> isLoaded()
+        {
+            await libraryLoader;
+            return loaded;
         }
 
         bool getSpectrum(int index)

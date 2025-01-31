@@ -102,20 +102,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         loader.Wait();
         //Thread.Sleep(100);
 
-        if (spec != null && spec.paired)
-        {
-            libraryLoader = Task.Run(() =>
-            {
-                library = new DPLibrary("database", spec);
-                //library = new WPLibrary("library", spec); 
-                AnalysisViewModel.getInstance().library = library;
-            });
-            libraryLoader.Wait();
-            library.LoadFinished += Library_LoadFinished;
-            Task.Run(() => findUserFiles());
-        }
-
-
         overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
         settings = Settings.getInstance();
         string savePath = settings.getSavePath();
@@ -150,10 +136,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
 
-        logger.debug("SVM.ctor: updating chart");
-        updateChart();
-
-       if (spec != null && spec.paired && spec.eeprom.hasBattery)
+        if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
         if (spec != null && spec.paired)
         {
@@ -165,6 +148,45 @@ public class ScopeViewModel : INotifyPropertyChanged
                 spec.autoDarkEnabled = false;
             }
         }
+
+        logger.debug("SVM.ctor: updating chart");
+        updateChart();
+
+
+
+        if (spec != null && spec.paired)
+        {
+            libraryLoader = Task.Run(() =>
+            {
+                library = new DPLibrary("database", spec);
+                //library = new WPLibrary("library", spec); 
+                AnalysisViewModel.getInstance().library = library;
+            });
+            libraryLoader.Wait();
+
+            if ((library as DPLibrary).isLoading)
+                library.LoadFinished += Library_LoadFinished;
+            else
+            {
+                bool loaded = library.samples.Count > 0;
+                if (!loaded)
+                {
+                    logger.info("trying alternative library load");
+
+                    libraryLoader = Task.Run(() =>
+                    {
+                        //library = new DPLibrary("database", spec);
+                        library = new WPLibrary("library", spec);
+                        AnalysisViewModel.getInstance().library = library;
+                    });
+                    libraryLoader.Wait();
+                    library.LoadFinished += Library_LoadFinished;
+                    return;
+                }
+            }
+            Task.Run(() => findUserFiles());
+        }
+
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
     }
@@ -243,8 +265,26 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: done");
     }
 
-    private void Library_LoadFinished(object sender, Library e)
+    private async void Library_LoadFinished(object sender, Library e)
     {
+        if (library is DPLibrary)
+        {
+            bool loaded = await (library as DPLibrary).isLoaded();
+            if (!loaded)
+            {
+                libraryLoader = Task.Run(() =>
+                {
+                    //library = new DPLibrary("database", spec);
+                    library = new WPLibrary("library", spec); 
+                    AnalysisViewModel.getInstance().library = library;
+                });
+                libraryLoader.Wait();
+                library.LoadFinished += Library_LoadFinished;
+                return;
+            }
+        }
+
+
         foreach (string sample in library.samples)
         {
             if (!fullLibraryOverlayStatus.ContainsKey(sample))
