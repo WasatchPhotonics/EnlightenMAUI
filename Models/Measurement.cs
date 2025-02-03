@@ -640,6 +640,19 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Laser Enable, {0}", spec.laserEnabled || spec.autoDarkEnabled);
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
         sw.WriteLine("Timestamp, {0}", timestamp.ToString());
+        if (spec.measurement.declaredScore.HasValue)
+        {
+            if (spec.measurement.declaredMatch.Length > 0)
+                sw.WriteLine("Compound Matches, {0}", String.Join(",", spec.measurement.declaredMatch));
+            else
+                sw.WriteLine("Compound Match, {0}", spec.measurement.declaredMatch);
+            sw.WriteLine("Match Score, {0:f2}", spec.measurement.declaredScore.Value);
+        }
+        else
+        {
+            sw.WriteLine("Compound Match, No Match");
+        }
+
         sw.WriteLine("Note, {0}", spec.measurement.notes);
         sw.WriteLine("Pixel Count, {0}", spec.eeprom.activePixelsHoriz);
 

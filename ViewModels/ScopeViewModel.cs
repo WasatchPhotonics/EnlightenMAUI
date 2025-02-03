@@ -1522,6 +1522,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 matchCompound = result.Item1;
                 matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
+                spec.measurement.declaredMatch = new string[] { result.Item1 };
+                spec.measurement.declaredScore = result.Item2;
                 hasMatch = true;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
@@ -1529,7 +1531,6 @@ public class ScopeViewModel : INotifyPropertyChanged
 
                 AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
 
-                await Shell.Current.GoToAsync("//AnalysisPage");
 
                 //if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
                     //displayMatch = true;
@@ -1539,6 +1540,8 @@ public class ScopeViewModel : INotifyPropertyChanged
                 AnalysisViewModel.getInstance().SetData(spec.measurement, null);
             }
 
+            await Shell.Current.GoToAsync("//AnalysisPage");
+
         }
         else
         {
@@ -1546,6 +1549,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             AnalysisViewModel.getInstance().SetData(spec.measurement, null);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+            await Shell.Current.GoToAsync("//AnalysisPage");
         }
 
         if (spec.performDeconvolution)
