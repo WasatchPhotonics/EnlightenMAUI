@@ -137,11 +137,13 @@ namespace EnlightenMAUI.ViewModels
                     spec.measurement.filename = saveViewModel.saveName + ".csv";
                     spec.measurement.notes = saveViewModel.notes;
                     library.addSampleToLibrary(saveViewModel.saveName, spec.measurement);
-                    var ok = await spec.measurement.saveAsync();
+                    var ok = await spec.measurement.saveAsync(true);
                     if (ok)
                     {
                         notifyToast?.Invoke($"{saveViewModel.saveName} added to library");
                     }
+                    spec.measurement.pathname = null;
+                    ok = await spec.measurement.saveAsync(false);
                 }
             }
 

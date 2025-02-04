@@ -48,10 +48,10 @@ namespace EnlightenMAUI.Models
             spectrum.npoints = 0;
 
             isLoading = true;
-            libraryLoader = loadFiles(root);
+            libraryLoader = loadFiles();
         }
 
-        async Task loadFiles(string root)
+        async Task loadFiles()
         {
             try
             {

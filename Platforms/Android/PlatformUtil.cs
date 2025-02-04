@@ -45,6 +45,7 @@ internal class PlatformUtil
     public static int REQUEST_TREE = 85;
 
     static string savePath;
+    static string userLibraryPath;
 
     public static void RequestSelectLogFolder()
     {
@@ -395,6 +396,29 @@ internal class PlatformUtil
         logger.debug($"getSavePath: returning writeable todayDir {todayDir}");
         return savePath = todayDir;
     }
+
+    public static string getUserLibraryPath()
+    {
+        if (userLibraryPath != null)
+        {
+            logger.debug($"getuserLibraryPath: returning previous userLibraryPath {userLibraryPath}");
+            return userLibraryPath;
+        }
+
+        var docDir = Android.App.Application.Context.GetExternalFilesDir(null);
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var userLibDir = Path.Join(docDir.Path, "User Library");
+
+        if (!writeable(userLibDir))
+        {
+            logger.error($"getuserLibraryPath: unable to write userLibDir {userLibDir}");
+            return null;
+        }
+
+        logger.debug($"getuserLibraryPath: returning writeable userLibDir {userLibDir}");
+        return userLibraryPath = userLibDir;
+    }
+
 
     static bool writeable(string path)
     {

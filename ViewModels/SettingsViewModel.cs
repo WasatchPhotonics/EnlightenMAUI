@@ -103,6 +103,32 @@ namespace EnlightenMAUI.ViewModels
         }
         string _currentParamSet = "Default";
 
+        public ObservableCollection<string> library
+        {
+            get => _library;
+        }
+
+        static ObservableCollection<string> _library = new ObservableCollection<string>()
+        {
+            "Wasatch",
+            "3rd Party"
+        };
+
+        public string currentLibrary
+        {
+            get { return _currentLibrary; }
+            set
+            {
+                if (value != _currentLibrary)
+                {
+                    changeLibrary(value);
+                    _currentLibrary = value;
+                }
+            }
+
+        }
+        string _currentLibrary = "Wasatch";
+
         void changeParamSet(string key)
         {
             if (!parameterSets.ContainsKey(key))
@@ -130,6 +156,11 @@ namespace EnlightenMAUI.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(currentParamSet)));
         }
 
+        void changeLibrary(string key)
+        { 
+            Settings.getInstance().setLibrary(key);
+        }
+
         public SettingsViewModel()
         {
             laserWatchdogTimeoutSec = 0;
@@ -139,6 +170,11 @@ namespace EnlightenMAUI.ViewModels
                 spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
+
+            if (Settings.getInstance().library is DPLibrary)
+                _currentLibrary = "3rd Party";
+            else if (Settings.getInstance().library is WPLibrary)
+                _currentLibrary = "Wasatch";
         }
 
         public void loadSettings()

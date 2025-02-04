@@ -625,6 +625,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     logger.error("spectrometer connect event failed with exception {0}", e.Message);
                 }
                     logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
+                Settings.getInstance().spec = spec;
                 await Shell.Current.GoToAsync("//ScopePage");
             }
         }
@@ -679,6 +680,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     connectionProgress = 1;
                     buttonConnectEnabled = true;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+                    Settings.getInstance().spec = spec;
                     await Shell.Current.GoToAsync("//ScopePage");
                     connectionProgress = 0;
                     return ok;

@@ -152,43 +152,51 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: updating chart");
         updateChart();
 
-
-
         if (spec != null && spec.paired)
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new DPLibrary("database", spec);
-                //library = new WPLibrary("library", spec); 
+                //library = new DPLibrary("database", spec);
+                library = new WPLibrary("library", spec); 
                 AnalysisViewModel.getInstance().library = library;
+                Settings.getInstance().library = library;
             });
             libraryLoader.Wait();
-
-            if ((library as DPLibrary).isLoading)
-                library.LoadFinished += Library_LoadFinished;
-            else
+            settings.libraryLabel = "Wasatch";
+            library.LoadFinished += Library_LoadFinished;
+            
+            /*
+            bool loaded = library.samples.Count > 0;
+            if (!loaded)
             {
-                bool loaded = library.samples.Count > 0;
-                if (!loaded)
-                {
-                    logger.info("trying alternative library load");
+                logger.info("trying alternative library load");
 
-                    libraryLoader = Task.Run(() =>
-                    {
-                        //library = new DPLibrary("database", spec);
-                        library = new WPLibrary("library", spec);
-                        AnalysisViewModel.getInstance().library = library;
-                    });
-                    libraryLoader.Wait();
+                libraryLoader = Task.Run(() =>
+                {
+                    library = new DPLibrary("database", spec);
+                    //library = new WPLibrary("library", spec);
+                    AnalysisViewModel.getInstance().library = library;
+                    Settings.getInstance().library = library;
+                });
+                libraryLoader.Wait();
+                if ((library as DPLibrary).isLoading)
                     library.LoadFinished += Library_LoadFinished;
-                    return;
-                }
+                return;
             }
+            */
+
             Task.Run(() => findUserFiles());
         }
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
+        settings.LibraryChanged += Settings_LibraryChanged;
+    }
+
+    private void Settings_LibraryChanged(object sender, Settings e)
+    {
+        library = settings.library;
+        AnalysisViewModel.getInstance().library = library;
     }
 
     void handleNewSpectrometer(object sender, Spectrometer e)
@@ -211,6 +219,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 library = new WPLibrary("library", spec);
                 AnalysisViewModel.getInstance().library = library;
+                Settings.getInstance().library = library;
             });
             libraryLoader.Wait();
             library.LoadFinished += Library_LoadFinished;
@@ -277,6 +286,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     //library = new DPLibrary("database", spec);
                     library = new WPLibrary("library", spec); 
                     AnalysisViewModel.getInstance().library = library;
+                    Settings.getInstance().library = library;
                 });
                 libraryLoader.Wait();
                 library.LoadFinished += Library_LoadFinished;
@@ -1509,6 +1519,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     async Task<bool> doMatchAsync()
     {
         logger.info("calling library match function");
+        spec.measurement.libraryUsed = settings.libraryLabel;
 
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));

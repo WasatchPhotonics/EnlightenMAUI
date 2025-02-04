@@ -109,6 +109,7 @@ public class Measurement : INotifyPropertyChanged
     public bool electricalDarkCorrection { get; set; }
     public bool deconvoluted { get; set; }
     public int? region { get; set; }
+    public string libraryUsed { get; set; } = null;
 
     public DateTime timestamp { get; set; }
 
@@ -552,7 +553,7 @@ public class Measurement : INotifyPropertyChanged
     /// - support full ENLIGHTEN metadata
     /// - support SaveOptions (selectable output fields)
     /// </todo>
-    public async Task<bool> saveAsync()
+    public async Task<bool> saveAsync(bool librarySave = false)
     {
         logger.debug("Measurement.saveAsync: starting");
 
@@ -570,6 +571,9 @@ public class Measurement : INotifyPropertyChanged
 
         Settings settings = Settings.getInstance();
         string savePath = settings.getSavePath();
+        if (librarySave)
+            savePath = settings.getUserLibraryPath();
+
         if (savePath == null)
         {
             logger.error("saveAsync: can't get savePath");
@@ -583,7 +587,7 @@ public class Measurement : INotifyPropertyChanged
         {
             writeMetadata(sw);
             sw.WriteLine();
-            writeSpectra(sw);
+            writeSpectra(sw, librarySave);
         }
 
         logger.debug($"Measurement.saveAsync: done");
@@ -640,6 +644,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Laser Enable, {0}", spec.laserEnabled || spec.autoDarkEnabled);
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
         sw.WriteLine("Timestamp, {0}", timestamp.ToString());
+        sw.WriteLine("Library Used, {0}", libraryUsed);
         if (spec.measurement.declaredScore.HasValue)
         {
             if (spec.measurement.declaredMatch.Length > 0)
@@ -674,55 +679,78 @@ public class Measurement : INotifyPropertyChanged
         var fmt = "{0:" + format + "}";
         return string.Format(fmt, a[index]);
     }
-    void writeSpectra(StreamWriter sw)
+    void writeSpectra(StreamWriter sw, bool librarySpectrum)
     {
         logger.debug("writeSpectra: starting");
         Settings settings = Settings.getInstance();
 
         List<string> headers = new List<string>();
 
-        if (settings.savePixel) headers.Add("Pixel");
-        if (settings.saveWavelength) headers.Add("Wavelength");
-        if (settings.saveWavenumber) headers.Add("Wavenumber");
-        headers.Add("Spectrum");
-        if (settings.saveRaw) headers.Add("Raw");
-        if (settings.saveDark) headers.Add("Dark");
-        if (settings.saveReference) headers.Add("Reference");
-        if (rawWavenumbers[0] != wavenumbers[0])
+        if (librarySpectrum)
         {
-            headers.Add("");
-            if (settings.savePixel) headers.Add("Processed Data Point");
-            if (settings.saveWavenumber) headers.Add("Processed Wavenumber");
-            headers.Add("Processed Spectrum");
+            headers.Add("Wavenumber");
+            headers.Add("Intensity");
+
+            // reference-based techniques should output higher precision
+            string fmt = reference is null ? "f2" : "f5";
+
+            sw.WriteLine(string.Join(", ", headers));
+
+            for (int i = 0; i < postProcessed.Length; i++)
+            {
+                List<string> values = new List<string>();
+                values.Add(render(wavenumbers, i));
+                values.Add(render(postProcessed, i));
+                sw.WriteLine(string.Join(", ", values));
+            }
         }
-        // reference-based techniques should output higher precision
-        string fmt = reference is null ? "f2" : "f5";
-
-        sw.WriteLine(string.Join(", ", headers));
-
-        for (int i = 0; i < Math.Max(postProcessed.Length, processed.Length); i++)
+        else
         {
-            List<string> values = new List<string>();
 
-            if (settings.savePixel && i < processed.Length) values.Add(i.ToString());
-            else if (settings.savePixel) values.Add("");
-            if (settings.saveWavelength) values.Add(render(wavelengths, i));
-            if (settings.saveWavenumber) values.Add(render(rawWavenumbers, i));
-            values.Add(render(processed, i, fmt));
-            if (settings.saveRaw) values.Add(render(raw, i));
-            if (settings.saveDark) values.Add(render(rawDark, i));
-            if (settings.saveReference) values.Add(render(reference, i));
+            if (settings.savePixel) headers.Add("Pixel");
+            if (settings.saveWavelength) headers.Add("Wavelength");
+            if (settings.saveWavenumber) headers.Add("Wavenumber");
+            headers.Add("Spectrum");
+            if (settings.saveRaw) headers.Add("Raw");
+            if (settings.saveDark) headers.Add("Dark");
+            if (settings.saveReference) headers.Add("Reference");
             if (rawWavenumbers[0] != wavenumbers[0])
             {
-                values.Add(render(null, i));
-                if (settings.savePixel && i < postProcessed.Length) values.Add(i.ToString());
-                else if (settings.savePixel) values.Add("");
-                if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
-                values.Add(render(postProcessed, i));
+                headers.Add("");
+                if (settings.savePixel) headers.Add("Processed Data Point");
+                if (settings.saveWavenumber) headers.Add("Processed Wavenumber");
+                headers.Add("Processed Spectrum");
             }
+            // reference-based techniques should output higher precision
+            string fmt = reference is null ? "f2" : "f5";
 
-            sw.WriteLine(string.Join(", ", values));
+            sw.WriteLine(string.Join(", ", headers));
+
+            for (int i = 0; i < Math.Max(postProcessed.Length, processed.Length); i++)
+            {
+                List<string> values = new List<string>();
+
+                if (settings.savePixel && i < processed.Length) values.Add(i.ToString());
+                else if (settings.savePixel) values.Add("");
+                if (settings.saveWavelength) values.Add(render(wavelengths, i));
+                if (settings.saveWavenumber) values.Add(render(rawWavenumbers, i));
+                values.Add(render(processed, i, fmt));
+                if (settings.saveRaw) values.Add(render(raw, i));
+                if (settings.saveDark) values.Add(render(rawDark, i));
+                if (settings.saveReference) values.Add(render(reference, i));
+                if (rawWavenumbers[0] != wavenumbers[0])
+                {
+                    values.Add(render(null, i));
+                    if (settings.savePixel && i < postProcessed.Length) values.Add(i.ToString());
+                    else if (settings.savePixel) values.Add("");
+                    if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
+                    values.Add(render(postProcessed, i));
+                }
+
+                sw.WriteLine(string.Join(", ", values));
+            }
         }
+
         logger.debug("writeSpectra: done");
     }
     public string asCSV(string operatorName)

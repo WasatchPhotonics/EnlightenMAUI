@@ -177,7 +177,7 @@ namespace EnlightenMAUI.Models
     }
 
 
-    abstract class Library
+    public abstract class Library
     {
 #if USE_DECON
         protected Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
@@ -200,7 +200,7 @@ namespace EnlightenMAUI.Models
 
         protected void InvokeLoadFinished()
         {
-            LoadFinished.Invoke(this, this);
+            LoadFinished?.Invoke(this, this);
         }
 
 
@@ -214,6 +214,7 @@ namespace EnlightenMAUI.Models
     {
         Logger logger = Logger.getInstance();
         protected Task libraryLoader;
+        protected Task userLoader;
 
         protected Wavecal wavecal;
         protected int roiStart = 0;
@@ -232,6 +233,8 @@ namespace EnlightenMAUI.Models
 
             if (doLoad)
                 libraryLoader = loadFiles(root);
+
+            userLoader = loadFiles("User Library", false);
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -290,6 +293,8 @@ namespace EnlightenMAUI.Models
             if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
             {
                 adjusted = sample.copy();
+                adjusted.dark = null;
+                adjusted.raw = sample.postProcessed;
             }
             else
             {
@@ -303,7 +308,7 @@ namespace EnlightenMAUI.Models
             library[name] = adjusted;
         }
 
-        async Task loadFiles(string root, string correctionFileName = "etalon_correction.json")
+        async Task loadFiles(string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
         {
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
@@ -358,16 +363,18 @@ namespace EnlightenMAUI.Models
             InvokeLoadFinished();
             logger.debug("prepping data for decon");
 
-
-#if USE_DECON
-            if (PlatformUtil.transformerLoaded)
+            if (doDecon)
             {
-                double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
-                await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
-            }
-            else
-                await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+#if USE_DECON
+                if (PlatformUtil.transformerLoaded)
+                {
+                    double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
+                }
+                else
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
 #endif
+            }
 
             logger.debug("finished prepping data for decon");
         }

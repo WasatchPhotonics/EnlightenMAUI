@@ -1,7 +1,9 @@
 ﻿using EnlightenMAUI.Platforms;
+using EnlightenMAUI.ViewModels;
 using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
+using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.Models;
 
@@ -13,6 +15,7 @@ namespace EnlightenMAUI.Models;
 public class Settings : INotifyPropertyChanged
 {
     static Settings instance = null;
+    public event EventHandler<Settings> LibraryChanged;
 
     public const string stars = "••••••••";
 
@@ -33,6 +36,7 @@ public class Settings : INotifyPropertyChanged
     public bool saveRaw { get; set;} = true;
     public bool saveDark { get; set;} = true;
     public bool saveReference { get; set;} = true;
+    public Spectrometer spec = BluetoothSpectrometer.getInstance();
 
     // todo: prompt to auto-connect this device if found on scan
     // public Guid lastConnectedGuid;
@@ -45,6 +49,10 @@ public class Settings : INotifyPropertyChanged
     public string companyURL = "https://wasatchphotonics.com";
 
     Logger logger = Logger.getInstance();
+    public Library library { get; set;}
+    DPLibrary dpLibrary = null;
+    WPLibrary wpLibrary = null;
+
 
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle
@@ -62,6 +70,10 @@ public class Settings : INotifyPropertyChanged
         logger.info($"EnlightenMAUI {version}");
         logger.info($"hostDescription = {hostDescription}");
         logger.info($"OS = {os}");
+        if (spec == null || !spec.paired)
+            spec = API6BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
+            spec = USBSpectrometer.getInstance();
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -86,9 +98,71 @@ public class Settings : INotifyPropertyChanged
     // SaveOptions / FileManager
     ////////////////////////////////////////////////////////////////////////
 
+    public async Task setLibrary(string type)
+    {
+        bool libraryChanged = false;
+
+        if (type == "Wasatch")
+        {
+            if (library == null || (library is DPLibrary))
+            {
+                libraryChanged = true;
+
+                if (library != null && library is DPLibrary)
+                    dpLibrary = (DPLibrary)library;
+
+                if (wpLibrary != null)
+                    library = wpLibrary;
+                else
+                {
+                    await Task.Run(() =>
+                    {
+                        //library = new DPLibrary("database", spec);
+                        library = new WPLibrary("library", spec);
+                    });
+                }
+            }
+        }
+        else if (type == "3rd Party")
+        {
+            if (library == null || !(library is DPLibrary))
+            {
+                libraryChanged = true;
+
+                if (library != null && !(library is DPLibrary))
+                    wpLibrary = (WPLibrary)library;
+
+                if (dpLibrary != null)
+                    library = dpLibrary;
+                else
+                {
+                    await Task.Run(() =>
+                    {
+                        library = new DPLibrary("database", spec);
+                        //library = new WPLibrary("library", spec);
+                    });
+                }
+            }
+        }
+
+        if (libraryChanged)
+        {
+            libraryLabel = type;
+            LibraryChanged.Invoke(this, this);
+        }
+    }
+
+    public string libraryLabel = "Wasatch";
+
+
     public string getSavePath()
     {
         return PlatformUtil.getSavePath();
+    }
+
+    public string getUserLibraryPath()
+    {
+        return PlatformUtil.getUserLibraryPath();
     }
 
     // Write the file content to the app data directory
