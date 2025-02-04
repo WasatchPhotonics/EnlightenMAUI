@@ -408,7 +408,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _maxCollectionTimeMS = 10000;
+        protected ushort _maxCollectionTimeMS = 2000;
         
         public virtual ushort startIntTimeMS
         {
@@ -423,7 +423,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _startIntTimeMS = 100;
+        protected ushort _startIntTimeMS = 400;
 
         public virtual byte startGainDb
         {
@@ -442,7 +442,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _startGainDB = 0;
+        protected byte _startGainDB = 8;
 
         public virtual ushort minIntTimeMS
         {
@@ -457,7 +457,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _minIntTimeMS = 10;
+        protected ushort _minIntTimeMS = 100;
         
         public virtual ushort maxIntTimeMS
         {
@@ -472,7 +472,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _maxIntTimeMS = 2000;
+        protected ushort _maxIntTimeMS = 1000;
 
         public virtual byte minGainDb
         {
@@ -491,7 +491,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _minGainDb = 0;
+        protected byte _minGainDb = 8;
 
         public virtual byte maxGainDb
         {
@@ -525,7 +525,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _targetCounts = 45000;
+        protected ushort _targetCounts = 40000;
         
         public virtual ushort minCounts
         {
@@ -540,7 +540,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _minCounts = 40000;
+        protected ushort _minCounts = 30000;
 
         public virtual ushort maxCounts
         {
@@ -570,7 +570,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxFactor = 5;
+        protected byte _maxFactor = 10;
 
         public virtual float dropFactor
         {
@@ -612,7 +612,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxAverage = 100;
+        protected byte _maxAverage = 1;
 
         protected byte[] packAutoRamanParameters()
         {

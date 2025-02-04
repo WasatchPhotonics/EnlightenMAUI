@@ -21,39 +21,79 @@
             <StackLayout HorizontalOptions="FillAndExpand">
                 
                 <!-- Acquisition Parameters -->
-                <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                <StackLayout Orientation="Vertical" BackgroundColor="#555" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
 
                     <Label Text="Collection Parameters" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
 
                     <!-- integration time -->
                     <StackLayout Orientation="Horizontal">
-                        <Label Text="Integration Time (ms)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <Label Text="Integration Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="integrationTime" 
                                                  Value="{Binding integrationTimeMS}" 
                                                  Minimum="1" Maximum="5000"
-                                                 HorizontalOptions="EndAndExpand"/>
+                                                 HorizontalOptions="EndAndExpand">
+                            <telerik:RadNumericInput.IncreaseButtonStyle>
+                                <Style TargetType="telerik:RadNumericInput">
+                                    <Setter Property="BackgroundColor" Value="#333"/>
+                                </Style>
+                            </telerik:RadNumericInput.IncreaseButtonStyle>
+                            <telerik:RadNumericInput.DecreaseButtonStyle>
+                                <Style TargetType="telerik:RadNumericInput">
+                                    <Setter Property="BackgroundColor" Value="#333"/>
+                                </Style>
+                            </telerik:RadNumericInput.DecreaseButtonStyle>
+                        </telerik:RadNumericInput>
                     </StackLayout>
 
                     <!-- gain -->
                     <StackLayout Orientation="Horizontal">
-                        <Label Text="Gain (dB)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <Label Text="Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="gainDb" 
                                                  Value="{Binding gainDb}" 
                                                  StringFormat="{}{0:f1}"
                                                  Minimum="0" Maximum="30" Step="0.1"
-                                                 HorizontalOptions="EndAndExpand"/>
+                                                 HorizontalOptions="EndAndExpand">
+                            <telerik:RadNumericInput.IncreaseButtonStyle>
+                                <Style TargetType="telerik:RadNumericInput">
+                                    <Setter Property="BackgroundColor" Value="#333"/>
+                                </Style>
+                            </telerik:RadNumericInput.IncreaseButtonStyle>
+                            <telerik:RadNumericInput.DecreaseButtonStyle>
+                                <Style TargetType="telerik:RadNumericInput">
+                                    <Setter Property="BackgroundColor" Value="#333"/>
+                                </Style>
+                            </telerik:RadNumericInput.DecreaseButtonStyle>
+                        </telerik:RadNumericInput>
                     </StackLayout>
 
                     <!-- scansToAverage -->
                     <StackLayout Orientation="Horizontal">
-                        <Label Text="Scan Averaging" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <Label Text="Scan Averaging" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                         <telerik:RadNumericInput x:Name="scansToAverage" 
                                                  Value="{Binding scansToAverage}" 
                                                  Minimum="1" Maximum="100"
-                                                 HorizontalOptions="EndAndExpand"/>
+                                                 HorizontalOptions="EndAndExpand">
+                            <telerik:RadNumericInput.IncreaseButtonStyle>
+                                <Style TargetType="telerik:RadNumericInput">
+                                    <Setter Property="BackgroundColor" Value="#333"/>
+                                </Style>
+                            </telerik:RadNumericInput.IncreaseButtonStyle>
+                            <telerik:RadNumericInput.DecreaseButtonStyle>
+                                <Style TargetType="telerik:RadNumericInput">
+                                    <Setter Property="BackgroundColor" Value="#333"/>
+                                </Style>
+                            </telerik:RadNumericInput.DecreaseButtonStyle>
+                        </telerik:RadNumericInput>
                     </StackLayout>
 
+                    <StackLayout Orientation="Horizontal">
+
+                        <Label  VerticalOptions="Center"  Text="Faster Optimize" TextColor="#eee" />
+                        <Switch VerticalOptions="Center" HorizontalOptions="EndAndExpand" IsEnabled="True" IsToggled="{Binding fastMode}" />
+
+                    </StackLayout>
+                    
                 </StackLayout>
 
                 <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
@@ -107,13 +147,14 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Auto Params" TextColor="#eee" />
+                        <!--
                         <Picker Grid.Row="0" 
                                 VerticalOptions="Center" 
                                 HorizontalOptions="FillAndExpand"
                                 Grid.Column="1" 
                                 ItemsSource="{Binding Path=paramSets}"
                                 SelectedItem="{Binding Path=currentParamSet}"/>
+                        -->
 
                         <Switch Grid.Row="1" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding useHorizontalROI}" />
                         <Label Grid.Row="1" VerticalOptions="Center" Grid.Column="0" Text="Horizontal ROI" TextColor="#eee" />

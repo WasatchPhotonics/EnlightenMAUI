@@ -101,7 +101,7 @@ namespace EnlightenMAUI.ViewModels
             }
 
         }
-        string _currentParamSet = "Default";
+        string _currentParamSet = "Faster";
 
         public ObservableCollection<string> library
         {
@@ -113,6 +113,24 @@ namespace EnlightenMAUI.ViewModels
             "Wasatch",
             "3rd Party"
         };
+
+        public bool fastMode
+        {
+            get => _fastMode;
+            set
+            {
+                if (value != _fastMode)
+                {
+                    if (value)
+                        changeParamSet("Faster");
+                    else
+                        changeParamSet("Default");
+
+                    _fastMode = value;
+                }
+            }
+        }
+        bool _fastMode = true;
 
         public string currentLibrary
         {
