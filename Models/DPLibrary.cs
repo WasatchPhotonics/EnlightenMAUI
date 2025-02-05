@@ -12,6 +12,7 @@ using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using static Android.Provider.DocumentsContract;
 using static Java.Util.Jar.Attributes;
+using Android.Renderscripts;
 
 namespace EnlightenMAUI.Models
 {
@@ -26,11 +27,13 @@ namespace EnlightenMAUI.Models
     internal class DPLibrary : WPLibrary
     {
         private int _lib = 0;
+        private int maxYPoints = 0;
         private byte[] _data = new byte[250000];
         public dpSpectrum spectrum = new dpSpectrum();
         public bool loaded = false;
         public bool isLoading = false;
         Logger logger = Logger.getInstance();
+        Dictionary<string, string> libraryIDs = new Dictionary<string, string>();
 
         public class DPCR : Android.Content.ContentResolver
         {
@@ -55,6 +58,7 @@ namespace EnlightenMAUI.Models
         {
             try
             {
+                libraryIDs.Clear();
                 string finalFullPath = "";
 
                 var dir = Platform.AppContext.GetExternalFilesDir(null);
@@ -95,7 +99,8 @@ namespace EnlightenMAUI.Models
 
                 if (loaded)
                 {
-                    spectrum.y = new float[_dpLIBMxNPoints(_lib)];
+                    maxYPoints = _dpLIBMxNPoints(_lib);
+                    spectrum.y = new float[maxYPoints];
 
                     int len = _dpLIBInfo(_lib, _data, _data.Length);
                     logger.info("dplibrary contains {0} items", len);
@@ -116,15 +121,23 @@ namespace EnlightenMAUI.Models
                     }
 
                     len = _dpLIBActiveLibs(_lib, _data, _data.Length);
+                    string libIDs = "";
                     if (len > 0)
                     {
                         Dictionary<string, string> libs = _todict(len);
                         foreach (string key in libs.Keys)
                         {
                             logger.info("dplibrary item: {0} : {1}", key, libs[key]);
+                            libraryIDs.Add(libs[key], key);
+                            libIDs += key;
+                            if (key != libs.Keys.Last())
+                                libIDs += ";";
                         }
                     }
 
+                    _dpLIBSetFilter(_lib, Encoding.UTF8.GetBytes(libIDs + '\0'));
+
+                    /*
                     int numSpec = _dpLIBNumSpectra(_lib);
                     logger.info("library contains {0} items", numSpec);
 
@@ -162,6 +175,7 @@ namespace EnlightenMAUI.Models
                             library.Add(info["Name"].ToLower(), updated);
                         }
                     }
+                    */
 
                     logger.info("library loaded successfully");
                     isLoading = false;
@@ -207,6 +221,135 @@ namespace EnlightenMAUI.Models
 
             return res;
         }
+
+        Measurement getFittedMeasurement(int i)
+        {
+            byte[] xfirst = new byte[4];
+            byte[] xstep = new byte[4];
+            byte[] npoints = new byte[4];
+
+            int len = _dpLIBGetSpectrumData(_lib, i, _data, _data.Length);
+            Dictionary<string, string> info = _todict(len);
+
+            dpSpectrum spec = new dpSpectrum();
+            spec.y = new float[maxYPoints];
+            spec.xfirst = 200.0F;
+            spec.xstep = 2.0F;
+            spec.npoints = 0;
+            bool res = _dpLIBGetSpectrum(_lib, i, xfirst, xstep, npoints, spec.y.Length, spec.y);
+
+            if (res)
+            {
+                spec.xfirst = BitConverter.ToSingle(xfirst);
+                spec.xstep = BitConverter.ToSingle(xstep);
+                spec.npoints = BitConverter.ToInt32(npoints);
+
+            }
+            else
+                return null;
+
+            Measurement m = new Measurement();
+            m.wavenumbers = new double[2008];
+            m.raw = new double[2008];
+            m.excitationNM = Double.Parse(info["RamanExci"]);
+            m.tag = info["Name"];
+
+            int index = 0;
+            while (spec.xfirst + spec.xstep * index < 400)
+                ++index;
+
+
+            for (int j = index; j < spec.npoints; j++)
+            {
+                m.wavenumbers[(j * 2 - index * 2)] = spec.xfirst + spec.xstep * j;
+                m.raw[(j * 2 - index * 2)] = spec.y[j];
+
+                if ((j * 2 - index * 2) + 1 < 2008)
+                {
+                    m.wavenumbers[(j * 2 - index * 2) + 1] = spec.xfirst + spec.xstep * j + 0.5 * spec.xstep;
+                    m.raw[(j * 2 - index * 2) + 1] = (spec.y[j] + spec.y[j + 1]) / 2;
+                }
+                else
+                {
+                    break;
+                }
+
+                if (spec.xfirst + spec.xstep * j == 2406)
+                    break;
+            }
+
+            m.postProcess();
+
+            return m;
+        }
+
+        public override async Task<Tuple<string, double>> findMatch(Measurement spec)
+        {
+            logger.debug("Library.findMatch: trying to match spectrum");
+
+            await libraryLoader;
+
+            logger.debug("Library.findMatch: library is loaded");
+
+            Dictionary<string, double> scores = new Dictionary<string, double>();
+            List<Task> matchTasks = new List<Task>();
+
+            foreach (string sample in library.Keys)
+            {
+                double score = Common.Util.pearsonLibraryMatch(spec, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                logger.info($"{sample} score: {score}");
+                scores[sample] = score;
+            }
+
+
+            int numSpec = _dpLIBNumSpectra(_lib);
+            logger.info("library contains {0} items", numSpec);
+
+            Dictionary<string, int> indexLookup = new Dictionary<string, int>();
+
+            for (int i = 0; i < numSpec; i++)
+            {
+                Measurement m = getFittedMeasurement(i);
+
+                if (m != null) // get the spectrum
+                {
+                    double score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
+                    //logger.info($"{m.tag} score: {score}");
+                    scores[m.tag] = score;
+                    indexLookup[m.tag] = i;
+                }
+            }
+
+            logger.info("matches complete");
+
+            double maxScore = double.MinValue;
+            string finalSample = "";
+            foreach (string sample in scores.Keys)
+            {
+                logger.info($"matched {sample} with score {scores[sample]:f4}");
+
+                if (scores[sample] > maxScore)
+                {
+                    maxScore = scores[sample];
+                    finalSample = sample;
+                }
+            }
+
+            logger.info($"best match {finalSample} with score {maxScore}");
+
+            mostRecentCompound = finalSample;
+            mostRecentScore = maxScore;
+            if (library.ContainsKey(finalSample))
+                mostRecentMeasurement = library[finalSample];
+            else
+                mostRecentMeasurement = getFittedMeasurement(indexLookup[finalSample]);
+
+            if (finalSample != "")
+                return new Tuple<string, double>(finalSample, maxScore);
+            else
+                return null;
+        }
+
 
 #if USE_DECON
         public override Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)

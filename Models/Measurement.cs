@@ -435,7 +435,7 @@ public class Measurement : INotifyPropertyChanged
 
     public void reset()
     {
-        logger.debug("Measurement.reset: nulling everything");
+        //logger.debug("Measurement.reset: nulling everything");
         raw = dark = reference = processed = null;
         filename = pathname = measurementID = null;
         spec = null;
