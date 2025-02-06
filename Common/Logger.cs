@@ -166,7 +166,7 @@ namespace EnlightenMAUI
         string getTimestamp()
         {
             // drop date, as Android phones have narrow screens
-            return DateTime.Now.ToString("HH:mm:ss.fff: ", CultureInfo.InvariantCulture);
+            return DateTime.Now.ToString("HH:mm:ss.ffffff: ", CultureInfo.InvariantCulture);
         }
 
         void log(LogLevel lvl, string fmt, params Object[] obj)

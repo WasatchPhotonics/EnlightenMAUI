@@ -248,6 +248,8 @@ namespace EnlightenMAUI.Models
             else
                 return null;
 
+            logger.debug("{0} loaded", info["Name"]);
+
             Measurement m = new Measurement();
             m.wavenumbers = new double[2008];
             m.raw = new double[2008];
@@ -279,6 +281,7 @@ namespace EnlightenMAUI.Models
             }
 
             m.postProcess();
+            logger.debug("{0} stitched and processed", info["Name"]);
 
             return m;
         }
@@ -314,7 +317,8 @@ namespace EnlightenMAUI.Models
                 if (m != null) // get the spectrum
                 {
                     double score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
-                    //logger.info($"{m.tag} score: {score}");
+                    //logger.debug("{0} matched", info["Name"]);
+                    logger.debug($"{m.tag} score: {score}");
                     scores[m.tag] = score;
                     indexLookup[m.tag] = i;
                 }
