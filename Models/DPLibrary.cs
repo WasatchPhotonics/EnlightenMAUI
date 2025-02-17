@@ -79,6 +79,7 @@ namespace EnlightenMAUI.Models
                 if (_lib != 0)
                     _dpLIBClose(_lib);
 
+                _dpLIBInit(Encoding.UTF8.GetBytes("WP-01490\0"));
 
                 if (finalFullPath.Length == 0)
                 {
@@ -137,10 +138,11 @@ namespace EnlightenMAUI.Models
 
                     _dpLIBSetFilter(_lib, Encoding.UTF8.GetBytes(libIDs + '\0'));
 
-                    /*
+                    
                     int numSpec = _dpLIBNumSpectra(_lib);
                     logger.info("library contains {0} items", numSpec);
 
+                    /*
                     for (int i = 0; i < numSpec; i++)
                     {
                         len = _dpLIBGetSpectrumData(_lib, i, _data, _data.Length);
