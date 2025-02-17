@@ -643,7 +643,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Scan Averaging, {0}", spec.scansToAverage);
         sw.WriteLine("Laser Enable, {0}", spec.laserEnabled || spec.autoDarkEnabled);
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
-        sw.WriteLine("Timestamp, {0}", timestamp.ToString());
+        sw.WriteLine("Timestamp, {0}", timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff"));
         sw.WriteLine("Library Used, {0}", libraryUsed);
         if (spec.measurement.declaredScore.HasValue)
         {
