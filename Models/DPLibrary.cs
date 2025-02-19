@@ -71,7 +71,7 @@ namespace EnlightenMAUI.Models
                     if (file != null && file.Length > 0)
                     {
                         string fullPath = dir + "/" + file;
-                        if (file.Split('.').Last() == "idex")
+                        if (file.Split('.').Last().ToLower() == "idex")
                             finalFullPath = fullPath;
                     }
                 }
@@ -79,7 +79,9 @@ namespace EnlightenMAUI.Models
                 if (_lib != 0)
                     _dpLIBClose(_lib);
 
-                _dpLIBInit(Encoding.UTF8.GetBytes("WP-01490\0"));
+                //_dpLIBInit(Encoding.UTF8.GetBytes("SN=WP-01490\0"));
+                byte[] argument = "SN=WP-01490\0"u8.ToArray();
+                _dpLIBInit(argument);
 
                 if (finalFullPath.Length == 0)
                 {

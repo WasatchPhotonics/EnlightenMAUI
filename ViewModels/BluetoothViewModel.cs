@@ -31,6 +31,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     public ObservableCollection<USBViewDevice> usbDeviceList { get; private set; }
     BLEDevice bleDevice;
     Android.Hardware.Usb.UsbDevice acc;
+    Task libraryTester;
 
     public Command scanCmd { get; }
     public Command scanUSBCmd { get; }
@@ -147,6 +148,11 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // as the Spectrometer connection proceeds, allow it to flow updates
         // through this ViewModel for visualization to the user
         spec.showConnectionProgress += showSpectrometerConnectionProgress;
+
+        libraryTester = Task.Run(() =>
+        {
+            DPLibrary library = new DPLibrary("database", spec);
+        });
 
         logger.debug("BVM.ctor: done");
 }

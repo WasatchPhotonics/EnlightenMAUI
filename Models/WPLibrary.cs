@@ -224,12 +224,15 @@ namespace EnlightenMAUI.Models
         {
             logger.debug($"instantiating Library from {root}");
 
-            wavecal = new Wavecal(spec.pixels);
-            wavecal.coeffs = spec.eeprom.wavecalCoeffs;
-            wavecal.excitationNM = spec.laserExcitationNM;
+            if (spec != null)
+            {
+                wavecal = new Wavecal(spec.pixels);
+                wavecal.coeffs = spec.eeprom.wavecalCoeffs;
+                wavecal.excitationNM = spec.laserExcitationNM;
 
-            roiStart = spec.eeprom.ROIHorizStart;
-            roiEnd = spec.eeprom.ROIHorizEnd;
+                roiStart = spec.eeprom.ROIHorizStart;
+                roiEnd = spec.eeprom.ROIHorizEnd;
+            }
 
             if (doLoad)
                 libraryLoader = loadFiles(root);
