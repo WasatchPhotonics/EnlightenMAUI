@@ -28,6 +28,7 @@ namespace EnlightenMAUI.Models
     {
         private int _lib = 0;
         private int maxYPoints = 0;
+        const int matchThreadCount = 8;
         private byte[] _data = new byte[250000];
         public dpSpectrum spectrum = new dpSpectrum();
         public bool loaded = false;
@@ -252,12 +253,39 @@ namespace EnlightenMAUI.Models
             else
                 return null;
 
-            logger.debug("{0} loaded", info["Name"]);
+            //logger.debug("{0} loaded", info["Name"]);
 
             Measurement m = new Measurement();
             m.wavenumbers = new double[2008];
             m.raw = new double[2008];
-            m.excitationNM = Double.Parse(info["RamanExci"]);
+            if (info.ContainsKey("RamanExci"))
+            {
+                bool hasLetter = false;
+                StringBuilder sb = new StringBuilder();
+                foreach (char c in info["RamanExci"])
+                {
+                    if (char.IsLetter(c))
+                    {
+                        hasLetter = true;
+                    }
+                    else if (char.IsDigit(c))
+                        sb.Append(c);
+                }
+
+                /*
+                if (hasLetter)
+                {
+                    logger.info("excitation parse problem {0}", info["RamanExci"]);
+                }
+                */
+
+                if (sb.Length > 0)
+                    m.excitationNM = Double.Parse(sb.ToString());
+                else
+                    m.excitationNM = 600;
+            }
+            else
+                m.excitationNM = 600;
             m.tag = info["Name"];
 
             int index = 0;
@@ -285,77 +313,85 @@ namespace EnlightenMAUI.Models
             }
 
             m.postProcess();
-            logger.debug("{0} stitched and processed", info["Name"]);
+            //logger.debug("{0} stitched and processed", info["Name"]);
 
             return m;
         }
 
         public override async Task<Tuple<string, double>> findMatch(Measurement spec)
         {
-            logger.debug("Library.findMatch: trying to match spectrum");
-
-            await libraryLoader;
-
-            logger.debug("Library.findMatch: library is loaded");
-
-            Dictionary<string, double> scores = new Dictionary<string, double>();
-            List<Task> matchTasks = new List<Task>();
-
-            foreach (string sample in library.Keys)
+            try
             {
-                double score = Common.Util.pearsonLibraryMatch(spec, library[sample], smooth: !PlatformUtil.transformerLoaded);
-                logger.info($"{sample} score: {score}");
-                scores[sample] = score;
-            }
+                logger.debug("Library.findMatch: trying to match spectrum");
 
+                await libraryLoader;
 
-            int numSpec = _dpLIBNumSpectra(_lib);
-            logger.info("library contains {0} items", numSpec);
+                logger.debug("Library.findMatch: library is loaded");
 
-            Dictionary<string, int> indexLookup = new Dictionary<string, int>();
+                Dictionary<string, double> scores = new Dictionary<string, double>();
+                List<Task> matchTasks = new List<Task>();
 
-            for (int i = 0; i < numSpec; i++)
-            {
-                Measurement m = getFittedMeasurement(i);
-
-                if (m != null) // get the spectrum
+                foreach (string sample in library.Keys)
                 {
-                    double score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
-                    //logger.debug("{0} matched", info["Name"]);
-                    logger.debug($"{m.tag} score: {score}");
-                    scores[m.tag] = score;
-                    indexLookup[m.tag] = i;
+                    double score = Common.Util.pearsonLibraryMatch(spec, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                    logger.info($"{sample} score: {score}");
+                    scores[sample] = score;
                 }
-            }
 
-            logger.info("matches complete");
 
-            double maxScore = double.MinValue;
-            string finalSample = "";
-            foreach (string sample in scores.Keys)
-            {
-                logger.info($"matched {sample} with score {scores[sample]:f4}");
+                int numSpec = _dpLIBNumSpectra(_lib);
+                logger.info("library contains {0} items", numSpec);
 
-                if (scores[sample] > maxScore)
+                Dictionary<string, int> indexLookup = new Dictionary<string, int>();
+
+                for (int i = 0; i < numSpec; i++)
                 {
-                    maxScore = scores[sample];
-                    finalSample = sample;
+                    Measurement m = getFittedMeasurement(i);
+
+                    if (m != null) // get the spectrum
+                    {
+                        double score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
+                        //logger.debug("{0} matched", info["Name"]);
+                        //logger.debug($"{m.tag} score: {score}");
+                        scores[m.tag] = score;
+                        indexLookup[m.tag] = i;
+                    }
                 }
+
+                logger.info("matches complete");
+
+                double maxScore = double.MinValue;
+                string finalSample = "";
+                foreach (string sample in scores.Keys)
+                {
+                    logger.info($"matched {sample} with score {scores[sample]:f4}");
+
+                    if (scores[sample] > maxScore)
+                    {
+                        maxScore = scores[sample];
+                        finalSample = sample;
+                    }
+                }
+
+                logger.info($"best match {finalSample} with score {maxScore}");
+
+                mostRecentCompound = finalSample;
+                mostRecentScore = maxScore;
+                if (library.ContainsKey(finalSample))
+                    mostRecentMeasurement = library[finalSample];
+                else
+                    mostRecentMeasurement = getFittedMeasurement(indexLookup[finalSample]);
+
+                if (finalSample != "")
+                    return new Tuple<string, double>(finalSample, maxScore);
+                else
+                    return null;
             }
-
-            logger.info($"best match {finalSample} with score {maxScore}");
-
-            mostRecentCompound = finalSample;
-            mostRecentScore = maxScore;
-            if (library.ContainsKey(finalSample))
-                mostRecentMeasurement = library[finalSample];
-            else
-                mostRecentMeasurement = getFittedMeasurement(indexLookup[finalSample]);
-
-            if (finalSample != "")
-                return new Tuple<string, double>(finalSample, maxScore);
-            else
+            catch (Exception e)
+            {
+                logger.info("match failed with issue {0}", e.Message);
                 return null;
+            }
         }
 
 
