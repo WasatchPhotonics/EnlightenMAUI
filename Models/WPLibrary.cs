@@ -182,6 +182,14 @@ namespace EnlightenMAUI.Models
 #if USE_DECON
         protected Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
 #endif
+
+        public delegate void MatchProgressNotification(double perc);
+        public event MatchProgressNotification showMatchProgress;
+        public void raiseMatchProgress(double arg)
+        {
+            showMatchProgress(arg);
+        }
+
         protected Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();

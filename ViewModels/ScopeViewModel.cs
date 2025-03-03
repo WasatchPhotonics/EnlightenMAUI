@@ -56,7 +56,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public event EventHandler<ScopeViewModel> OverlaysChanged;
     public event EventHandler<ScopeViewModel> WipeOverlays;
     SaveSpectrumPopupViewModel saveViewModel;
-    OverlaysPopupViewModel overlaysViewModel;
+    SelectionPopupViewModel overlaysViewModel;
     SaveSpectrumPopup savePopup;
     bool popupClosing = false;
     public Dictionary<string, bool> fullLibraryOverlayStatus = new Dictionary<string, bool>();
@@ -102,7 +102,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         loader.Wait();
         //Thread.Sleep(100);
 
-        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
+        overlaysViewModel = new SelectionPopupViewModel(new List<SelectionMetadata>());
         settings = Settings.getInstance();
         string savePath = settings.getSavePath();
 
@@ -160,6 +160,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 library = new WPLibrary("library", spec); 
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
+                (library as WPLibrary).showMatchProgress += showMatchProgress;
             });
             libraryLoader.Wait();
             settings.libraryLabel = "Wasatch";
@@ -193,9 +194,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings.LibraryChanged += Settings_LibraryChanged;
     }
 
+
     private void Settings_LibraryChanged(object sender, Settings e)
     {
+        (library as WPLibrary).showMatchProgress -= showMatchProgress;
         library = settings.library;
+        (library as WPLibrary).showMatchProgress += showMatchProgress;
         AnalysisViewModel.getInstance().library = library;
     }
 
@@ -228,7 +232,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         logger.debug("finished loading library in refresh");
 
-        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
+        overlaysViewModel = new SelectionPopupViewModel(new List<SelectionMetadata>());
 
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress;
@@ -300,7 +304,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (!fullLibraryOverlayStatus.ContainsKey(sample))
             {
                 fullLibraryOverlayStatus.Add(sample, false);
-                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(sample, false));
+                overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
             }
         }
     }
@@ -375,7 +379,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 await loadCSV(file);
 
             fullLibraryOverlayStatus.Add(name, false);
-            overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(name, false));
+            overlaysViewModel.selections.Add(new SelectionMetadata(name, false));
         }
     }
 
@@ -507,6 +511,16 @@ public class ScopeViewModel : INotifyPropertyChanged
     public string darkButtonBackgroundColor
     {
         get => spec.dark != null ? "#ba0a0a" : "#515151";
+    }
+
+    public string progressBarColor
+    {
+        get
+        {
+            // string color = "#ff0000";
+            string color = waitingForMatch ? "#27c0a1" : "#1894f2";
+            return color;
+        }
     }
 
     private void updateDarkButton()
@@ -983,6 +997,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     void showAcquisitionProgress(double progress) => acquisitionProgress = progress;
+    void showMatchProgress(double progress) => acquisitionProgress = progress;
 
     // this is a floating-point "percentage completion" backing the 
     // ProgressBar on the ScopeView
@@ -1234,7 +1249,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         bool somethingChanged = false;
 
-        foreach (SpectrumOverlayMetadata omd in overlaysViewModel.overlays)
+        foreach (SelectionMetadata omd in overlaysViewModel.selections)
         {
             bool wasDisplayed = fullLibraryOverlayStatus[omd.name];
 
@@ -1285,7 +1300,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         WipeOverlays.Invoke(this, this);
 
-        foreach (var overlay in overlaysViewModel.overlays)
+        foreach (var overlay in overlaysViewModel.selections)
         {
             overlay.selected = false;
         }
@@ -1356,7 +1371,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 else
                     fullLibraryOverlayStatus[saveViewModel.saveName] = saveViewModel.addToDisplay;
 
-                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(saveViewModel.saveName, saveViewModel.addToDisplay));
+                overlaysViewModel.selections.Add(new SelectionMetadata(saveViewModel.saveName, saveViewModel.addToDisplay));
 
                 if (saveViewModel.addToLibrary && library.getSample(saveViewModel.saveName) == null)
                 {
@@ -1469,7 +1484,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
             if (wasDisplayed != selected)
             {
-                foreach (var o in overlaysViewModel.overlays)
+                foreach (var o in overlaysViewModel.selections)
                 {
                     if (o.name == matchCompound)
                         o.selected = selected;
@@ -1509,7 +1524,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
     public bool hasDecon {get; private set;}
-    public bool waitingForMatch {get; private set;}
+    public bool waitingForMatch { get; private set; } = false;
     public string matchResult {get; private set;}
     string matchCompound = "";
     public string deconResult {get; private set;}
@@ -1523,6 +1538,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
         var result = await library.findMatch(spec.measurement);
 
         if (result != null)
@@ -1610,6 +1626,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
 
         waitingForMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
 
         return true;

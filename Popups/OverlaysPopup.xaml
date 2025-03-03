@@ -13,18 +13,18 @@
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="10,10,10,10" />
         </Border.StrokeShape>
-        <ListView ItemsSource="{Binding overlays}"
+        <ListView ItemsSource="{Binding selections}"
                         VerticalScrollBarVisibility="Never"
                   MaximumHeightRequest="300"
                           SeparatorColor="#555" 
                           BackgroundColor="Transparent" 
                           VerticalOptions="StartAndExpand"
-                          x:DataType="local:ViewModels.OverlaysPopupViewModel"
+                          x:DataType="local:ViewModels.SelectionPopupViewModel"
                           HorizontalOptions="Fill"
                           Margin="0, 0, 0, 10">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <ViewCell x:DataType="local:Models.SpectrumOverlayMetadata">
+                    <ViewCell x:DataType="local:Models.SelectionMetadata">
                         <StackLayout Orientation="Horizontal" BackgroundColor="Transparent">
                             <CheckBox Margin="10" VerticalOptions="Center" IsChecked="{Binding selected}"/>
                             <Label TextColor="WhiteSmoke" Margin="10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Medium"/>

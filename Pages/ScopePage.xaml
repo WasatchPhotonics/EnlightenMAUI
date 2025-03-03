@@ -81,7 +81,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Acquisition ProgressBar -->
-            <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/>
+            <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="{Binding progressBarColor}"/>
             <!-- ProgressColor="#2994d3"/> -->
 
             <!-- Match Result -->

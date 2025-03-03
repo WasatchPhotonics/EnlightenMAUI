@@ -3,6 +3,7 @@ using Android.Content.Res;
 using EnlightenMAUI.Platforms;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -35,6 +36,15 @@ namespace EnlightenMAUI.Models
         public bool isLoading = false;
         Logger logger = Logger.getInstance();
         Dictionary<string, string> libraryIDs = new Dictionary<string, string>();
+        Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
+
+        List<string> defaultSublibs = new List<string>()
+        {
+            "Alcohols, Phenols",
+            "Forensic",
+            "Hazardous Chemicals",
+            "Narcotics, Drugs, Controlled Substances Vol. 2 (customs)"
+        };
 
         public class DPCR : Android.Content.ContentResolver
         {
@@ -133,11 +143,16 @@ namespace EnlightenMAUI.Models
                         {
                             logger.info("dplibrary item: {0} : {1}", key, libs[key]);
                             libraryIDs.Add(libs[key], key);
-                            libIDs += key;
-                            if (key != libs.Keys.Last())
+                            activeLibraries.Add(libs[key], defaultSublibs.Contains(libs[key]));
+
+                            if (defaultSublibs.Contains(libs[key]))
+                            {
+                                libIDs += key;
                                 libIDs += ";";
+                            }
                         }
                     }
+                    libIDs = libIDs.TrimEnd(';');
 
                     _dpLIBSetFilter(_lib, Encoding.UTF8.GetBytes(libIDs + '\0'));
 
@@ -201,6 +216,39 @@ namespace EnlightenMAUI.Models
             }
 
             isLoading = false;
+        }
+
+        public ObservableCollection<Tuple<string, bool>> LibraryOptions
+        { 
+            get
+            {
+                var temp = new ObservableCollection<Tuple<string, bool>>();
+
+                foreach (var pair in activeLibraries)
+                {
+                    temp.Add(new Tuple<string, bool>(pair.Key, pair.Value));
+                }
+                return temp;
+            }
+        }
+
+        public void setFilter(Dictionary<string, bool> selections = null)
+        {
+            string libIDs = "";
+            if (selections != null)
+                activeLibraries = selections;
+
+            foreach (string key in activeLibraries.Keys)
+            {
+                if (activeLibraries[key])
+                {
+                    libIDs += libraryIDs[key];
+                    libIDs += ";";
+                }
+            }
+
+            libIDs = libIDs.TrimEnd(';');
+            _dpLIBSetFilter(_lib, Encoding.UTF8.GetBytes(libIDs + '\0'));
         }
 
         public async Task<bool> isLoaded()
@@ -336,6 +384,8 @@ namespace EnlightenMAUI.Models
         {
             try
             {
+                raiseMatchProgress(0);
+
                 logger.debug("Library.findMatch: trying to match spectrum");
 
                 await libraryLoader;
@@ -347,7 +397,8 @@ namespace EnlightenMAUI.Models
 
                 foreach (string sample in library.Keys)
                 {
-                    double score = Common.Util.pearsonLibraryMatch(spec, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                    double score = 0;
+                    await Task.Run(() => score = Common.Util.pearsonLibraryMatch(spec, library[sample], smooth: !PlatformUtil.transformerLoaded));
                     logger.info($"{sample} score: {score}");
                     scores[sample] = score;
                 }
@@ -366,7 +417,17 @@ namespace EnlightenMAUI.Models
                     {
                         if (i % 1000 == 0)
                             logger.info("starting Pearson for {0}", m.tag);
-                        double score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
+
+                        double score = 0;
+                        if (i % 100 == 0)
+                        {
+                            await Task.Run(() => score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded));
+                            raiseMatchProgress((float)i / numSpec);
+                        }
+                        else
+                        {
+                            score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
+                        }
                         if (i % 1000 == 0)
                             logger.info("finished Pearson for {0}", m.tag);
                         //logger.debug("{0} matched", info["Name"]);
