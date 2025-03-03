@@ -233,7 +233,11 @@ namespace EnlightenMAUI.Models
             byte[] xstep = new byte[4];
             byte[] npoints = new byte[4];
 
+            if (i % 1000 == 0)
+                logger.info("retrieving spectrum meta");
             int len = _dpLIBGetSpectrumData(_lib, i, _data, _data.Length);
+            if (i % 1000 == 0)
+                logger.info("retrieved spectrum meta");
             Dictionary<string, string> info = _todict(len);
 
             dpSpectrum spec = new dpSpectrum();
@@ -241,7 +245,12 @@ namespace EnlightenMAUI.Models
             spec.xfirst = 200.0F;
             spec.xstep = 2.0F;
             spec.npoints = 0;
+
+            if (i % 1000 == 0)
+                logger.info("retrieving spectrum");
             bool res = _dpLIBGetSpectrum(_lib, i, xfirst, xstep, npoints, spec.y.Length, spec.y);
+            if (i % 1000 == 0)
+                logger.info("retrieved spectrum");
 
             if (res)
             {
@@ -293,6 +302,8 @@ namespace EnlightenMAUI.Models
                 ++index;
 
 
+            if (i % 1000 == 0)
+                logger.info("stretching {0} spectrum", m.tag);
             for (int j = index; j < spec.npoints; j++)
             {
                 m.wavenumbers[(j * 2 - index * 2)] = spec.xfirst + spec.xstep * j;
@@ -312,10 +323,13 @@ namespace EnlightenMAUI.Models
                     break;
             }
 
+            if (i % 1000 == 0)
+                logger.info("processing {0} spectrum", m.tag);
             m.postProcess();
-            //logger.debug("{0} stitched and processed", info["Name"]);
+            if (i % 1000 == 0)
+                logger.info("{0} stitched and processed", info["Name"]);
 
-            return m;
+                return m;
         }
 
         public override async Task<Tuple<string, double>> findMatch(Measurement spec)
@@ -350,7 +364,11 @@ namespace EnlightenMAUI.Models
 
                     if (m != null) // get the spectrum
                     {
+                        if (i % 1000 == 0)
+                            logger.info("starting Pearson for {0}", m.tag);
                         double score = Common.Util.pearsonLibraryMatch(spec, m, smooth: !PlatformUtil.transformerLoaded);
+                        if (i % 1000 == 0)
+                            logger.info("finished Pearson for {0}", m.tag);
                         //logger.debug("{0} matched", info["Name"]);
                         //logger.debug($"{m.tag} score: {score}");
                         scores[m.tag] = score;
