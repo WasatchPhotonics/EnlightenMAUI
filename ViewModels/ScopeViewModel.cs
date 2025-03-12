@@ -598,7 +598,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 break;
             case 2: 
                 laserWarningStep = 3;
-                laserWarningText = "Acknowledge to Arm Laser";
+                laserWarningText = "Acknowledge to Arm Class 3B Laser";
                 break;
             case 3: 
                 laserWarningStep = 4;
@@ -629,7 +629,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningText)));
         }
     }
-    string _laserWarningText = "Click for Laser Warnings";
+    string _laserWarningText = "Acknowledge to Arm Class 3B Laser";
 
     public bool laserArmIncomplete
     {
@@ -666,7 +666,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmIncomplete)));
         }
     }
-    int _laserWarningStep = 0;
+    int _laserWarningStep = 3;
 
     public string laserButtonText
     {

@@ -1359,10 +1359,13 @@ public class BluetoothSpectrometer : Spectrometer
             DateTime now = DateTime.Now;
             if (prevUpdate.Year != DateTime.MinValue.Year)
             {
-                double slope = (now - prevUpdate).TotalMilliseconds / (arg - prevValue);
-                double estMSToGo = slope * (90 - arg);
-                double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS + 2500);
-                autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+                if (arg != prevValue)
+                {
+                    double slope = (now - prevUpdate).TotalMilliseconds / (arg - prevValue);
+                    double estMSToGo = slope * (90 - arg);
+                    double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS + 2500);
+                    autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+                }
             }
 
             prevUpdate = now;

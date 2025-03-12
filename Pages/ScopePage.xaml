@@ -187,7 +187,7 @@
                 
                 <Button IsVisible="{Binding laserArmIncomplete}"
                         Text="{Binding laserWarningText}"
-                        FontSize="17"
+                        FontSize="14"
                         Margin="10,0,5,5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
