@@ -1278,13 +1278,13 @@ public class BluetoothSpectrometer : Spectrometer
 
         int waitTime = (int)integrationTimeMS + bufferTime;
         if (acquisitionMode == AcquisitionMode.AUTO_DARK)
-            waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+            waitTime = 2 * (int)(integrationTimeMS + 25) * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
         {
             waitTime = 30000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         }
 
-        int timeout = waitTime * 2 + 4000;
+        int timeout = waitTime * 2 + 6000;
 
         Stopwatch sw = Stopwatch.StartNew();
         sw.Start();
@@ -1296,6 +1296,10 @@ public class BluetoothSpectrometer : Spectrometer
             if (totalPixelsRead == totalPixelsToRead)
                 return true;
         }
+
+        logger.info("collection timed out");
+
+        sw.Stop();
 
         return false;
     }
