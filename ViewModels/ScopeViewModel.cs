@@ -158,7 +158,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 //library = new DPLibrary("database", spec);
                 library = new WPLibrary("library", spec); 
-                AnalysisViewModel.getInstance().library = library;
+                AnalysisViewModel.getInstance().libr = library;
                 Settings.getInstance().library = library;
                 (library as WPLibrary).showMatchProgress += showMatchProgress;
             });
@@ -200,7 +200,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         (library as WPLibrary).showMatchProgress -= showMatchProgress;
         library = settings.library;
         (library as WPLibrary).showMatchProgress += showMatchProgress;
-        AnalysisViewModel.getInstance().library = library;
+        AnalysisViewModel.getInstance().libr = library;
     }
 
     void handleNewSpectrometer(object sender, Spectrometer e)
@@ -222,7 +222,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() =>
             {
                 library = new WPLibrary("library", spec);
-                AnalysisViewModel.getInstance().library = library;
+                AnalysisViewModel.getInstance().libr = library;
                 Settings.getInstance().library = library;
             });
             libraryLoader.Wait();
@@ -289,7 +289,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 {
                     //library = new DPLibrary("database", spec);
                     library = new WPLibrary("library", spec); 
-                    AnalysisViewModel.getInstance().library = library;
+                    AnalysisViewModel.getInstance().libr = library;
                     Settings.getInstance().library = library;
                 });
                 libraryLoader.Wait();

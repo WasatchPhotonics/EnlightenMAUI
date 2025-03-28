@@ -25,14 +25,215 @@ namespace EnlightenMAUI.ViewModels
         public delegate void ToastNotification(string msg);
         public event ToastNotification notifyToast;
 
+        Settings settings = Settings.getInstance();
         Logger logger = Logger.getInstance();
-        public Library library;
+        public Library libr;
         public Spectrometer spec;
         static AnalysisViewModel instance = null; 
         SaveSpectrumPopupViewModel saveViewModel;
         AddToLibraryPopup savePopup;
         bool popupClosing = false;
         double[] xAxis;
+
+
+        Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
+    {
+        {
+            "Default" ,
+            new AutoRamanParameters()
+            {
+                maxCollectionTimeMS = 10000,
+                startIntTimeMS = 100,
+                startGainDb = 0,
+                minIntTimeMS = 10,
+                maxIntTimeMS = 2000,
+                minGainDb = 0,
+                maxGainDb = 30,
+                targetCounts = 45000,
+                minCounts = 40000,
+                maxCounts = 50000,
+                maxFactor = 5,
+                dropFactor = 0.5f,
+                saturationCounts = 65000,
+                maxAverage = 100
+            }
+        },
+        {
+            "Faster" ,
+            new AutoRamanParameters()
+            {
+                maxCollectionTimeMS = 2000,
+                startIntTimeMS = 400,
+                startGainDb = 8,
+                minIntTimeMS = 100,
+                maxIntTimeMS = 1000,
+                minGainDb = 8,
+                maxGainDb = 30,
+                targetCounts = 40000,
+                minCounts = 30000,
+                maxCounts = 50000,
+                maxFactor = 10,
+                dropFactor = 0.5f,
+                saturationCounts = 65000,
+                maxAverage = 1
+            }
+        }
+
+    };
+
+        public ObservableCollection<string> paramSets
+        {
+            get => _paramSets;
+        }
+
+        static ObservableCollection<string> _paramSets = new ObservableCollection<string>()
+        {
+            "Default",
+            "Faster"
+        };
+
+        public string currentParamSet
+        {
+            get { return _currentParamSet; }
+            set
+            {
+                if (value != _currentParamSet)
+                {
+                    changeParamSet(value);
+                }
+            }
+
+        }
+        string _currentParamSet = "Faster";
+
+        public ObservableCollection<string> library
+        {
+            get => _library;
+        }
+
+        static ObservableCollection<string> _library = new ObservableCollection<string>()
+        {
+            "Wasatch",
+            "3rd Party"
+        };
+
+        public bool fastMode
+        {
+            get => _fastMode;
+            set
+            {
+                if (value != _fastMode)
+                {
+                    if (value)
+                        changeParamSet("Faster");
+                    else
+                        changeParamSet("Default");
+
+                    _fastMode = value;
+                }
+            }
+        }
+        bool _fastMode = true;
+
+        public string currentLibrary
+        {
+            get { return _currentLibrary; }
+            set
+            {
+                if (value != _currentLibrary)
+                {
+                    changeLibrary(value);
+                    _currentLibrary = value;
+                }
+            }
+
+        }
+        string _currentLibrary = "Wasatch";
+
+        void changeParamSet(string key)
+        {
+            if (!parameterSets.ContainsKey(key))
+                return;
+
+            spec.holdAutoRamanParameterSet = true;
+            AutoRamanParameters parameters = parameterSets[key];
+            spec.maxCollectionTimeMS = parameters.maxCollectionTimeMS;
+            spec.startIntTimeMS = parameters.startIntTimeMS;
+            spec.startGainDb = parameters.startGainDb;
+            spec.minIntTimeMS = parameters.minIntTimeMS;
+            spec.maxIntTimeMS = parameters.maxIntTimeMS;
+            spec.minGainDb = parameters.minGainDb;
+            spec.maxGainDb = parameters.maxGainDb;
+            spec.targetCounts = parameters.targetCounts;
+            spec.minCounts = parameters.minCounts;
+            spec.maxCounts = parameters.maxCounts;
+            spec.maxFactor = parameters.maxFactor;
+            spec.dropFactor = parameters.dropFactor;
+            spec.saturationCounts = parameters.saturationCounts;
+            spec.holdAutoRamanParameterSet = false;
+            spec.maxAverage = parameters.maxAverage;
+
+            _currentParamSet = key;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(currentParamSet)));
+        }
+
+        void changeLibrary(string key)
+        {
+            settings.setLibrary(key);
+        }
+
+        SelectionPopupViewModel sublibraryViewModel = new SelectionPopupViewModel();
+
+        private void Settings_LibraryChanged(object sender, Settings e)
+        {
+            if (settings.library is DPLibrary)
+            {
+                if ((settings.library as DPLibrary).isLoading)
+                {
+                    while (((settings.library as DPLibrary).isLoading))
+                        Thread.Sleep(50);
+                }
+
+                logger.info("switching to DP library with {0} sublibraries", (settings.library as DPLibrary).LibraryOptions.Count);
+                if (sublibraryViewModel.selections.Count == 0)
+                {
+                    foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
+                    {
+                        sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
+                    }
+                }
+            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(subLibrariesAvailable)));
+        }
+
+        public bool subLibrariesAvailable
+        {
+            get => settings.library is DPLibrary;
+        }
+
+        bool doSublibrary()
+        {
+            OverlaysPopup op = new OverlaysPopup(sublibraryViewModel);
+            op.Closed += Op_Closed; ;
+            Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
+
+            return true;
+        }
+
+        private void Op_Closed(object sender, CommunityToolkit.Maui.Core.PopupClosedEventArgs e)
+        {
+            Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
+
+            foreach (SelectionMetadata omd in sublibraryViewModel.selections)
+            {
+                activeLibraries.Add(omd.name, omd.selected);
+            }
+
+            if (settings.library is DPLibrary)
+            {
+                (settings.library as DPLibrary).setFilter(activeLibraries);
+            }
+        }
 
         static public AnalysisViewModel getInstance()
         {
@@ -49,8 +250,23 @@ namespace EnlightenMAUI.ViewModels
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
+
+            if (settings.library is DPLibrary)
+            {
+                _currentLibrary = "3rd Party";
+                foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
+                {
+                    sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
+                }
+            }
+            else if (settings.library is WPLibrary)
+                _currentLibrary = "Wasatch";
+
+            settings.LibraryChanged += Settings_LibraryChanged;
+
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             saveCmd = new Command(() => { _ = doSave(); });
+            sublibrCmd = new Command(() => { _ = doSublibrary(); });
 
             if (instance != null)
                 updateFromInstance();
@@ -84,6 +300,7 @@ namespace EnlightenMAUI.ViewModels
 
         public Command shareCmd { get; private set; }
         public Command saveCmd { get; private set; }
+        public Command sublibrCmd { get; private set; }
 
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {
@@ -92,8 +309,8 @@ namespace EnlightenMAUI.ViewModels
 
         void updateFromInstance()
         {
-            if (library == null)
-                library = instance.library;
+            if (libr == null)
+                libr = instance.libr;
             xAxisMinimum = instance.xAxisMinimum;
             xAxisMaximum = instance.xAxisMaximum;
             matchString = instance.matchString;
@@ -136,7 +353,7 @@ namespace EnlightenMAUI.ViewModels
                 {
                     spec.measurement.filename = saveViewModel.saveName + ".csv";
                     spec.measurement.notes = saveViewModel.notes;
-                    library.addSampleToLibrary(saveViewModel.saveName, spec.measurement);
+                    libr.addSampleToLibrary(saveViewModel.saveName, spec.measurement);
                     var ok = await spec.measurement.saveAsync(true);
                     if (ok)
                     {
@@ -398,11 +615,11 @@ namespace EnlightenMAUI.ViewModels
 
                     xAxisMinimum = xAxis[pxLo];
                     xAxisMaximum = xAxis[pxHi];
-                    if (library != null)
+                    if (libr != null)
                     {
                         TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
-                        matchString = ti.ToTitleCase(library.mostRecentCompound);
-                        scoreString = library.mostRecentScore.ToString("f2");
+                        matchString = ti.ToTitleCase(libr.mostRecentCompound);
+                        scoreString = libr.mostRecentScore.ToString("f2");
                         _matchFound = true;
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchFound)));
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));
