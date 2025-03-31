@@ -183,6 +183,7 @@ namespace EnlightenMAUI.ViewModels
         }
 
         SelectionPopupViewModel sublibraryViewModel = new SelectionPopupViewModel();
+        SelectionPopupViewModel userlibraryViewModel = new SelectionPopupViewModel();
 
         private void Settings_LibraryChanged(object sender, Settings e)
         {
@@ -203,6 +204,13 @@ namespace EnlightenMAUI.ViewModels
                     }
                 }
             }
+
+            userlibraryViewModel.selections.Clear();
+            foreach (string sample in (settings.library as WPLibrary).userSamples)
+            {
+                userlibraryViewModel.selections.Add(new SelectionMetadata(sample));
+            }
+
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(subLibrariesAvailable)));
         }
 
@@ -235,6 +243,20 @@ namespace EnlightenMAUI.ViewModels
             }
         }
 
+        bool doUserLibrary()
+        {
+            RemovePopup op = new RemovePopup(userlibraryViewModel);
+            op.Closed += Rem_closed;
+            Shell.Current.ShowPopupAsync<RemovePopup>(op);
+
+            return true;
+        }
+
+        private void Rem_closed(object sender, CommunityToolkit.Maui.Core.PopupClosedEventArgs e)
+        {
+
+        }
+
         static public AnalysisViewModel getInstance()
         {
             if (instance is null)
@@ -262,11 +284,20 @@ namespace EnlightenMAUI.ViewModels
             else if (settings.library is WPLibrary)
                 _currentLibrary = "Wasatch";
 
+            if (settings.library is WPLibrary)
+            {
+                foreach (string sample in (settings.library as WPLibrary).userSamples)
+                {
+                    userlibraryViewModel.selections.Add(new SelectionMetadata(sample));
+                }
+            }
+
             settings.LibraryChanged += Settings_LibraryChanged;
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             saveCmd = new Command(() => { _ = doSave(); });
             sublibrCmd = new Command(() => { _ = doSublibrary(); });
+            removeCmd = new Command(() => { _ = doUserLibrary(); });
 
             if (instance != null)
                 updateFromInstance();
@@ -301,6 +332,7 @@ namespace EnlightenMAUI.ViewModels
         public Command shareCmd { get; private set; }
         public Command saveCmd { get; private set; }
         public Command sublibrCmd { get; private set; }
+        public Command removeCmd { get; private set; }
 
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {
@@ -431,7 +463,7 @@ namespace EnlightenMAUI.ViewModels
             logger.debug("AVM.ctor: done");
         }
 
-        public void SetData(Measurement sample, Measurement reference)
+        public void SetData(Measurement sample, Measurement reference, string defaultString = "No Match Found")
         {
             bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
@@ -439,6 +471,8 @@ namespace EnlightenMAUI.ViewModels
 
             if (sample == null &&  reference == null)
             {
+                chartData.Clear();
+
                 xAxisMinimum = spec.wavenumbers.Minimum();
                 xAxisMaximum = spec.wavenumbers.Maximum();
 
@@ -634,7 +668,7 @@ namespace EnlightenMAUI.ViewModels
             else
             {
                 referenceData.Clear();
-                matchString = "No Match Found";
+                matchString = defaultString;
                 _matchFound = false;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchFound)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));

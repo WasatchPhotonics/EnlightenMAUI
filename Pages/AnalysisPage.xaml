@@ -116,6 +116,17 @@
 
             </StackLayout>
 
+
+            <StackLayout IsVisible="{Binding spectrumCollected}" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
+                <Button Margin="2" 
+                        CornerRadius="10"
+                        WidthRequest="150"
+                        HeightRequest="50"
+                        Text="Manage Library"
+                        Command="{Binding removeCmd}"
+                        BackgroundColor="#515151"/>
+            </StackLayout>
+
             <StackLayout Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
 
                 <Label  VerticalOptions="Center"  Text="Faster Optimize" TextColor="#eee" />

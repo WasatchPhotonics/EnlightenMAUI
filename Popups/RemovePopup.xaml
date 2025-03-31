@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             HorizontalOptions="Fill"
+             Color="Transparent"
+             x:Class="EnlightenMAUI.Popups.RemovePopup">
+    <Border  BackgroundColor="#666" 
+          Padding="2" 
+          HorizontalOptions="Fill">
+
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="10,10,10,10" />
+        </Border.StrokeShape>
+
+        <StackLayout Orientation="Vertical" 
+                     HorizontalOptions="Fill"
+                     VerticalOptions="Center">
+            <ListView ItemsSource="{Binding selections}"
+                            VerticalScrollBarVisibility="Never"
+                      MaximumHeightRequest="300"
+                              SeparatorColor="#555" 
+                              BackgroundColor="Transparent" 
+                              VerticalOptions="StartAndExpand"
+                              x:DataType="local:ViewModels.SelectionPopupViewModel"
+                              HorizontalOptions="Fill"
+                              Margin="0, 0, 0, 10">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell x:DataType="local:Models.SelectionMetadata">
+                            <StackLayout Orientation="Horizontal" BackgroundColor="Transparent">
+                                <CheckBox Margin="10" VerticalOptions="Center" IsChecked="{Binding selected}"/>
+                                <Label TextColor="WhiteSmoke" Margin="10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Medium"/>
+                            </StackLayout>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <ImageButton Margin="10" Padding="2" Source="Images/trash.png"  WidthRequest="40" HeightRequest="40"  CornerRadius="20" HorizontalOptions="End"
+                BackgroundColor="#515151"/>
+
+        </StackLayout>
+    </Border>
+</toolkit:Popup>

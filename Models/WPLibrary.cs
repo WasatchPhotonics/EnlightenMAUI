@@ -191,6 +191,8 @@ namespace EnlightenMAUI.Models
         }
 
         protected Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
+        protected List<string> userCompounds = new List<string>();
+
         protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
 
@@ -199,6 +201,7 @@ namespace EnlightenMAUI.Models
         public Measurement mostRecentMeasurement;
         public event EventHandler<Library> LoadFinished;
         public List<string> samples => library.Keys.ToList();
+        public List<string> userSamples => new List<string>(userCompounds);
 
         public Library(string root, Spectrometer spec) { }
 
@@ -351,7 +354,7 @@ namespace EnlightenMAUI.Models
                 {
                     try
                     {
-                        await loadJSON(libraryFile);
+                        await loadJSON(libraryFile, isUserFile: root == "User Library");
                     }
                     catch (Exception e)
                     {
@@ -362,7 +365,7 @@ namespace EnlightenMAUI.Models
                 {
                     try
                     {
-                        await loadCSV(libraryFile);
+                        await loadCSV(libraryFile, isUserFile: root == "User Library");
                     }
                     catch (Exception e)
                     {
@@ -438,7 +441,7 @@ namespace EnlightenMAUI.Models
 
             logger.info("finish loading library file from {0}", path);
         }
-        async Task loadCSV(Java.IO.File file)
+        async Task loadCSV(Java.IO.File file, bool isUserFile = false)
         {
             logger.info("start loading library file from {0}", file.AbsolutePath);
 
@@ -503,6 +506,8 @@ namespace EnlightenMAUI.Models
                 //updated.dark = null;
 
                 library.Add(name, updated);
+                if (isUserFile && !userCompounds.Contains(name))
+                    userCompounds.Add(name);
 
 #if USE_DECON
                 Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(updated.wavenumbers), new List<double>(updated.processed));
@@ -552,7 +557,7 @@ namespace EnlightenMAUI.Models
             library.Add(name, updated);
             logger.info("finish loading library file from {0}", path);
         }
-        async Task loadJSON(Java.IO.File file)
+        async Task loadJSON(Java.IO.File file, bool isUserFile = false)
         {
             logger.info("start loading library file from {0}", file.AbsolutePath);
 
@@ -605,6 +610,8 @@ namespace EnlightenMAUI.Models
                 updated.dark = null;
 
                 library.Add(name, updated);
+                if (isUserFile && !userCompounds.Contains(name))
+                    userCompounds.Add(name);
             }
 
             logger.info("finish loading library file from {0}", file.AbsolutePath);

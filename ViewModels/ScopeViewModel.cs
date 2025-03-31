@@ -964,6 +964,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             updateChart();
         }
 
+        AnalysisViewModel.getInstance().SetData(null, null, "Collecting Data");
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
@@ -1537,6 +1538,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.measurement.libraryUsed = settings.libraryLabel;
 
         waitingForMatch = true;
+        AnalysisViewModel.getInstance().SetData(null, null, "Searching Database");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
         var result = await library.findMatch(spec.measurement);
