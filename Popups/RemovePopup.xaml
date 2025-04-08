@@ -38,8 +38,8 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <ImageButton Margin="10" Padding="2" Source="Images/trash.png"  WidthRequest="40" HeightRequest="40"  CornerRadius="20" HorizontalOptions="End"
-                BackgroundColor="#515151"/>
+            <ImageButton x:Name="RemoveButton" Margin="10" Padding="2" Source="Images/trash.png"  WidthRequest="40" HeightRequest="40"  CornerRadius="20" HorizontalOptions="End"
+                BackgroundColor="#515151" Clicked="RemoveButton_Clicked"/>
 
         </StackLayout>
     </Border>

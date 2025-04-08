@@ -13,6 +13,7 @@ namespace EnlightenMAUI.ViewModels
     {
         public event PropertyChangedEventHandler PropertyChanged;
         public ObservableCollection<SelectionMetadata> selections {  get; private set; }
+        public List<string> markedForRemoval { get; set; } = new List<string>();
 
         public SelectionPopupViewModel(List<SelectionMetadata> selectionList)
         {

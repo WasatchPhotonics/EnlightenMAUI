@@ -192,6 +192,7 @@ namespace EnlightenMAUI.Models
 
         protected Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         protected List<string> userCompounds = new List<string>();
+        protected Dictionary<string, string> userPaths = new Dictionary<string, string>();
 
         protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
@@ -320,6 +321,42 @@ namespace EnlightenMAUI.Models
             }
 
             library[name] = adjusted;
+        }
+
+        public bool removeSample(string name)
+        {
+            try
+            {
+                if (userCompounds.Contains(name))
+                {
+
+                    string path = userPaths[name];
+                    string archive = Path.Join(path.Substring(0, path.LastIndexOf('/')), "archive");
+                    string newPath = Path.Join(path.Substring(0, path.LastIndexOf('/')), "archive", path.Split('/').Last());
+
+                    if (PlatformUtil.writeable(archive))
+                    {
+                        File.Move(path, newPath);
+
+                        userCompounds.Remove(name);
+                        library.Remove(name);
+                        userPaths.Remove(name);
+
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                logger.error("sample removal failed out with exception {0}", e.Message);
+                return false;
+            }
         }
 
         async Task loadFiles(string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
@@ -507,8 +544,10 @@ namespace EnlightenMAUI.Models
 
                 library.Add(name, updated);
                 if (isUserFile && !userCompounds.Contains(name))
+                {
                     userCompounds.Add(name);
-
+                    userPaths.Add(name, file.AbsolutePath);
+                }
 #if USE_DECON
                 Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(updated.wavenumbers), new List<double>(updated.processed));
                 deconvolutionLibrary.library.Add(name, upSpec);
@@ -611,7 +650,10 @@ namespace EnlightenMAUI.Models
 
                 library.Add(name, updated);
                 if (isUserFile && !userCompounds.Contains(name))
+                {
                     userCompounds.Add(name);
+                    userPaths.Add(name, file.AbsolutePath);
+                }
             }
 
             logger.info("finish loading library file from {0}", file.AbsolutePath);

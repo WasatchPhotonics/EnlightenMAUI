@@ -254,7 +254,23 @@ namespace EnlightenMAUI.ViewModels
 
         private void Rem_closed(object sender, CommunityToolkit.Maui.Core.PopupClosedEventArgs e)
         {
+            List<string> removeList = new List<string>(userlibraryViewModel.markedForRemoval);
+            List<SelectionMetadata> removeMetaList = new List<SelectionMetadata>();
 
+            foreach (var item in removeList)
+            {
+                (settings.library as WPLibrary).removeSample(item);
+                foreach (var sample in userlibraryViewModel.selections)
+                {
+                    if (sample.name == item)
+                        removeMetaList.Add(sample);
+                    sample.selected = false;
+                }
+            }
+
+            foreach (var item in removeMetaList)
+                userlibraryViewModel.selections.Remove(item);
+            userlibraryViewModel.markedForRemoval.Clear();
         }
 
         static public AnalysisViewModel getInstance()

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace EnlightenMAUI.Models
 {
-    public  class SelectionMetadata : INotifyPropertyChanged
+    public class SelectionMetadata : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 

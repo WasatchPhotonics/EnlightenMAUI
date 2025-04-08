@@ -420,7 +420,7 @@ internal class PlatformUtil
     }
 
 
-    static bool writeable(string path)
+    public static bool writeable(string path)
     {
         var f = new Java.IO.File(path);
         logger.debug($"writeable: testing {path}");

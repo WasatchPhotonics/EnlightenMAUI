@@ -9,4 +9,16 @@ public partial class RemovePopup : Popup
 		InitializeComponent();
         BindingContext = vm;
     }
+
+    private void RemoveButton_Clicked(object sender, EventArgs e)
+    {
+        SelectionPopupViewModel vm = BindingContext as SelectionPopupViewModel;
+        foreach (var item in vm.selections)
+        {
+            if (item.selected)
+                vm.markedForRemoval.Add(item.name);
+        }
+
+        this.Close();
+    }
 }
