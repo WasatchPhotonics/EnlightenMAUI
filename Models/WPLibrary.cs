@@ -193,6 +193,7 @@ namespace EnlightenMAUI.Models
         protected Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
         protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
+        protected string unitSN = "";
 
         public string mostRecentCompound;
         public double mostRecentScore;
@@ -240,6 +241,8 @@ namespace EnlightenMAUI.Models
 
                 roiStart = spec.eeprom.ROIHorizStart;
                 roiEnd = spec.eeprom.ROIHorizEnd;
+
+                unitSN = spec.eeprom.serialNumber;
             }
 
             if (doLoad)

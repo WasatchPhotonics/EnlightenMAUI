@@ -90,8 +90,8 @@ namespace EnlightenMAUI.Models
                 if (_lib != 0)
                     _dpLIBClose(_lib);
 
-                //_dpLIBInit(Encoding.UTF8.GetBytes("SN=WP-01490\0"));
-                byte[] argument = "SN=WP-01490\0"u8.ToArray();
+                string serialString = $"SN={unitSN}\0";
+                byte[] argument = Encoding.ASCII.GetBytes(serialString);
                 _dpLIBInit(argument);
 
                 if (finalFullPath.Length == 0)
