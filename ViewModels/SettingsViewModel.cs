@@ -69,7 +69,7 @@ namespace EnlightenMAUI.ViewModels
                 startGainDb = 8,
                 minIntTimeMS = 10,
                 maxIntTimeMS = 1000,
-                minGainDb = 8,
+                minGainDb = 0,
                 maxGainDb = 30,
                 targetCounts = 40000,
                 minCounts = 30000,

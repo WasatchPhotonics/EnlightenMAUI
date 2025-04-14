@@ -423,7 +423,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _startIntTimeMS = 400;
+        protected ushort _startIntTimeMS = 200;
 
         public virtual byte startGainDb
         {
@@ -457,7 +457,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _minIntTimeMS = 100;
+        protected ushort _minIntTimeMS = 10;
         
         public virtual ushort maxIntTimeMS
         {
@@ -491,7 +491,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _minGainDb = 8;
+        protected byte _minGainDb = 0;
 
         public virtual byte maxGainDb
         {
