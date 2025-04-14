@@ -1498,6 +1498,7 @@ public class BluetoothSpectrometer : Spectrometer
 
             ushort startPixel = (ushort)(data[1] | data[0] << 8);
             logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
+            logger.hexdump(data, "pixel data: ");
             if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
             {
                 totalPixelsRead += startPixel;
