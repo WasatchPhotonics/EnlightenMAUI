@@ -65,9 +65,9 @@ namespace EnlightenMAUI.ViewModels
             new AutoRamanParameters()
             {
                 maxCollectionTimeMS = 2000,
-                startIntTimeMS = 400,
+                startIntTimeMS = 20,
                 startGainDb = 8,
-                minIntTimeMS = 100,
+                minIntTimeMS = 10,
                 maxIntTimeMS = 1000,
                 minGainDb = 8,
                 maxGainDb = 30,

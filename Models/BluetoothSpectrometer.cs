@@ -1419,7 +1419,7 @@ public class BluetoothSpectrometer : Spectrometer
                     optimizationDone = true;
                     double estimatedMilliseconds = (maxCollectionTimeMS + 2500);
                     autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
-                    syncAcqParams();
+                    //syncAcqParams();
                 }
                 else
                 {
