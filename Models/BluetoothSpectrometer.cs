@@ -45,6 +45,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
+    bool collectionErrorDetected = false;
     double[] spectrum;
 
     ////////////////////////////////////////////////////////////////////////
@@ -1098,6 +1099,7 @@ public class BluetoothSpectrometer : Spectrometer
         // for progress bar
         totalPixelsToRead = pixels; // * scansToAverage;
         totalPixelsRead = 0;
+        collectionErrorDetected = false;
         acquiring = true;
 
         // TODO: integrate laserDelayMS into showProgress
@@ -1224,6 +1226,7 @@ public class BluetoothSpectrometer : Spectrometer
         spectrum = new double[pixels];
         totalPixelsRead = 0;
         totalPixelsToRead = pixels;
+        collectionErrorDetected = false;
 
         dataCollectingStarted = false;
         optimizationDone = false;
@@ -1254,7 +1257,10 @@ public class BluetoothSpectrometer : Spectrometer
         bool ok = await monitorSpectrumAcquire();
         if (!ok)
         {
-            logger.debug("spectrum collection timed out");
+            if (collectionErrorDetected)
+                logger.debug("collection error detected");
+            else
+                logger.debug("spectrum collection timed out");
             return null;
         }
 
@@ -1295,6 +1301,8 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (totalPixelsRead == totalPixelsToRead)
                 return true;
+            else if (collectionErrorDetected)
+                return false;
         }
 
         logger.info("collection timed out");
@@ -1487,14 +1495,25 @@ public class BluetoothSpectrometer : Spectrometer
         else
         {
             int pixelsInPacket = (int)data.Length / 2 - 1;
-            logger.debug("reading {0} pixels", pixelsInPacket);
+
+            ushort startPixel = (ushort)(data[1] | data[0] << 8);
+            logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
+            if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
+            {
+                totalPixelsRead += startPixel;
+            }
+            else if (totalPixelsRead != startPixel)
+            {
+                collectionErrorDetected = true;
+            }
+
             for (int i = 1; i <= pixelsInPacket; i++)
             {
                 var offset = i * 2;
                 ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
 
-                logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
-                logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
+                //logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
+                //logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
 
                  if (totalPixelsRead >= spectrum.Length)
                     logger.error("more received data than expected...");
