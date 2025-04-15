@@ -152,6 +152,38 @@ namespace EnlightenMAUI.ViewModels
         }
         string _currentLibrary = "Wasatch";
 
+        public string enteredPassword
+        {
+            get
+            {
+                return _enteredPassword;
+            }
+            set
+            {
+                _enteredPassword = value;
+                _passwordCorrect = _enteredPassword == UNLOCK_PASSWORD;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(enteredPassword)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(passwordCorrect)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(passwordIncorrect)));
+            }
+        }
+        string _enteredPassword;
+
+
+        const string UNLOCK_PASSWORD = "photon";
+        public bool passwordCorrect
+        {
+            get => _passwordCorrect;
+        }
+        public bool passwordIncorrect
+        {
+            get => !_passwordCorrect;
+        }
+
+        bool _passwordCorrect = false;
+
+
+
         void changeParamSet(string key)
         {
             if (!parameterSets.ContainsKey(key))

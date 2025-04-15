@@ -209,7 +209,7 @@ public class Settings : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeEnabled)));
         }
     }
-    bool _advancedModeEnabled = false;
+    bool _advancedModeEnabled = true;
 
     // The user entered a new password on the SettingsView, and hit
     // return, so the View asked the ViewModel to authenticate it.  The

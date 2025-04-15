@@ -12,114 +12,127 @@
         <local:ViewModels.SettingsViewModel/>
     </ContentPage.BindingContext>
 
-    <ScrollView Margin="10, 0, 10, 0">
-        <StackLayout Orientation="Vertical" BackgroundColor="#333">
+    <Grid>
+        <StackLayout IsVisible="{Binding passwordIncorrect}" Orientation="Vertical" Margin="10, 0, 10, 0" HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand">
+            <Label Text="Password" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center"/>
+            <Entry IsPassword="True" 
+                   FontSize="14" 
+                   HorizontalOptions="Center" 
+                   Background="#333"
+                   TextColor="#eee"
+                   VerticalOptions="Center" 
+                   Text="{Binding enteredPassword}"
+                   WidthRequest="150" />
+        </StackLayout>
 
-        <!-- Page header -->
-            <Image Source="enlighten_logo.png" WidthRequest="300"/>
+        <ScrollView IsVisible="{Binding passwordCorrect}" Margin="10, 0, 10, 0">
+            <StackLayout Orientation="Vertical" BackgroundColor="#333">
 
-            <StackLayout HorizontalOptions="FillAndExpand">
-                
-                <!-- Acquisition Parameters -->
-                <StackLayout Orientation="Vertical" BackgroundColor="#555" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                <!-- Page header -->
+                <Image Source="enlighten_logo.png" WidthRequest="300"/>
+
+                <StackLayout HorizontalOptions="FillAndExpand">
+
+                    <!-- Acquisition Parameters -->
+                    <StackLayout Orientation="Vertical" BackgroundColor="#555" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
 
-                    <Label Text="Collection Parameters" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                        <Label Text="Collection Parameters" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
 
-                    <!-- integration time -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Integration Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="integrationTime" 
+                        <!-- integration time -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Integration Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="integrationTime" 
                                                  Value="{Binding integrationTimeMS}" 
                                                  Minimum="1" Maximum="5000"
                                                  HorizontalOptions="EndAndExpand">
-                            <telerik:RadNumericInput.IncreaseButtonStyle>
-                                <Style TargetType="telerik:RadNumericInput">
-                                    <Setter Property="BackgroundColor" Value="#333"/>
-                                </Style>
-                            </telerik:RadNumericInput.IncreaseButtonStyle>
-                            <telerik:RadNumericInput.DecreaseButtonStyle>
-                                <Style TargetType="telerik:RadNumericInput">
-                                    <Setter Property="BackgroundColor" Value="#333"/>
-                                </Style>
-                            </telerik:RadNumericInput.DecreaseButtonStyle>
-                        </telerik:RadNumericInput>
-                    </StackLayout>
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+                        </StackLayout>
 
-                    <!-- gain -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="gainDb" 
+                        <!-- gain -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="gainDb" 
                                                  Value="{Binding gainDb}" 
                                                  StringFormat="{}{0:f1}"
                                                  Minimum="0" Maximum="30" Step="0.1"
                                                  HorizontalOptions="EndAndExpand">
-                            <telerik:RadNumericInput.IncreaseButtonStyle>
-                                <Style TargetType="telerik:RadNumericInput">
-                                    <Setter Property="BackgroundColor" Value="#333"/>
-                                </Style>
-                            </telerik:RadNumericInput.IncreaseButtonStyle>
-                            <telerik:RadNumericInput.DecreaseButtonStyle>
-                                <Style TargetType="telerik:RadNumericInput">
-                                    <Setter Property="BackgroundColor" Value="#333"/>
-                                </Style>
-                            </telerik:RadNumericInput.DecreaseButtonStyle>
-                        </telerik:RadNumericInput>
-                    </StackLayout>
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+                        </StackLayout>
 
-                    <!-- scansToAverage -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Scan Averaging" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="scansToAverage" 
+                        <!-- scansToAverage -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Scan Averaging" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="scansToAverage" 
                                                  Value="{Binding scansToAverage}" 
                                                  Minimum="1" Maximum="100"
                                                  HorizontalOptions="EndAndExpand">
-                            <telerik:RadNumericInput.IncreaseButtonStyle>
-                                <Style TargetType="telerik:RadNumericInput">
-                                    <Setter Property="BackgroundColor" Value="#333"/>
-                                </Style>
-                            </telerik:RadNumericInput.IncreaseButtonStyle>
-                            <telerik:RadNumericInput.DecreaseButtonStyle>
-                                <Style TargetType="telerik:RadNumericInput">
-                                    <Setter Property="BackgroundColor" Value="#333"/>
-                                </Style>
-                            </telerik:RadNumericInput.DecreaseButtonStyle>
-                        </telerik:RadNumericInput>
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+                        </StackLayout>
+
+                        <StackLayout Orientation="Horizontal">
+
+                            <Label  VerticalOptions="Center"  Text="Faster Optimize" TextColor="#eee" />
+                            <Switch VerticalOptions="Center" HorizontalOptions="EndAndExpand" IsEnabled="True" IsToggled="{Binding fastMode}" />
+
+                        </StackLayout>
+
                     </StackLayout>
 
-                    <StackLayout Orientation="Horizontal">
+                    <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
-                        <Label  VerticalOptions="Center"  Text="Faster Optimize" TextColor="#eee" />
-                        <Switch VerticalOptions="Center" HorizontalOptions="EndAndExpand" IsEnabled="True" IsToggled="{Binding fastMode}" />
+                        <Label Text="Library Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                        <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                    </StackLayout>
-                    
-                </StackLayout>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
-
-                    <Label Text="Library Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
-                    <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Library" TextColor="#eee" />
-                        <Picker Grid.Row="0" 
+                            <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Library" TextColor="#eee" />
+                            <Picker Grid.Row="0" 
                                 VerticalOptions="Center" 
                                 HorizontalOptions="FillAndExpand"
                                 Grid.Column="1" 
                                 ItemsSource="{Binding Path=library}"
                                 SelectedItem="{Binding Path=currentLibrary}"/>
 
-                        <Label Grid.Row="1" IsVisible="{Binding subLibrariesAvailable}" VerticalOptions="Center" Grid.Column="0" Text="Sublibraries" TextColor="#eee" />
-                        <Button Grid.Row="1" 
+                            <Label Grid.Row="1" IsVisible="{Binding subLibrariesAvailable}" VerticalOptions="Center" Grid.Column="0" Text="Sublibraries" TextColor="#eee" />
+                            <Button Grid.Row="1" 
                                 IsVisible="{Binding subLibrariesAvailable}"
                                 Command="{Binding addCmd}"
                                 VerticalOptions="Center" 
@@ -127,38 +140,38 @@
                                 Grid.Column="1" 
                                 Text="Select"
                                 WidthRequest="100"/>
-                    </Grid>
-                </StackLayout>
+                        </Grid>
+                    </StackLayout>
 
-                <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+                    <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
-                    <Label Text="Processing Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
-                    <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <!-- Auto Raman Params          -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Horizontal ROI             -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Raman Intensity Correction -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Auto-Dark Mode             -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Auto-Raman Mode            -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Background Removal         -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Perform Match              -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Perform Deconvolution      -->
-                        </Grid.RowDefinitions>
+                        <Label Text="Processing Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                        <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <!-- Auto Raman Params          -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Horizontal ROI             -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Raman Intensity Correction -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Auto-Dark Mode             -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Auto-Raman Mode            -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Background Removal         -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Perform Match              -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Perform Deconvolution      -->
+                            </Grid.RowDefinitions>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <!--
+                            <!--
                         <Picker Grid.Row="0" 
                                 VerticalOptions="Center" 
                                 HorizontalOptions="FillAndExpand"
@@ -167,119 +180,121 @@
                                 SelectedItem="{Binding Path=currentParamSet}"/>
                         -->
 
-                        <Switch Grid.Row="1" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding useHorizontalROI}" />
-                        <Label Grid.Row="1" VerticalOptions="Center" Grid.Column="0" Text="Horizontal ROI" TextColor="#eee" />
+                            <Switch Grid.Row="1" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding useHorizontalROI}" />
+                            <Label Grid.Row="1" VerticalOptions="Center" Grid.Column="0" Text="Horizontal ROI" TextColor="#eee" />
 
-                        <Switch Grid.Row="2" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}"  IsToggled="{Binding useRamanIntensityCorrection}" />
-                        <Label Grid.Row="2" VerticalOptions="Center" Grid.Column="0" Text="Raman Intensity Correction" TextColor="#eee" />
+                            <Switch Grid.Row="2" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}"  IsToggled="{Binding useRamanIntensityCorrection}" />
+                            <Label Grid.Row="2" VerticalOptions="Center" Grid.Column="0" Text="Raman Intensity Correction" TextColor="#eee" />
 
-                        <Switch Grid.Row="3" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding autoDarkEnabled}" />
-                        <Label Grid.Row="3" VerticalOptions="Center" Grid.Column="0" Text="Auto-Dark Mode" TextColor="#eee" />
+                            <Switch Grid.Row="3" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding autoDarkEnabled}" />
+                            <Label Grid.Row="3" VerticalOptions="Center" Grid.Column="0" Text="Auto-Dark Mode" TextColor="#eee" />
 
-                        <Switch Grid.Row="4" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding autoRamanEnabled}" />
-                        <Label Grid.Row="4" VerticalOptions="Center" Grid.Column="0" Text="Auto-Raman Mode" TextColor="#eee" />
+                            <Switch Grid.Row="4" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding autoRamanEnabled}" />
+                            <Label Grid.Row="4" VerticalOptions="Center" Grid.Column="0" Text="Auto-Raman Mode" TextColor="#eee" />
 
-                        <Switch Grid.Row="5" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding useBackgroundRemoval}" />
-                        <Label Grid.Row="5" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
+                            <Switch Grid.Row="5" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding useBackgroundRemoval}" />
+                            <Label Grid.Row="5" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
 
-                        <Switch Grid.Row="6" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performMatch}" />
-                        <Label Grid.Row="6" VerticalOptions="Center" Grid.Column="0" Text="Library Matching" TextColor="#eee" />
+                            <Switch Grid.Row="6" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performMatch}" />
+                            <Label Grid.Row="6" VerticalOptions="Center" Grid.Column="0" Text="Library Matching" TextColor="#eee" />
 
-                        <Switch Grid.Row="7" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performDeconvolution}" />
-                        <Label Grid.Row="7" VerticalOptions="Center" Grid.Column="0" Text="Deconvolution Matching" TextColor="#eee" />
-                    </Grid>
-                </StackLayout>
+                            <Switch Grid.Row="7" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performDeconvolution}" />
+                            <Label Grid.Row="7" VerticalOptions="Center" Grid.Column="0" Text="Deconvolution Matching" TextColor="#eee" />
+                        </Grid>
+                    </StackLayout>
 
-                <!-- Category header -->
-                <Label Text="Save Options" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                    <!-- Category header -->
+                    <Label Text="Save Options" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
 
-                <!-- Save Pixel -->
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Save Pixel" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding savePixel}" HorizontalOptions="EndAndExpand" />
-                </StackLayout>
+                    <!-- Save Pixel -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Save Pixel" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding savePixel}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
 
-                <!-- Save Wavelength -->
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Save Wavelength" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding saveWavelength}" HorizontalOptions="EndAndExpand" />
-                </StackLayout>
+                    <!-- Save Wavelength -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Save Wavelength" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding saveWavelength}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
 
-                <!-- Save Wavenumber -->
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Save Wavenumber" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding saveWavenumber}" HorizontalOptions="EndAndExpand" />
-                </StackLayout>
+                    <!-- Save Wavenumber -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Save Wavenumber" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding saveWavenumber}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
 
-                <!-- Save Raw -->
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Save Raw" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding saveRaw}" HorizontalOptions="EndAndExpand" />
-                </StackLayout>
+                    <!-- Save Raw -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Save Raw" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding saveRaw}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
 
-                <!-- Save Dark -->
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Save Dark" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding saveDark}" HorizontalOptions="EndAndExpand" />
-                </StackLayout>
+                    <!-- Save Dark -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Save Dark" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding saveDark}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
 
-                <!-- Save Reference -->
-                <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
-                    <Label  Text="Save Reference" TextColor="#ccc" VerticalTextAlignment="Center"/>
-                    <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
-                </StackLayout>
+                    <!-- Save Reference -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Save Reference" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
 
-                <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="10">
-                    
-                    <Label Text="Advanced Spectrometer Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                    <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="10">
 
-                    <!-- Laser Warning Delay -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Laser Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
+                        <Label Text="Advanced Spectrometer Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+
+                        <!-- Laser Warning Delay -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Laser Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
                                                  Value="{Binding laserWarningDelaySec}" 
                                                  Minimum="0" Maximum="10"
                                                  HorizontalOptions="EndAndExpand"/>
-                    </StackLayout>
+                        </StackLayout>
 
-                    <!-- Laser Watchdog Timeout -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Laser Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
+                        <!-- Laser Watchdog Timeout -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Laser Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
                                                  Value="{Binding laserWatchdogTimeoutSec}" 
                                                  Minimum="0" Maximum="600"
                                                  HorizontalOptions="EndAndExpand"/>
-                    </StackLayout>
+                        </StackLayout>
 
-                    <!-- Vertical ROI Start Line -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Vertical ROI Start Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="VerticalROIStartLine" 
+                        <!-- Vertical ROI Start Line -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Vertical ROI Start Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="VerticalROIStartLine" 
                                                  Value="{Binding verticalROIStartLine}" 
                                                  Minimum="0" Maximum="1080"
                                                  HorizontalOptions="EndAndExpand"/>
-                    </StackLayout>
+                        </StackLayout>
 
-                    <!-- Vertical ROI Stop Line -->
-                    <StackLayout Orientation="Horizontal">
-                        <Label Text="Vertical ROI Stop Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                        <telerik:RadNumericInput x:Name="verticalROIStopLine" 
+                        <!-- Vertical ROI Stop Line -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Vertical ROI Stop Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="verticalROIStopLine" 
                                                  Value="{Binding verticalROIStopLine}" 
                                                  Minimum="0" Maximum="1080"
                                                  HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+
+                    </StackLayout>
+
+
+                    <StackLayout Orientation="Horizontal" Margin="10">
+                        <Label Text="Advanced Mode" TextColor="#ccc" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <Switch x:Name="advancedModeEnabled" 
+                                                IsToggled="{Binding advancedModeEnabled}" 
+                                                HorizontalOptions="EndAndExpand"/>
                     </StackLayout>
 
                 </StackLayout>
-
-
-                <StackLayout Orientation="Horizontal" Margin="10">
-                    <Label Text="Advanced Mode" TextColor="#ccc" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                    <Switch x:Name="advancedModeEnabled" 
-                                                IsToggled="{Binding advancedModeEnabled}" 
-                                                HorizontalOptions="EndAndExpand"/>
-                </StackLayout>
-
             </StackLayout>
-        </StackLayout>
-    </ScrollView>
+        </ScrollView>
+    </Grid>
+    
 </ContentPage>
