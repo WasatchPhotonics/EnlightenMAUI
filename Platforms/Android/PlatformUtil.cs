@@ -350,7 +350,10 @@ internal class PlatformUtil
             double[] output = new double[outputSize];
             for (int i = 0; i < outputSize; ++i)
             {
-                output[i] = p.spectrum[i] * max;
+                if (p.spectrum[i] < 0)
+                    output[i] = 0;
+                else
+                    output[i] = p.spectrum[i] * max;
             }
 
             logger.debug("returning processed spectrum");
