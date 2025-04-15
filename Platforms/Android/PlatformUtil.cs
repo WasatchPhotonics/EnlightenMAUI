@@ -16,6 +16,7 @@ using Android.Webkit;
 using AndroidX.DocumentFile.Provider;
 using Java.IO;
 using Newtonsoft.Json;
+using Telerik.Maui.Controls;
 namespace EnlightenMAUI.Platforms;
 
 
@@ -296,7 +297,7 @@ internal class PlatformUtil
         }
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial)
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm)
     {
         try
         {
@@ -356,6 +357,8 @@ internal class PlatformUtil
                     output[i] = p.spectrum[i] * max;
             }
 
+            output = deconvoluteSpectrum(targetWavenum, output, fwhm);
+
             logger.debug("returning processed spectrum");
             return output;
         }
@@ -364,6 +367,153 @@ internal class PlatformUtil
             logger.debug("background process failed with exception {0}", e.Message);
             return null;
         }
+    }
+
+    static double[] deconvoluteSpectrum(double[] wnOut, double[] spectrum, double fwhm)
+    {
+        logger.info("entered deconvolution");
+
+        double padWidth = 3;
+        int maxIterations = 25;
+        double[] wavenumberPerPixel = new double[wnOut.Length];
+        for (int i = 1; i < wnOut.Length; ++i)
+        {
+            wavenumberPerPixel[i] = wnOut[i] - wnOut[i - 1];
+        }
+
+        double avgPixelFWHM = fwhm / wavenumberPerPixel.Average();
+        int padPixels = (int)Math.Ceiling(padWidth *  avgPixelFWHM);
+
+        double[] wavenumberPerPixelPadded = new double[wavenumberPerPixel.Length + 2 * padPixels];
+        for (int i = 0; i < padPixels; ++i)
+        {
+            wavenumberPerPixelPadded[i] = wavenumberPerPixel.First();
+            wavenumberPerPixelPadded[wavenumberPerPixelPadded.Length - 1 - i] = wavenumberPerPixel.Last();
+        }
+        
+        for (int i = 0; i < wavenumberPerPixel.Length; ++i)
+        {
+            wavenumberPerPixelPadded[i + padPixels] = wavenumberPerPixel[i];
+        }
+
+        double[] pixelFWHM = new double[wavenumberPerPixelPadded.Length];
+        for(int i = 0;i < pixelFWHM.Length;++i)
+        {
+            pixelFWHM[i] = fwhm / wavenumberPerPixelPadded[i];
+        }
+
+        double[] pixelSigma = new double[wavenumberPerPixelPadded.Length];
+        double[] pixelSigma2 = new double[wavenumberPerPixelPadded.Length];
+        for (int i = 0; i < pixelFWHM.Length; ++i)
+        {
+            pixelSigma[i] = pixelFWHM[i] / (2 * Math.Sqrt(2 * Math.Log(2)));
+            pixelSigma2[i] = pixelSigma[i] * pixelSigma[i];
+        }
+
+        int numPixelPadded = wavenumberPerPixelPadded.Length;
+
+        double[] spectrumPadded = new double[wavenumberPerPixel.Length + 2 * padPixels];
+        for (int i = 0; i < padPixels; ++i)
+        {
+            spectrumPadded[i] = spectrum.First();
+            spectrumPadded[spectrumPadded.Length - 1 - i] = spectrum.Last();
+        }
+
+        for (int i = 0; i < spectrum.Length; ++i)
+        {
+            spectrumPadded[i + padPixels] = spectrum[i];
+        }
+
+        double[] pixels = new double[numPixelPadded];
+        for (int i = 0; i < pixels.Length; ++i)
+        {
+            pixels[i] = i;
+        }
+
+        logger.info("non-matrix packing complete");
+
+        MathNet.Numerics.LinearAlgebra.Matrix<double> resolutionH = MathNet.Numerics.LinearAlgebra.Matrix<double>.Build.Dense(numPixelPadded, numPixelPadded);
+        logger.info("matrix allocated");
+
+        foreach (int row in pixels)
+        {
+            double[] resolutionSpectrum = new double[pixels.Length];
+
+            logger.info("row {0} contruction started", row);
+            if (pixelSigma2[row] != 0)
+            {
+                for (int i = 0; i < resolutionSpectrum.Length; ++i)
+                {
+                    double inner = -0.5 * Math.Pow((pixels[i] - row), 2) / pixelSigma2[row];
+                    resolutionSpectrum[i] = Math.Exp(inner);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < resolutionSpectrum.Length; ++i)
+                {
+                    resolutionSpectrum[i] = 1;
+                }
+            }
+            logger.info("row {0} construction ended", row);
+
+            double sum = resolutionSpectrum.Sum();
+
+            for (int i = 0; i < resolutionSpectrum.Length; ++i)
+            {
+                resolutionH[row, i] = resolutionSpectrum[i] / sum;
+            }
+
+            logger.info("row {0} fill ended", row);
+        }
+        logger.info("matrix packed");
+
+        double[] origSpectrumPadded = spectrumPadded;
+        double epsilon = 1e-5;
+        double[] spectrumDeconvPadded = new double[origSpectrumPadded.Length];
+        for (int i = 0; i < spectrumDeconvPadded.Length; ++i)
+        {
+            spectrumDeconvPadded[i] = Math.Max(origSpectrumPadded[i], epsilon);
+        }
+
+        var hTrans = resolutionH.Transpose();
+        logger.info("matrix transposed");
+
+        for (int i = 0; i < maxIterations; ++i)
+        {
+            var hTimesX = resolutionH * MathNet.Numerics.LinearAlgebra.Vector<double>.Build.DenseOfArray(spectrumDeconvPadded);
+
+            logger.info("iter {0} multiply complete", i);
+
+            double[] yOverHTimesX = new double[hTimesX.Count];
+            for (int j = 0; j < hTimesX.Count - 1; ++j)
+            {
+                yOverHTimesX[j + 1] = origSpectrumPadded[j] / hTimesX[j];
+            }
+            yOverHTimesX[0] = yOverHTimesX[1];
+
+            var yOverHXVec = MathNet.Numerics.LinearAlgebra.Vector<double>.Build.DenseOfArray(yOverHTimesX);
+
+            double[] fullSum = new double[yOverHXVec.Count];
+
+
+            for (int j = 0; j < yOverHXVec.Count; ++j)
+            {
+                fullSum[j] = yOverHXVec.DotProduct(hTrans.Row(j));
+                spectrumDeconvPadded[j] = spectrumDeconvPadded[j] * fullSum[j];
+                spectrumDeconvPadded[j] = Math.Max(epsilon, spectrumDeconvPadded[j]);
+            }
+
+            logger.info("iter {0} dotprods complete", i);
+        }
+
+        double[] spectrumDeconv = new double[spectrum.Length];
+        for (int i = 0; i < spectrum.Length; ++i)
+            spectrumDeconv[i] = spectrumDeconvPadded[i + padPixels];
+
+        logger.info("decon complete");
+
+        return spectrumDeconv;
     }
 
     public static string getLibraryFilenames()

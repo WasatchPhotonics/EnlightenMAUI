@@ -415,7 +415,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;

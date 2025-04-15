@@ -20,6 +20,7 @@ namespace EnlightenMAUI.ViewModels
 {
     internal class AnalysisViewModel : INotifyPropertyChanged
     {
+        Settings settings = Settings.getInstance();
         public event PropertyChangedEventHandler PropertyChanged;
         public event EventHandler<AnalysisViewModel> SpectraChanged;
         public delegate void ToastNotification(string msg);
@@ -89,6 +90,125 @@ namespace EnlightenMAUI.ViewModels
         {
             updateFromInstance();
         }
+
+        Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
+        {
+            {
+                "Default" ,
+                new AutoRamanParameters()
+                {
+                    maxCollectionTimeMS = 10000,
+                    startIntTimeMS = 100,
+                    startGainDb = 0,
+                    minIntTimeMS = 10,
+                    maxIntTimeMS = 2000,
+                    minGainDb = 0,
+                    maxGainDb = 30,
+                    targetCounts = 45000,
+                    minCounts = 40000,
+                    maxCounts = 50000,
+                    maxFactor = 5,
+                    dropFactor = 0.5f,
+                    saturationCounts = 65000,
+                    maxAverage = 100
+                }
+            },
+            {
+                "Faster" ,
+                new AutoRamanParameters()
+                {
+                    maxCollectionTimeMS = 2000,
+                    startIntTimeMS = 200,
+                    startGainDb = 8,
+                    minIntTimeMS = 10,
+                    maxIntTimeMS = 1000,
+                    minGainDb = 0,
+                    maxGainDb = 30,
+                    targetCounts = 40000,
+                    minCounts = 30000,
+                    maxCounts = 50000,
+                    maxFactor = 10,
+                    dropFactor = 0.5f,
+                    saturationCounts = 65000,
+                    maxAverage = 1
+                }
+            }
+
+        };
+
+        public ObservableCollection<string> paramSets
+        {
+            get => _paramSets;
+        }
+
+        static ObservableCollection<string> _paramSets = new ObservableCollection<string>()
+        {
+            "Default",
+            "Faster"
+        };
+
+        public bool fastMode
+        {
+            get => _fastMode;
+            set
+            {
+                if (value != _fastMode)
+                {
+                    if (value)
+                        changeParamSet("Faster");
+                    else
+                        changeParamSet("Default");
+
+                    _fastMode = value;
+                }
+            }
+        }
+        bool _fastMode = true;
+
+        public string currentParamSet
+        {
+            get { return _currentParamSet; }
+            set
+            {
+                if (value != _currentParamSet)
+                {
+                    changeParamSet(value);
+                }
+            }
+
+        }
+        string _currentParamSet = "Faster";
+
+        void changeParamSet(string key)
+        {
+            if (!parameterSets.ContainsKey(key))
+                return;
+
+            if (spec != null && spec.paired)
+            {
+                spec.holdAutoRamanParameterSet = true;
+                AutoRamanParameters parameters = parameterSets[key];
+                spec.maxCollectionTimeMS = parameters.maxCollectionTimeMS;
+                spec.startIntTimeMS = parameters.startIntTimeMS;
+                spec.startGainDb = parameters.startGainDb;
+                spec.minIntTimeMS = parameters.minIntTimeMS;
+                spec.maxIntTimeMS = parameters.maxIntTimeMS;
+                spec.minGainDb = parameters.minGainDb;
+                spec.maxGainDb = parameters.maxGainDb;
+                spec.targetCounts = parameters.targetCounts;
+                spec.minCounts = parameters.minCounts;
+                spec.maxCounts = parameters.maxCounts;
+                spec.maxFactor = parameters.maxFactor;
+                spec.dropFactor = parameters.dropFactor;
+                spec.saturationCounts = parameters.saturationCounts;
+                spec.holdAutoRamanParameterSet = false;
+                spec.maxAverage = parameters.maxAverage;
+
+                _currentParamSet = key;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(currentParamSet)));
+            }
+        }
+
 
         void updateFromInstance()
         {

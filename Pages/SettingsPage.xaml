@@ -14,9 +14,9 @@
 
     <Grid>
         <StackLayout IsVisible="{Binding passwordIncorrect}" Orientation="Vertical" Margin="10, 0, 10, 0" HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand">
-            <Label Text="Password" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center"/>
+            <Label Text="Password" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
             <Entry IsPassword="True" 
-                   FontSize="14" 
+                   FontSize="16" 
                    HorizontalOptions="Center" 
                    Background="#333"
                    TextColor="#eee"

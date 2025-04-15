@@ -116,6 +116,13 @@
 
             </StackLayout>
 
+            <StackLayout Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
+
+                <Label  VerticalOptions="Center"  Text="Faster Optimize" FontSize="16" TextColor="#eee" />
+                <Switch VerticalOptions="Center" HorizontalOptions="EndAndExpand" IsEnabled="True" IsToggled="{Binding fastMode}" />
+
+            </StackLayout>
+
 
         </StackLayout>
     </ScrollView>
