@@ -46,6 +46,7 @@ internal class PlatformUtil
 
     static string savePath;
     static string userLibraryPath;
+    static string configurationPath;
 
     public static void RequestSelectLogFolder()
     {
@@ -417,6 +418,26 @@ internal class PlatformUtil
 
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {userLibDir}");
         return userLibraryPath = userLibDir;
+    }
+
+    public static string getConfigFilePath()
+    {
+        if (configurationPath != null)
+        {
+            logger.debug($"getConfigFilePath: returning previous configPath {configurationPath}");
+            return configurationPath;
+        }
+
+        var docDir = Android.App.Application.Context.GetExternalFilesDir(null).AbsolutePath;
+
+        if (!writeable(docDir))
+        {
+            logger.error($"getuserLibraryPath: unable to write userLibDir {docDir}");
+            return null;
+        }
+
+        logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
+        return configurationPath = docDir + "/configuration.json";
     }
 
 

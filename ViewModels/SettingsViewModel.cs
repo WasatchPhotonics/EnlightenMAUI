@@ -6,10 +6,20 @@ using EnlightenMAUI.Popups;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using Telerik.Windows.Documents.Spreadsheet.History;
+using System.Runtime.CompilerServices;
+using EnlightenMAUI.Platforms;
+using WPProduction.Utils;
+using Newtonsoft.Json;
+using Telerik.Maui.Controls;
 
 namespace EnlightenMAUI.ViewModels
 {
-    public struct AutoRamanParameters
+    public class PersistentSettings
+    {
+        public Dictionary<string, AutoRamanParameters> AutoParameters;
+    }
+
+    public class AutoRamanParameters
     {
         public ushort maxCollectionTimeMS;
         public ushort startIntTimeMS;
@@ -205,6 +215,8 @@ namespace EnlightenMAUI.ViewModels
             else if (settings.library is WPLibrary)
                 _currentLibrary = "Wasatch";
 
+            setConfigurationFromFile();
+
             addCmd = new Command(() => { _ = doAdd(); });
             settings.LibraryChanged += Settings_LibraryChanged;
         }
@@ -229,6 +241,59 @@ namespace EnlightenMAUI.ViewModels
                 }
             }
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(subLibrariesAvailable)));
+        }
+
+        async Task setConfigurationFromFile()
+        {
+            string configPath = PlatformUtil.getConfigFilePath();
+            if (File.Exists(configPath))
+            {
+                SimpleCSVParser parser = new SimpleCSVParser();
+                Stream s = File.OpenRead(configPath);
+                StreamReader sr = new StreamReader(s);
+                string blob = await sr.ReadToEndAsync();
+
+                PersistentSettings json = JsonConvert.DeserializeObject<PersistentSettings>(blob);
+                if (json != null && json.AutoParameters != null)
+                {
+                    foreach (string set in json.AutoParameters.Keys)
+                    {
+                        parameterSets[set] = json.AutoParameters[set];
+                    }
+                }
+            }
+            else
+            {
+                JsonThingWriter jtw = new JsonThingWriter();
+                jtw.startBlock("AutoParameters");
+
+                foreach (string set in parameterSets.Keys)
+                {
+                    jtw.startBlock(set);
+
+                    AutoRamanParameters paramSet = parameterSets[set];
+                    jtw.writePair("maxCollectionTimeMS", paramSet.maxCollectionTimeMS);
+                    jtw.writePair("startIntTimeMS", paramSet.startIntTimeMS);
+                    jtw.writePair("startGainDb", paramSet.startGainDb);
+                    jtw.writePair("minIntTimeMS", paramSet.minIntTimeMS);
+                    jtw.writePair("maxIntTimeMS", paramSet.maxIntTimeMS);
+                    jtw.writePair("minGainDb", paramSet.minGainDb);
+                    jtw.writePair("maxGainDb", paramSet.maxGainDb);
+                    jtw.writePair("targetCounts", paramSet.targetCounts);
+                    jtw.writePair("minCounts", paramSet.minCounts);
+                    jtw.writePair("maxCounts", paramSet.maxCounts);
+                    jtw.writePair("maxFactor", paramSet.maxFactor);
+                    jtw.writePair("dropFactor", paramSet.dropFactor);
+                    jtw.writePair("saturationCounts", paramSet.saturationCounts);
+                    jtw.writePair("maxAverage", paramSet.maxAverage);
+
+
+                    jtw.closeBlock();
+                }
+
+                jtw.closeBlock();
+
+            }
         }
 
         public void loadSettings()
