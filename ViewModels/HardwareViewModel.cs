@@ -47,11 +47,14 @@ public class HardwareViewModel : INotifyPropertyChanged
             logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
             (spec as API6BLESpectrometer).bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
         }
+
+        Spectrometer.NewConnection += handleNewSpectrometer;
     }
 
 
     private void refreshEEPROMFields()
     {
+        eepromFields = new ObservableCollection<ViewableSetting>(eeprom.viewableSettings);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(eepromFields)));
     }
 
@@ -65,17 +68,24 @@ public class HardwareViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public string serialNumber { get => eeprom?.serialNumber; }
-    public string fullModelName { get => spec.fullModelName; }
+    public string fullModelName { get => spec?.fullModelName; }
 
     ////////////////////////////////////////////////////////////////////////
     // BLE Device Info
     ////////////////////////////////////////////////////////////////////////
 
-    public string deviceName       { get => spec.bleDeviceInfo.deviceName; }
-    public string manufacturerName { get => spec.bleDeviceInfo.manufacturerName; }
-    public string softwareRevision { get => spec.bleDeviceInfo.softwareRevision; }
-    public string firmwareRevision { get => spec.bleDeviceInfo.firmwareRevision; }
-    public string hardwareRevision { get => spec.bleDeviceInfo.hardwareRevision; }
+    public string deviceName       { get => spec?.bleDeviceInfo.deviceName; }
+    public string manufacturerName { get => spec?.bleDeviceInfo.manufacturerName; }
+    public string softwareRevision { get => spec?.bleDeviceInfo.softwareRevision; }
+    public string firmwareRevision { get => spec?.bleDeviceInfo.firmwareRevision; }
+    public string hardwareRevision { get => spec?.bleDeviceInfo.hardwareRevision; }
+
+
+    void handleNewSpectrometer(object sender, Spectrometer e)
+    {
+        spec = e;
+        refresh();
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Util

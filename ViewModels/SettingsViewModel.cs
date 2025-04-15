@@ -189,27 +189,30 @@ namespace EnlightenMAUI.ViewModels
             if (!parameterSets.ContainsKey(key))
                 return;
 
-            spec.holdAutoRamanParameterSet = true;
-            AutoRamanParameters parameters = parameterSets[key];
-            spec.maxCollectionTimeMS = parameters.maxCollectionTimeMS;
-            spec.startIntTimeMS = parameters.startIntTimeMS;
-            spec.startGainDb = parameters.startGainDb;
-            spec.minIntTimeMS = parameters.minIntTimeMS;
-            spec.maxIntTimeMS = parameters.maxIntTimeMS;
-            spec.minGainDb = parameters.minGainDb;
-            spec.maxGainDb = parameters.maxGainDb;
-            spec.targetCounts = parameters.targetCounts;
-            spec.minCounts = parameters.minCounts;
-            spec.maxCounts = parameters.maxCounts;
-            spec.maxFactor = parameters.maxFactor;
-            spec.dropFactor = parameters.dropFactor;
-            spec.saturationCounts = parameters.saturationCounts;
-            spec.holdAutoRamanParameterSet = false;
-            spec.maxAverage = parameters.maxAverage;
+            if (spec != null && spec.paired)
+            { 
+                spec.holdAutoRamanParameterSet = true;
+                AutoRamanParameters parameters = parameterSets[key];
+                spec.maxCollectionTimeMS = parameters.maxCollectionTimeMS;
+                spec.startIntTimeMS = parameters.startIntTimeMS;
+                spec.startGainDb = parameters.startGainDb;
+                spec.minIntTimeMS = parameters.minIntTimeMS;
+                spec.maxIntTimeMS = parameters.maxIntTimeMS;
+                spec.minGainDb = parameters.minGainDb;
+                spec.maxGainDb = parameters.maxGainDb;
+                spec.targetCounts = parameters.targetCounts;
+                spec.minCounts = parameters.minCounts;
+                spec.maxCounts = parameters.maxCounts;
+                spec.maxFactor = parameters.maxFactor;
+                spec.dropFactor = parameters.dropFactor;
+                spec.saturationCounts = parameters.saturationCounts;
+                spec.holdAutoRamanParameterSet = false;
+                spec.maxAverage = parameters.maxAverage;
 
-            _currentParamSet = key;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(currentParamSet)));
-        }
+                _currentParamSet = key;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(currentParamSet)));
+            }
+            }
 
         void changeLibrary(string key)
         { 
@@ -226,6 +229,8 @@ namespace EnlightenMAUI.ViewModels
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
 
+            Spectrometer.NewConnection += handleNewSpectrometer;
+
             if (settings.library is DPLibrary)
             {
                 _currentLibrary = "3rd Party";
@@ -239,6 +244,36 @@ namespace EnlightenMAUI.ViewModels
 
             addCmd = new Command(() => { _ = doAdd(); });
             settings.LibraryChanged += Settings_LibraryChanged;
+        }
+
+        void handleNewSpectrometer(object sender, Spectrometer e)
+        {
+            spec = e;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(gainDb)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scansToAverage)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useHorizontalROI)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useRamanIntensityCorrection)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWatchdogTimeoutSec)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningDelaySec)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
+
+            if (settings.library is DPLibrary)
+            {
+                _currentLibrary = "3rd Party";
+                foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
+                {
+                    sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
+                }
+            }
+            else if (settings.library is WPLibrary)
+                _currentLibrary = "Wasatch";
         }
 
         private void Settings_LibraryChanged(object sender, Settings e)
@@ -304,28 +339,31 @@ namespace EnlightenMAUI.ViewModels
 
         public UInt32 integrationTimeMS
         {
-            get => spec.integrationTimeMS;
+            get => spec != null ? spec.integrationTimeMS : 0;
             set
             {
+                if (spec != null && spec.paired)
                 spec.integrationTimeMS = value;
             }
         }
 
         public float gainDb
         {
-            get => spec.gainDb;
+            get => spec != null ? spec.gainDb : 0f;
             set
             {
-                spec.gainDb = value;
+                if (spec != null && spec.paired)
+                    spec.gainDb = value;
             }
         }
 
         public byte scansToAverage
         {
-            get => spec.scansToAverage;
+            get => spec != null ? spec.scansToAverage : (byte)0;
             set
             {
-                spec.scansToAverage = value;
+                if (spec != null && spec.paired)
+                    spec.scansToAverage = value;
             }
         }
 
@@ -336,41 +374,48 @@ namespace EnlightenMAUI.ViewModels
         // @todo: let the user live-toggle this and update the on-screen spectrum
         public bool useHorizontalROI
         {
-            get => spec.useHorizontalROI;
+            get => spec != null ? spec.useHorizontalROI : true;
             set
             {
-                spec.useHorizontalROI = value;
+                if (spec != null && spec.paired)
+                    spec.useHorizontalROI = value;
             }
         }
 
         public bool autoDarkEnabled
         {
-            get => spec.autoDarkEnabled;
+            get => spec != null ? spec.autoDarkEnabled : false;
             set
             {
-                if (spec.autoDarkEnabled != value)
-                    spec.autoDarkEnabled = value;
+                if (spec != null && spec.paired)
+                {
+                    if (spec.autoDarkEnabled != value)
+                        spec.autoDarkEnabled = value;
 
-                if (spec.acquisitionMode == AcquisitionMode.STANDARD)
-                    assertSettings();
+                    if (spec.acquisitionMode == AcquisitionMode.STANDARD)
+                        assertSettings();
 
-                advancedModeEnabled = advancedModeEnabled;
+                    advancedModeEnabled = advancedModeEnabled;
+                }
                 updateLaserProperties();
             }
         }
 
         public bool autoRamanEnabled
         {
-            get => spec.autoRamanEnabled;
+            get => spec != null ? spec.autoRamanEnabled : false;
             set
             {
-                if (spec.autoRamanEnabled != value)
-                    spec.autoRamanEnabled = value;
+                if (spec != null && spec.paired)
+                {
+                    if (spec.autoRamanEnabled != value)
+                        spec.autoRamanEnabled = value;
 
-                if (spec.acquisitionMode == AcquisitionMode.STANDARD)
-                    assertSettings();
+                    if (spec.acquisitionMode == AcquisitionMode.STANDARD)
+                        assertSettings();
 
-                advancedModeEnabled = advancedModeEnabled;
+                    advancedModeEnabled = advancedModeEnabled;
+                }
                 updateLaserProperties();
             }
         }
@@ -385,16 +430,17 @@ namespace EnlightenMAUI.ViewModels
         // @todo: let the user live-toggle this and update the on-screen spectrum
         public bool useRamanIntensityCorrection
         {
-            get => spec.useRamanIntensityCorrection;
+            get => spec != null ? spec.useRamanIntensityCorrection : false;
             set => spec.useRamanIntensityCorrection = value;
         }
 
         public bool useBackgroundRemoval
         {
-            get => spec.useBackgroundRemoval;
+            get => spec != null ? spec.useBackgroundRemoval : true;
             set
             {
-                spec.useBackgroundRemoval = value;
+                if (spec != null && spec.paired)
+                    spec.useBackgroundRemoval = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
             }
         }
@@ -402,20 +448,22 @@ namespace EnlightenMAUI.ViewModels
 
         public bool performMatch
         {
-            get => spec.performMatch;
+            get => spec != null ? spec.performMatch : true;
             set
             {
-                spec.performMatch = value;
+                if (spec != null && spec.paired)
+                    spec.performMatch = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
             }
         }
 
         public bool performDeconvolution
         {
-            get => spec.performDeconvolution;
+            get => spec != null ? spec.performDeconvolution : false;
             set
             {
-                spec.performDeconvolution = value;
+                if (spec != null && spec.paired)
+                    spec.performDeconvolution = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
             }
         }
@@ -553,40 +601,44 @@ namespace EnlightenMAUI.ViewModels
 
         public byte laserWatchdogTimeoutSec
         {
-            get => spec.laserWatchdogSec;
+            get => spec != null ? spec.laserWatchdogSec : (byte)0;
             set
             {
-                spec.laserWatchdogSec = value;
+                if (spec != null && spec.paired)
+                    spec.laserWatchdogSec = value;
                 Preferences.Set("laserWatchdog", value);
             }
         }
 
         public byte laserWarningDelaySec
         {
-            get => spec.laserWarningDelaySec;
+            get => spec != null ? spec.laserWarningDelaySec : (byte)0;
             set
             {
-                spec.laserWarningDelaySec = value;
+                if (spec != null && spec.paired)
+                    spec.laserWarningDelaySec = value;
                 Preferences.Set("laserWarningDelaySec", value);
             }
         }
 
         public ushort verticalROIStartLine
         {
-            get => spec.verticalROIStartLine;
+            get => spec != null ? spec.verticalROIStartLine : (ushort)0;
             set
             {
-                spec.verticalROIStartLine = value;
+                if (spec != null && spec.paired)
+                    spec.verticalROIStartLine = value;
                 Preferences.Set("verticalROIStartLine", value);
             }
         }
 
         public ushort verticalROIStopLine
         {
-            get => spec.verticalROIStopLine;
+            get => spec != null ? spec.verticalROIStopLine : (ushort)0;
             set
             {
-                spec.verticalROIStopLine = value;
+                if (spec != null && spec.paired)
+                    spec.verticalROIStopLine = value;
                 Preferences.Set("verticalROIStopLine", value);
             }
         }
