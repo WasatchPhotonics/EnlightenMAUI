@@ -39,7 +39,8 @@ namespace EnlightenMAUI.Models
 
         // software state
         public double[] wavelengths;
-        public double[] wavenumbers;
+        public double[] originalWavenumbers;
+        public double[] wavenumbers { get; set; }
         public double[] xAxisPixels;
 
         public double[] lastRaw;
@@ -858,7 +859,13 @@ namespace EnlightenMAUI.Models
             // Use code here to open file, look for peak list based on compound
             //
 
-            List<double> peaksToFind = new List<double>();
+            List<double> peaksToFind = new List<double>()
+            {
+                1001.4,
+                1031.8,
+                1602.3
+            };
+
 
             //
             // Perform peak finding here
@@ -868,18 +875,56 @@ namespace EnlightenMAUI.Models
             PeakFindingConfig pfc = new PeakFindingConfig();
             PeakFinder pf = new PeakFinder(pfc);
 
+            SortedDictionary<int, PeakInfo> peakInfos = pf.findPeaks(originalWavenumbers, spectrum.processed);
+
+
             foreach (double peak in peaksToFind)
             {
                 int pixel = getPixelFromWavenumber(peak);
-                PeakInfo info = pf.findExpectedPeak(spectrum.rawWavenumbers, spectrum.processed, (uint)pixel);
 
-                offsets.Add(peak - info.wavelength);
+                try
+                {
+                    double minDelta = double.MaxValue;
+                    PeakInfo info = null;
+                    foreach (PeakInfo pi in peakInfos.Values)
+                    {
+                        double delta = Math.Abs(peak - pi.wavelength);
+                        if (delta < minDelta)
+                        {
+                            minDelta = delta;
+                            info = pi;
+                        }
+                    }
+
+                    offsets.Add(minDelta);
+                    logger.info("found peak {0}-{1}cm-1 at pixel {2}", compoundName, peak, info.interpolatedPixel);
+
+                }
+                catch (Exception ex)
+                {
+                    logger.info("failed to find peak {0}-{1}cm-1", compoundName, peak);
+                }
             }
 
             double averageOffset = offsets.Average();
 
-
+            wavenumberOffset = averageOffset;
+            //measurement.wavenumbers = wavenumbers;
         }
+
+        public double wavenumberOffset
+        {
+            get => _wavenumberOffset;
+            set
+            {
+                _wavenumberOffset = value;
+                for (int i = 0; i < wavenumbers.Length; ++i)
+                {
+                    wavenumbers[i] = originalWavenumbers[i] + _wavenumberOffset;
+                }
+            }
+        }
+        double _wavenumberOffset = 0;
 
 
     }

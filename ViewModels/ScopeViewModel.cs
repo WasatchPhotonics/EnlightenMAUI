@@ -21,6 +21,8 @@ using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using System.Reflection.Metadata;
 using System.Text;
 using Xamarin.Google.Crypto.Tink.Signature;
+using DeconvolutionMAUI;
+using System.Security.AccessControl;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -1554,7 +1556,11 @@ public class ScopeViewModel : INotifyPropertyChanged
                 hasMatch = true;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
-
+                
+                //if (matchCompound.ToLower() == "polystyrene")
+                //{
+                    //spec.FindAndApplyRamanShiftCorrection(spec.measurement, "Polystyrene");
+                //}
 
                 AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
 

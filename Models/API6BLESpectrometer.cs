@@ -69,7 +69,9 @@ public class API6BLESpectrometer : Spectrometer
         wavelengths = new double[pixels];
         for (int i = 0; i < pixels; i++)
             wavelengths[i] = laserExcitationNM + 15 + i / 10.0;
-        wavenumbers = Util.wavelengthsToWavenumbers(laserExcitationNM, wavelengths);
+        originalWavenumbers = Util.wavelengthsToWavenumbers(laserExcitationNM, wavelengths);
+        wavenumbers = new double[originalWavenumbers.Length];
+        Array.Copy(originalWavenumbers, wavenumbers, originalWavenumbers.Length);
         generatePixelAxis();
 
         if (measurement is null)
@@ -124,9 +126,13 @@ public class API6BLESpectrometer : Spectrometer
         wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
 
         if (laserExcitationNM > 0)
-            wavenumbers = Util.wavelengthsToWavenumbers(laserExcitationNM, wavelengths);
+        {
+            originalWavenumbers = Util.wavelengthsToWavenumbers(laserExcitationNM, wavelengths);
+            wavenumbers = new double[originalWavenumbers.Length];
+            Array.Copy(originalWavenumbers, wavenumbers, originalWavenumbers.Length);
+        }
         else
-            wavenumbers = null;
+            wavenumbers = originalWavenumbers = null;
 
         logger.debug("Spectrometer.initAsync: generating pixel axis");
         generatePixelAxis();

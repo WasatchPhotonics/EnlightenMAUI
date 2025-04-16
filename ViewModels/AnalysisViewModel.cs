@@ -25,6 +25,7 @@ namespace EnlightenMAUI.ViewModels
         public event EventHandler<AnalysisViewModel> SpectraChanged;
         public delegate void ToastNotification(string msg);
         public event ToastNotification notifyToast;
+        Measurement lastMeas;
 
         Logger logger = Logger.getInstance();
         public Library library;
@@ -52,6 +53,7 @@ namespace EnlightenMAUI.ViewModels
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             saveCmd = new Command(() => { _ = doSave(); });
+            correctionCmd = new Command(() => { _ = changeCorrection(); });
 
             if (instance != null)
                 updateFromInstance();
@@ -85,6 +87,7 @@ namespace EnlightenMAUI.ViewModels
 
         public Command shareCmd { get; private set; }
         public Command saveCmd { get; private set; }
+        public Command correctionCmd { get; private set; }
 
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {
@@ -220,6 +223,8 @@ namespace EnlightenMAUI.ViewModels
             scoreString = instance.scoreString;
             _matchFound = instance.matchFound;
             spectrumCollected = instance.spectrumCollected;
+            lastMeas = instance.lastMeas;
+            matchIsPoly = instance.matchIsPoly;
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchFound)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));
@@ -294,6 +299,13 @@ namespace EnlightenMAUI.ViewModels
             refreshSpec();
         }
 
+        async Task changeCorrection()
+        {
+            if (lastMeas != null)
+                spec.FindAndApplyRamanShiftCorrection(lastMeas, "Polystyrene");
+            notifyToast?.Invoke($"Raman correction applied for future samples");
+        }
+
         async Task ShareSpectrum()
         {
             var ok = await spec.measurement.saveAsync();
@@ -339,6 +351,8 @@ namespace EnlightenMAUI.ViewModels
             bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
             double scaleFactor = 1;
+
+            lastMeas = sample;
 
             if (sample == null &&  reference == null)
             {
@@ -521,6 +535,8 @@ namespace EnlightenMAUI.ViewModels
                     if (library != null)
                     {
                         TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
+
+                        matchIsPoly = library.mostRecentCompound.ToLower() == "polystyrene";
                         matchString = ti.ToTitleCase(library.mostRecentCompound);
                         scoreString = library.mostRecentScore.ToString("f2");
                         _matchFound = true;
@@ -628,6 +644,18 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         bool _matchFound;
+
+        public bool matchIsPoly
+        {
+            get => _matchIsPoly;
+            set
+            {
+                _matchIsPoly = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchIsPoly)));
+            }
+        }
+        bool _matchIsPoly = false;
+
 
     }
 }

@@ -14,99 +14,100 @@
     </ContentPage.BindingContext>
 
     <ScrollView Margin="10, 0, 10, 0">
-        <StackLayout Orientation="Vertical" Padding="0" Spacing="0">
+        <Grid Padding="0">
+            <StackLayout Orientation="Vertical" Padding="0" Spacing="0">
 
-            <!-- Page header -->
-            <Image Source="enlighten_logo.png" WidthRequest="300"/>
+                <!-- Page header -->
+                <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <!-- ======================================================= -->
-            <!-- The all-important spectral chart                        -->
-            <!-- ======================================================= -->
+                <!-- ======================================================= -->
+                <!-- The all-important spectral chart                        -->
+                <!-- ======================================================= -->
 
-            <telerik:RadCartesianChart x:Name="chart"
+                <telerik:RadCartesianChart x:Name="chart"
                                     HorizontalOptions="FillAndExpand"
                                     HeightRequest="300"
                                     BackgroundColor="#000"
                                     Margin="0">
 
-                <!-- axes -->
-                <telerik:RadCartesianChart.HorizontalAxis>
-                    <telerik:NumericalAxis ShowLabels="False"
+                    <!-- axes -->
+                    <telerik:RadCartesianChart.HorizontalAxis>
+                        <telerik:NumericalAxis ShowLabels="False"
                                            LabelFitMode="MultiLine"
                                            LabelTextColor="Transparent"
                                            LineColor="Transparent"
                                            Minimum="{Binding xAxisMinimum}"
                                            Maximum="{Binding xAxisMaximum}" />
-                </telerik:RadCartesianChart.HorizontalAxis>
-                <telerik:RadCartesianChart.VerticalAxis>
-                    <telerik:NumericalAxis ShowLabels="False"
+                    </telerik:RadCartesianChart.HorizontalAxis>
+                    <telerik:RadCartesianChart.VerticalAxis>
+                        <telerik:NumericalAxis ShowLabels="False"
                                            LabelFitMode="MultiLine"
                                            RangeExtendDirection="Positive"
                                            LineColor="Transparent"
                                            LabelTextColor="Transparent"/>
-                </telerik:RadCartesianChart.VerticalAxis>
+                    </telerik:RadCartesianChart.VerticalAxis>
 
-                <!-- series data -->
-                <telerik:RadCartesianChart.Series>
-                    <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
-                    <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#af4363d8" DisplayName="Sample" x:DataType="local:ViewModels.AnalysisViewModel" ItemsSource="{Binding chartData}" />
-                    <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#afffe119" DisplayName="Reference" x:DataType="local:ViewModels.AnalysisViewModel" ItemsSource="{Binding referenceData}" />
-                </telerik:RadCartesianChart.Series>
+                    <!-- series data -->
+                    <telerik:RadCartesianChart.Series>
+                        <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
+                        <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#af4363d8" DisplayName="Sample" x:DataType="local:ViewModels.AnalysisViewModel" ItemsSource="{Binding chartData}" />
+                        <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#afffe119" DisplayName="Reference" x:DataType="local:ViewModels.AnalysisViewModel" ItemsSource="{Binding referenceData}" />
+                    </telerik:RadCartesianChart.Series>
 
-                <!-- pan and zoom -->
-                <telerik:RadCartesianChart.ChartBehaviors>
-                    <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
+                    <!-- pan and zoom -->
+                    <telerik:RadCartesianChart.ChartBehaviors>
+                        <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
                                                      PanMode="Both" 
                                                      HandleDoubleTap="True"/>
-                    <telerik:ChartTooltipBehavior TriggerMode="Tap" />
-                </telerik:RadCartesianChart.ChartBehaviors>
-            </telerik:RadCartesianChart>
+                        <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                    </telerik:RadCartesianChart.ChartBehaviors>
+                </telerik:RadCartesianChart>
 
-            <StackLayout HorizontalOptions="Center" Orientation="Horizontal" Margin="10,2,10,2">
+                <StackLayout HorizontalOptions="Center" Orientation="Horizontal" Margin="10,2,10,2">
 
-                <Border BackgroundColor="#4363d8" Stroke="Transparent" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
-                <Label Text="Sample" Margin="2,0,15,0" FontSize="12"/>
+                    <Border BackgroundColor="#4363d8" Stroke="Transparent" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
+                    <Label Text="Sample" Margin="2,0,15,0" FontSize="12"/>
 
-                <Border BackgroundColor="#ffe119" Stroke="Transparent" IsVisible="{Binding matchFound}" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
-                <Label Text="Reference" IsVisible="{Binding matchFound}" Margin="2,0,5,0" FontSize="12"/>
+                    <Border BackgroundColor="#ffe119" Stroke="Transparent" IsVisible="{Binding matchFound}" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
+                    <Label Text="Reference" IsVisible="{Binding matchFound}" Margin="2,0,5,0" FontSize="12"/>
 
 
-            </StackLayout>
-             
-            
-            <Label HorizontalOptions="Center" IsVisible="{Binding noMatchYet}" Text="{Binding matchString}" FontSize="24" />
+                </StackLayout>
 
-            <VerticalStackLayout IsVisible="{Binding matchFound}" Margin="10,10,10,0" HorizontalOptions="Center">
 
-                <HorizontalStackLayout HorizontalOptions="FillAndExpand">
-                    <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                        <Label Text="Compound" HorizontalOptions="End" FontSize="16" />
-                    </Border>
-                    <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                        <Label Text="{Binding matchString}" HorizontalOptions="Start" FontSize="16" />
-                    </Border>
-                </HorizontalStackLayout>
+                <Label HorizontalOptions="Center" IsVisible="{Binding noMatchYet}" Text="{Binding matchString}" FontSize="24" />
 
-                <HorizontalStackLayout HorizontalOptions="FillAndExpand">
-                    <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                        <Label Text="Score" HorizontalOptions="End" FontSize="16"/>
-                    </Border>
-                    <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                        <Label Text="{Binding scoreString}" HorizontalOptions="Start" FontSize="16"/>
-                    </Border>
-                </HorizontalStackLayout>
-                
-            </VerticalStackLayout>
+                <VerticalStackLayout IsVisible="{Binding matchFound}" Margin="10,10,10,0" HorizontalOptions="Center">
 
-            <StackLayout IsVisible="{Binding spectrumCollected}" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
-                <Button Margin="2" 
+                    <HorizontalStackLayout HorizontalOptions="FillAndExpand">
+                        <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
+                            <Label Text="Compound" HorizontalOptions="End" FontSize="16" />
+                        </Border>
+                        <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
+                            <Label Text="{Binding matchString}" HorizontalOptions="Start" FontSize="16" />
+                        </Border>
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout HorizontalOptions="FillAndExpand">
+                        <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
+                            <Label Text="Score" HorizontalOptions="End" FontSize="16"/>
+                        </Border>
+                        <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
+                            <Label Text="{Binding scoreString}" HorizontalOptions="Start" FontSize="16"/>
+                        </Border>
+                    </HorizontalStackLayout>
+
+                </VerticalStackLayout>
+
+                <StackLayout IsVisible="{Binding spectrumCollected}" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
+                    <Button Margin="2" 
                         CornerRadius="10"
                         WidthRequest="150"
                         HeightRequest="50"
                         Text="Share"
                         Command="{Binding shareCmd}"
                         BackgroundColor="#515151"/>
-                <Button Margin="2" 
+                    <Button Margin="2" 
                         CornerRadius="10"
                         WidthRequest="150"
                         HeightRequest="50"
@@ -114,17 +115,21 @@
                         Command="{Binding saveCmd}"
                         BackgroundColor="#515151"/>
 
+                </StackLayout>
+
+                <Button Margin="10" IsVisible="{Binding matchIsPoly}" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Start" Text="Correct Wavenumbers to Standard" Command="{Binding correctionCmd}"/>
+
+
+
             </StackLayout>
 
-            <StackLayout Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
+            <StackLayout VerticalOptions="End" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
 
                 <Label  VerticalOptions="Center"  Text="Faster Optimize" FontSize="16" TextColor="#eee" />
                 <Switch VerticalOptions="Center" HorizontalOptions="EndAndExpand" IsEnabled="True" IsToggled="{Binding fastMode}" />
 
             </StackLayout>
-
-
-        </StackLayout>
+        </Grid>
     </ScrollView>
     
 </ContentPage>

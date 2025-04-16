@@ -58,7 +58,7 @@ namespace EnlightenMAUI.Models
         /// in the SnappedPeak, and therefore all we need support is measurement-
         /// to-measurement drift due to temperature.
         /// </remarks>
-        public uint peakSearchHalfWidth { get; set; } = 5;
+        public uint peakSearchHalfWidth { get; set; } = 3;
 
         /// <summary>
         /// A slightly odd parameter, used when enumerating "all peaks." Essentially
@@ -80,7 +80,7 @@ namespace EnlightenMAUI.Models
         /// separate them sometime in the future.
         /// 
         /// </summary>
-        public uint minIndicesBetweenPeaks { get; set; } = 5;
+        public uint minIndicesBetweenPeaks { get; set; } = 3;
 
         /// <summary>
         /// This is used by SnappedPeaks when associating PeakFinder xCoord
@@ -130,7 +130,7 @@ namespace EnlightenMAUI.Models
         /// search for minima, using the values provided. This is typically used for especially
         /// broad/complex raman peaks where throughput is of interest (e.g. aluminum, polystyrene)
         /// </summary>
-        public bool useBaselineSubtraction { get; set; } = true;
+        public bool useBaselineSubtraction { get; set; } = false;
         public uint? baselineHalfWidth { get; set; } = 25;
         public uint? leftBaselineWidth { get; set; }
         public uint? rightBaselineWidth { get; set; }
