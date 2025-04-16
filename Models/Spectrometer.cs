@@ -1,4 +1,5 @@
-﻿using EnlightenMAUI.Common;
+﻿using Accord;
+using EnlightenMAUI.Common;
 using EnlightenMAUI.ViewModels;
 using Plugin.BLE.Abstractions.Contracts;
 using System;
@@ -833,5 +834,53 @@ namespace EnlightenMAUI.Models
                 spectrum[i] *= factor;
             }
         }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Raman Wavenumber Correction (ASTM 1840-96 Calibration)
+        ////////////////////////////////////////////////////////////////////////
+
+        public int getPixelFromWavenumber(double cm)
+        {
+            if (wavenumbers == null)
+                return -1;
+            int pixel = Array.BinarySearch(wavenumbers, cm);
+            if (pixel < 0)
+                return ~pixel;
+            else if (pixel >= wavenumbers.Length)
+                return wavenumbers.Length - 1;
+            else
+                return pixel;
+        }
+
+        public void FindAndApplyRamanShiftCorrection(Measurement spectrum, string compoundName)
+        {
+            //
+            // Use code here to open file, look for peak list based on compound
+            //
+
+            List<double> peaksToFind = new List<double>();
+
+            //
+            // Perform peak finding here
+            //
+
+            List<double> offsets = new List<double>();
+            PeakFindingConfig pfc = new PeakFindingConfig();
+            PeakFinder pf = new PeakFinder(pfc);
+
+            foreach (double peak in peaksToFind)
+            {
+                int pixel = getPixelFromWavenumber(peak);
+                PeakInfo info = pf.findExpectedPeak(spectrum.rawWavenumbers, spectrum.processed, (uint)pixel);
+
+                offsets.Add(peak - info.wavelength);
+            }
+
+            double averageOffset = offsets.Average();
+
+
+        }
+
+
     }
 }

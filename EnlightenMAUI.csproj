@@ -121,6 +121,8 @@
 		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.1" />
 		<PackageReference Include="Microsoft.ML.OnnxTransformer" Version="3.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Numpy" Version="3.11.1.35" />
+		<PackageReference Include="NumSharp" Version="0.30.0" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
 	</ItemGroup>
