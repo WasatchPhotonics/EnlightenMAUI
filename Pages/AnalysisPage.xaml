@@ -134,6 +134,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <Label Grid.Row="0" VerticalOptions="Center" Margin="5" Grid.Column="0" Text="Library" TextColor="#eee" />
@@ -155,11 +156,13 @@
                     Grid.Column="1" 
                     Text="Select"
                     WidthRequest="100"/>
+
+                    <Button WidthRequest="100" Command="{Binding retryCmd}"  VerticalOptions="CenterAndExpand" Grid.Column="2" Grid.RowSpan="2" Text="Re-Analyze" HorizontalOptions="Center" Margin="5"/>
+
                 </Grid>
             </StackLayout>
 
-            <Button WidthRequest="200" Text="Re-Analyze" HorizontalOptions="Center" Margin="5"/>
-
+            
             <StackLayout IsVisible="False" VerticalOptions="End" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
 
                 <Label  VerticalOptions="Center"  Text="Faster Optimize" FontSize="16" TextColor="#eee" />

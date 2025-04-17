@@ -35,7 +35,19 @@ public class Settings : INotifyPropertyChanged
     public bool saveWavenumber { get; set;} = true;
     public bool saveRaw { get; set;} = true;
     public bool saveDark { get; set;} = true;
+    public bool autoSave { get; set;} = true;
     public bool saveReference { get; set;} = true;
+    public float matchThreshold
+    {
+        get => _matchThreshold;
+        set
+        {
+            _matchThreshold = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
+        }
+    }
+    float _matchThreshold = 0.6f;
+
     public Spectrometer spec = BluetoothSpectrometer.getInstance();
 
     // todo: prompt to auto-connect this device if found on scan

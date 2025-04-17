@@ -55,7 +55,9 @@ namespace EnlightenMAUI.ViewModels
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             saveCmd = new Command(() => { _ = doSave(); });
+            addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
+            retryCmd = new Command(() => { _ = triggerReanalyze(); });
 
             if (instance != null)
                 updateFromInstance();
@@ -90,6 +92,8 @@ namespace EnlightenMAUI.ViewModels
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             addCmd = new Command(() => { _ = doAdd(); });
+            correctionCmd = new Command(() => { _ = changeCorrection(); });
+            retryCmd = new Command(() => { _ = triggerReanalyze(); });
 
             SetData(null, null);
 
@@ -105,6 +109,13 @@ namespace EnlightenMAUI.ViewModels
         public Command addCmd { get; private set; }
         public Command saveCmd { get; private set; }
         public Command correctionCmd { get; private set; }
+        public Command retryCmd { get; private set; }
+
+        bool triggerReanalyze()
+        {
+            TriggerRetry?.Invoke(this, this);
+            return true;
+        }
 
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {

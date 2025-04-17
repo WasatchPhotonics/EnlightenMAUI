@@ -203,9 +203,62 @@ public class ScopeViewModel : INotifyPropertyChanged
         AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
     }
 
-    private void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
+    private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
     {
-        throw new NotImplementedException();
+        logger.info("testing re-analyze trigger");
+        await Task.Delay(50);
+        await Shell.Current.GoToAsync("//ScopePage");
+        spec.measurement.libraryUsed = settings.libraryLabel;
+
+        waitingForMatch = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
+        var result = await library.findMatch(spec.measurement);
+
+        acquisitionProgress = 0;
+
+        if (result != null)
+        {
+            logger.info("returned from library match function with result {0}", result);
+
+            if (result.Item2 >= settings.matchThreshold)
+            {
+                matchCompound = result.Item1;
+                matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
+                spec.measurement.declaredMatch = new string[] { result.Item1 };
+                spec.measurement.declaredScore = result.Item2;
+                hasMatch = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+
+                //if (matchCompound.ToLower() == "polystyrene")
+                //{
+                //}
+
+                AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
+
+
+                //if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
+                //displayMatch = true;
+            }
+            else
+            {
+                AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+            }
+
+            await Task.Delay(50);
+            await Shell.Current.GoToAsync("//AnalysisPage");
+
+        }
+        else
+        {
+            hasMatch = false;
+            AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+            await Shell.Current.GoToAsync("//AnalysisPage");
+        }
+
     }
 
     private void Settings_LibraryChanged(object sender, Settings e)
@@ -1042,6 +1095,9 @@ public class ScopeViewModel : INotifyPropertyChanged
             runPSCorrection = false;
         }
 
+        if (settings.autoSave)
+            await spec.measurement.saveAsync();
+
         if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
         else
@@ -1583,7 +1639,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     string matchCompound = "";
     public string deconResult {get; private set;}
 
-    public const double MATCH_THRESHOLD = 0.6;
 
     async Task<bool> doMatchAsync()
     {
@@ -1595,11 +1650,13 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
         var result = await library.findMatch(spec.measurement);
 
+        acquisitionProgress = 0;
+
         if (result != null)
         {
             logger.info("returned from library match function with result {0}", result);
 
-            if (result.Item2 >= MATCH_THRESHOLD)
+            if (result.Item2 >= settings.matchThreshold)
             {
                 matchCompound = result.Item1;
                 matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
@@ -1623,8 +1680,12 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
                 {
+                    waitingForMatch = false;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
                     notifyToast?.Invoke("Retrying with through barrier settings");
                     AnalysisViewModel.getInstance().currentParamSet = "Default";
+                    await Task.Delay(200);
                     await doAcquireAsync();
                     AnalysisViewModel.getInstance().currentParamSet = "Faster";
                     return true;

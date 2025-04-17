@@ -246,6 +246,7 @@ namespace EnlightenMAUI.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveRaw)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveDark)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveReference)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoSave)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
         }
 
@@ -391,6 +392,16 @@ namespace EnlightenMAUI.ViewModels
             }
         }
 
+        public decimal matchThreshold
+        {
+            get => (decimal)settings.matchThreshold;
+            set
+            {
+                settings.matchThreshold = (float)value;
+                Preferences.Set("matchThreshold", (float)value);
+            }
+        }
+
         public void updateLaserProperties()
         {
             logger.debug("SVM.updateLaserProperties: start");
@@ -457,6 +468,16 @@ namespace EnlightenMAUI.ViewModels
             {
                 settings.saveReference = value;
                 Preferences.Set("saveReference", value);
+            }
+        }
+        
+        public bool autoSave
+        {
+            get => settings.autoSave;
+            set
+            {
+                settings.autoSave = value;
+                Preferences.Set("autoSave", value);
             }
         }
 

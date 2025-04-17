@@ -641,6 +641,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Integration Time, {0}", spec.integrationTimeMS);
         sw.WriteLine("Detector Gain, {0}", spec.gainDb);
         sw.WriteLine("Scan Averaging, {0}", spec.scansToAverage);
+        sw.WriteLine("Wavenumber Offset, {0}", spec.wavenumberOffset);
         sw.WriteLine("Laser Enable, {0}", spec.laserEnabled || spec.autoDarkEnabled);
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
         sw.WriteLine("Timestamp, {0}", timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff"));

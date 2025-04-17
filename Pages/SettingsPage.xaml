@@ -132,6 +132,8 @@
                                 <!-- Perform Match              -->
                                 <RowDefinition Height="Auto"/>
                                 <!-- Perform Deconvolution      -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Match Threshold      -->
                             </Grid.RowDefinitions>
 
                             <Grid.ColumnDefinitions>
@@ -168,6 +170,26 @@
 
                             <Switch Grid.Row="7" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performDeconvolution}" />
                             <Label Grid.Row="7" VerticalOptions="Center" Grid.Column="0" Text="Deconvolution Matching" TextColor="#eee" />
+
+                            <Label Text="Match Threshold" TextColor="#eee" VerticalTextAlignment="Center"/>
+                            <telerik:RadNumericInput x:Name="matchThresh" 
+                                                     Value="{Binding matchThreshold}" 
+                                                     IsEnabled="{Binding advancedModeEnabled}"
+                                                     StringFormat="{}{0:f2}"
+                                                     Minimum="0" Maximum="1" Step="0.1"
+                                                     HorizontalOptions="End">      
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+
                         </Grid>
                     </StackLayout>
 
@@ -208,6 +230,12 @@
                     <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
                         <Label  Text="Save Reference" TextColor="#ccc" VerticalTextAlignment="Center"/>
                         <Switch IsToggled="{Binding saveReference}" HorizontalOptions="EndAndExpand" />
+                    </StackLayout>
+                    
+                    <!-- Auto Save Spectra -->
+                    <StackLayout Orientation="Horizontal" Margin="30, 0, 0, 0">
+                        <Label  Text="Auto Save Spectra" TextColor="#ccc" VerticalTextAlignment="Center"/>
+                        <Switch IsToggled="{Binding autoSave}" HorizontalOptions="EndAndExpand" />
                     </StackLayout>
 
                     <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="10">
