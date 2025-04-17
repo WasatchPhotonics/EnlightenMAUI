@@ -194,8 +194,13 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
         settings.LibraryChanged += Settings_LibraryChanged;
+        AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
     }
 
+    private void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
+    {
+        throw new NotImplementedException();
+    }
 
     private void Settings_LibraryChanged(object sender, Settings e)
     {
@@ -1570,7 +1575,15 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
             else
             {
-                AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+                if (settings.autoRetry)
+                {
+                    AnalysisViewModel.getInstance().currentParamSet = "Default";
+                    await doAcquireAsync();
+                    AnalysisViewModel.getInstance().currentParamSet = "Faster";
+                    return true;
+                }
+                else
+                    AnalysisViewModel.getInstance().SetData(spec.measurement, null);
             }
 
             await Shell.Current.GoToAsync("//AnalysisPage");

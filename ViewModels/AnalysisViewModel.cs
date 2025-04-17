@@ -23,6 +23,7 @@ namespace EnlightenMAUI.ViewModels
         Settings settings = Settings.getInstance();
         public event PropertyChangedEventHandler PropertyChanged;
         public event EventHandler<AnalysisViewModel> SpectraChanged;
+        public event EventHandler<AnalysisViewModel> TriggerRetry;
         public delegate void ToastNotification(string msg);
         public event ToastNotification notifyToast;
         Measurement lastMeas;
@@ -228,6 +229,12 @@ namespace EnlightenMAUI.ViewModels
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchFound)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));
+
+            TriggerRetry = null;
+            foreach (var listener in instance.TriggerRetry.GetInvocationList())
+            {
+                TriggerRetry += (System.EventHandler<AnalysisViewModel>)listener;
+            }
 
             chartData.Clear();
             foreach (ChartDataPoint point in instance.chartData)

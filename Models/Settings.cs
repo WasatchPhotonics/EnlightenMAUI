@@ -154,6 +154,17 @@ public class Settings : INotifyPropertyChanged
 
     public string libraryLabel = "Wasatch";
 
+    public bool autoRetry
+    {
+        get { return autoRetry; }
+        set
+        {
+            _autoRetry = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRetry)));
+        }
+    }
+    bool _autoRetry = false;
+
 
     public string getSavePath()
     {
