@@ -14,7 +14,7 @@
     </ContentPage.BindingContext>
 
     <ScrollView Margin="10, 0, 10, 0">
-        <Grid Padding="0">
+        <StackLayout Orientation="Vertical" Padding="0">
             <StackLayout Orientation="Vertical" Padding="0" Spacing="0">
 
                 <!-- Page header -->
@@ -117,19 +117,56 @@
 
                 </StackLayout>
 
-                <Button Margin="10" IsVisible="{Binding matchIsPoly}" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Start" Text="Correct Wavenumbers to Standard" Command="{Binding correctionCmd}"/>
+                <Button Margin="10" IsVisible="False" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Start" Text="Correct Wavenumbers to Standard" Command="{Binding correctionCmd}"/>
 
 
 
             </StackLayout>
 
-            <StackLayout VerticalOptions="End" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
+            <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+
+                <Grid HorizontalOptions="Center" VerticalOptions="Start">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Row="0" VerticalOptions="Center" Margin="5" Grid.Column="0" Text="Library" TextColor="#eee" />
+                    <Picker Grid.Row="0" 
+                            Margin="5" 
+                            VerticalOptions="Center" 
+                            HorizontalOptions="FillAndExpand"
+                            Grid.Column="1" 
+                            ItemsSource="{Binding Path=compLibrary}"
+                            SelectedItem="{Binding Path=currentLibrary}"/>
+
+                    <Label Grid.Row="1" Margin="5"  IsVisible="{Binding subLibrariesAvailable}" VerticalOptions="Center" Grid.Column="0" Text="Sublibraries" TextColor="#eee" />
+                            <Button Grid.Row="1" 
+                                    Margin="5" 
+                    IsVisible="{Binding subLibrariesAvailable}"
+                    Command="{Binding addCmd}"
+                    VerticalOptions="Center" 
+                    HorizontalOptions="FillAndExpand"
+                    Grid.Column="1" 
+                    Text="Select"
+                    WidthRequest="100"/>
+                </Grid>
+            </StackLayout>
+
+            <Button WidthRequest="200" Text="Re-Analyze" HorizontalOptions="Center" Margin="5"/>
+
+            <StackLayout IsVisible="False" VerticalOptions="End" Orientation="Horizontal" Margin="10" HorizontalOptions="Center">
 
                 <Label  VerticalOptions="Center"  Text="Faster Optimize" FontSize="16" TextColor="#eee" />
                 <Switch VerticalOptions="Center" HorizontalOptions="EndAndExpand" IsEnabled="True" IsToggled="{Binding fastMode}" />
 
             </StackLayout>
-        </Grid>
+        </StackLayout>
     </ScrollView>
     
 </ContentPage>

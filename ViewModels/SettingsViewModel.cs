@@ -35,7 +35,6 @@ namespace EnlightenMAUI.ViewModels
         Settings settings = Settings.getInstance();
 
         Spectrometer spec = BluetoothSpectrometer.getInstance();
-        SelectionPopupViewModel sublibraryViewModel = new SelectionPopupViewModel();
         Logger logger = Logger.getInstance();
 
         Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
@@ -108,17 +107,6 @@ namespace EnlightenMAUI.ViewModels
         }
         string _currentParamSet = "Faster";
 
-        public ObservableCollection<string> library
-        {
-            get => _library;
-        }
-
-        static ObservableCollection<string> _library = new ObservableCollection<string>()
-        {
-            "Wasatch",
-            "3rd Party"
-        };
-
         public bool fastMode
         {
             get => _fastMode;
@@ -136,21 +124,6 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         bool _fastMode = true;
-
-        public string currentLibrary
-        {
-            get { return _currentLibrary; }
-            set
-            {
-                if (value != _currentLibrary)
-                {
-                    changeLibrary(value);
-                    _currentLibrary = value;
-                }
-            }
-
-        }
-        string _currentLibrary = "Wasatch";
 
         public string enteredPassword
         {
@@ -214,11 +187,6 @@ namespace EnlightenMAUI.ViewModels
             }
             }
 
-        void changeLibrary(string key)
-        { 
-            settings.setLibrary(key);
-        }
-
         public SettingsViewModel()
         {
             laserWatchdogTimeoutSec = 0;
@@ -231,19 +199,6 @@ namespace EnlightenMAUI.ViewModels
 
             Spectrometer.NewConnection += handleNewSpectrometer;
 
-            if (settings.library is DPLibrary)
-            {
-                _currentLibrary = "3rd Party";
-                foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
-                {
-                    sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
-                }
-            }
-            else if (settings.library is WPLibrary)
-                _currentLibrary = "Wasatch";
-
-            addCmd = new Command(() => { _ = doAdd(); });
-            settings.LibraryChanged += Settings_LibraryChanged;
         }
 
         void handleNewSpectrometer(object sender, Spectrometer e)
@@ -264,39 +219,8 @@ namespace EnlightenMAUI.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
 
-            if (settings.library is DPLibrary)
-            {
-                _currentLibrary = "3rd Party";
-                foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
-                {
-                    sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
-                }
-            }
-            else if (settings.library is WPLibrary)
-                _currentLibrary = "Wasatch";
         }
 
-        private void Settings_LibraryChanged(object sender, Settings e)
-        {
-            if (settings.library is DPLibrary)
-            {
-                if ((settings.library as DPLibrary).isLoading)
-                {
-                    while (((settings.library as DPLibrary).isLoading))
-                        Thread.Sleep(50);
-                }
-
-                logger.info("switching to DP library with {0} sublibraries", (settings.library as DPLibrary).LibraryOptions.Count);
-                if (sublibraryViewModel.selections.Count == 0)
-                {
-                    foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
-                    {
-                        sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
-                    }
-                }
-            }
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(subLibrariesAvailable)));
-        }
 
         public void loadSettings()
         {
@@ -325,7 +249,6 @@ namespace EnlightenMAUI.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
         }
 
-        public Command addCmd { get; private set; }
 
         public string title
         {
@@ -465,35 +388,6 @@ namespace EnlightenMAUI.ViewModels
                 if (spec != null && spec.paired)
                     spec.performDeconvolution = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
-            }
-        }
-
-        public bool subLibrariesAvailable
-        {
-            get => settings.library is DPLibrary;
-        }
-
-        bool doAdd()
-        {
-            OverlaysPopup op = new OverlaysPopup(sublibraryViewModel);
-            op.Closed += Op_Closed; ;
-            Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
-
-            return true;
-        }
-
-        private void Op_Closed(object sender, CommunityToolkit.Maui.Core.PopupClosedEventArgs e)
-        {
-            Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
-
-            foreach (SelectionMetadata omd in sublibraryViewModel.selections)
-            {
-                activeLibraries.Add(omd.name, omd.selected);
-            }
-
-            if (settings.library is DPLibrary)
-            {
-                (settings.library as DPLibrary).setFilter(activeLibraries);
             }
         }
 

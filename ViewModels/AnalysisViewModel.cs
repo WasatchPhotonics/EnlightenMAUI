@@ -27,6 +27,7 @@ namespace EnlightenMAUI.ViewModels
         public delegate void ToastNotification(string msg);
         public event ToastNotification notifyToast;
         Measurement lastMeas;
+        SelectionPopupViewModel sublibraryViewModel = new SelectionPopupViewModel();
 
         Logger logger = Logger.getInstance();
         public Library library;
@@ -61,6 +62,19 @@ namespace EnlightenMAUI.ViewModels
             else
                 SetData(null, null);
 
+            if (settings.library is DPLibrary)
+            {
+                _currentLibrary = "3rd Party";
+                foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
+                {
+                    sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
+                }
+            }
+            else if (settings.library is WPLibrary)
+                _currentLibrary = "Wasatch";
+
+
+            settings.LibraryChanged += Settings_LibraryChanged;
             Spectrometer.NewConnection += handleNewSpectrometer;
             getInstance().PropertyChanged += AnalysisViewModel_PropertyChanged;
             getInstance().SpectraChanged += AnalysisViewModel_SpectraChanged;
@@ -75,6 +89,7 @@ namespace EnlightenMAUI.ViewModels
                 spec = USBSpectrometer.getInstance();
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
+            addCmd = new Command(() => { _ = doAdd(); });
 
             SetData(null, null);
 
@@ -87,6 +102,7 @@ namespace EnlightenMAUI.ViewModels
         }
 
         public Command shareCmd { get; private set; }
+        public Command addCmd { get; private set; }
         public Command saveCmd { get; private set; }
         public Command correctionCmd { get; private set; }
 
@@ -150,6 +166,59 @@ namespace EnlightenMAUI.ViewModels
             "Default",
             "Faster"
         };
+
+        public ObservableCollection<string> compLibrary
+        {
+            get => _compLibrary;
+        }
+
+        static ObservableCollection<string> _compLibrary = new ObservableCollection<string>()
+        {
+            "Wasatch",
+            "3rd Party"
+        };
+
+        public string currentLibrary
+        {
+            get { return _currentLibrary; }
+            set
+            {
+                if (value != _currentLibrary)
+                {
+                    changeLibrary(value);
+                    _currentLibrary = value;
+                }
+            }
+
+        }
+        string _currentLibrary = "Wasatch";
+
+        void changeLibrary(string key)
+        {
+            settings.setLibrary(key);
+        }
+
+        private void Settings_LibraryChanged(object sender, Settings e)
+        {
+            if (settings.library is DPLibrary)
+            {
+                if ((settings.library as DPLibrary).isLoading)
+                {
+                    while (((settings.library as DPLibrary).isLoading))
+                        Thread.Sleep(50);
+                }
+
+                logger.info("switching to DP library with {0} sublibraries", (settings.library as DPLibrary).LibraryOptions.Count);
+                if (sublibraryViewModel.selections.Count == 0)
+                {
+                    foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
+                    {
+                        sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
+                    }
+                }
+            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(subLibrariesAvailable)));
+        }
 
         public bool fastMode
         {
@@ -304,6 +373,16 @@ namespace EnlightenMAUI.ViewModels
         void handleNewSpectrometer(object sender, Spectrometer e)
         {
             refreshSpec();
+            if (settings.library is DPLibrary)
+            {
+                _currentLibrary = "3rd Party";
+                foreach (var pair in (settings.library as DPLibrary).LibraryOptions)
+                {
+                    sublibraryViewModel.selections.Add(new SelectionMetadata(pair.Item1, pair.Item2));
+                }
+            }
+            else if (settings.library is WPLibrary)
+                _currentLibrary = "Wasatch";
         }
 
         async Task changeCorrection()
@@ -662,6 +741,35 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         bool _matchIsPoly = false;
+
+        public bool subLibrariesAvailable
+        {
+            get => settings.library is DPLibrary;
+        }
+
+        bool doAdd()
+        {
+            OverlaysPopup op = new OverlaysPopup(sublibraryViewModel);
+            op.Closed += Op_Closed; ;
+            Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
+
+            return true;
+        }
+
+        private void Op_Closed(object sender, CommunityToolkit.Maui.Core.PopupClosedEventArgs e)
+        {
+            Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
+
+            foreach (SelectionMetadata omd in sublibraryViewModel.selections)
+            {
+                activeLibraries.Add(omd.name, omd.selected);
+            }
+
+            if (settings.library is DPLibrary)
+            {
+                (settings.library as DPLibrary).setFilter(activeLibraries);
+            }
+        }
 
 
     }

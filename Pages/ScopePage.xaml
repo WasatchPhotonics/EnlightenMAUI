@@ -179,6 +179,11 @@
                     Grid.Column="0" 
                     Margin="10, 0, 10, 0">
 
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -249,11 +254,15 @@
                             WidthRequest="70"/>
                 </Border>
 
+                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
+                <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="0"/>
+                <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="2"/>
 
                 <StackLayout Margin="0,0,10,5"
                              Grid.Column="2"
                              Orientation="Horizontal"
                              HorizontalOptions="Start"
+                             IsVisible="{Binding laserArmed}"
                              Spacing="5">
 
                     <StackLayout Orientation="Vertical" Padding="0,20,0,0" VerticalOptions="Start">

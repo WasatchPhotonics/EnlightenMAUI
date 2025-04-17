@@ -85,6 +85,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     public delegate void UserNotification(string title, string message, string button);
     public event UserNotification notifyUser;
 
+    bool runPSCorrection = false;
+
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle
     ////////////////////////////////////////////////////////////////////////
@@ -131,6 +133,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         uploadCmd = new Command(() => { _ = doUpload(); });
         addCmd = new Command(() => { _ = doAdd(); });
         clearCmd = new Command(() => { _ = doClear(); });
+
+        confirmPSCmd = new Command(() => { _ = confirmPS(); });
+        denyPSCmd = new Command(() => { _ = denyPS(); });
+
         //matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
         xAxisNames = new ObservableCollection<string>();
@@ -254,6 +260,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         uploadCmd = new Command(() => { _ = doUpload(); });
         addCmd = new Command(() => { _ = doAdd(); });
         clearCmd = new Command(() => { _ = doClear(); });
+
+        confirmPSCmd = new Command(() => { _ = confirmPS(); });
+        denyPSCmd = new Command(() => { _ = denyPS(); });
 
         if (spec != null && spec.paired)
         {
@@ -609,7 +618,8 @@ public class ScopeViewModel : INotifyPropertyChanged
                 break;
             case 3: 
                 laserWarningStep = 4;
-                laserArmed = true;
+                polyCorrectionStep = true;
+                //laserArmed = true;
                 laserWarningText = "WARNING: Laser Armed";
                 break;
             case 4:
@@ -637,6 +647,37 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
     string _laserWarningText = "Acknowledge to Arm Class 3B Laser";
+
+    public Command confirmPSCmd { get; private set; }
+    public Command denyPSCmd { get; private set; }
+
+    bool confirmPS()
+    {
+        runPSCorrection = true;
+        polyCorrectionStep = false;
+        laserArmed = true;
+        notifyToast?.Invoke("When PS sample ready, press capture button  to perform correction");
+        return true;
+    }
+    
+    bool denyPS()
+    {
+        runPSCorrection = false;
+        polyCorrectionStep = false;
+        laserArmed = true;
+        return true;
+    }
+
+    public bool polyCorrectionStep
+    {
+        get => _polyCorrectionStep;
+        set
+        {
+            _polyCorrectionStep = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(polyCorrectionStep)));
+        }
+    }
+    bool _polyCorrectionStep = false;
 
     public bool laserArmIncomplete
     {
@@ -994,6 +1035,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         isRefreshing = false;
 
         updateLaserProperties();
+
+        if (runPSCorrection)
+        {
+            spec.FindAndApplyRamanShiftCorrection(spec.measurement, "Polystyrene");
+            runPSCorrection = false;
+        }
 
         if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
@@ -1564,7 +1611,6 @@ public class ScopeViewModel : INotifyPropertyChanged
                 
                 //if (matchCompound.ToLower() == "polystyrene")
                 //{
-                    //spec.FindAndApplyRamanShiftCorrection(spec.measurement, "Polystyrene");
                 //}
 
                 AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
@@ -1575,8 +1621,9 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
             else
             {
-                if (settings.autoRetry)
+                if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
                 {
+                    notifyToast?.Invoke("Retrying with through barrier settings");
                     AnalysisViewModel.getInstance().currentParamSet = "Default";
                     await doAcquireAsync();
                     AnalysisViewModel.getInstance().currentParamSet = "Faster";

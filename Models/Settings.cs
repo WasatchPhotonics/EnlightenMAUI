@@ -156,14 +156,14 @@ public class Settings : INotifyPropertyChanged
 
     public bool autoRetry
     {
-        get { return autoRetry; }
+        get { return _autoRetry; }
         set
         {
             _autoRetry = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRetry)));
         }
     }
-    bool _autoRetry = false;
+    bool _autoRetry = true;
 
 
     public string getSavePath()

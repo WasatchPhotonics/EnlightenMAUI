@@ -109,39 +109,7 @@
 
                     </StackLayout>
 
-                    <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
-
-                        <Label Text="Library Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
-                        <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Label Grid.Row="0" VerticalOptions="Center" Grid.Column="0" Text="Library" TextColor="#eee" />
-                            <Picker Grid.Row="0" 
-                                VerticalOptions="Center" 
-                                HorizontalOptions="FillAndExpand"
-                                Grid.Column="1" 
-                                ItemsSource="{Binding Path=library}"
-                                SelectedItem="{Binding Path=currentLibrary}"/>
-
-                            <Label Grid.Row="1" IsVisible="{Binding subLibrariesAvailable}" VerticalOptions="Center" Grid.Column="0" Text="Sublibraries" TextColor="#eee" />
-                            <Button Grid.Row="1" 
-                                IsVisible="{Binding subLibrariesAvailable}"
-                                Command="{Binding addCmd}"
-                                VerticalOptions="Center" 
-                                HorizontalOptions="FillAndExpand"
-                                Grid.Column="1" 
-                                Text="Select"
-                                WidthRequest="100"/>
-                        </Grid>
-                    </StackLayout>
+                    
 
                     <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
