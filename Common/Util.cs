@@ -31,20 +31,26 @@ public static class StorageHelper
 
     public static async Task<bool> GetManageAllFilesPermission()
     {
-        try
+        if (!Android.OS.Environment.IsExternalStorageManager)
         {
-            Android.Net.Uri uri = Android.Net.Uri.Parse("package:" + Platform.CurrentActivity.ApplicationInfo.PackageName);
+            try
+            {
+                Android.Net.Uri uri = Android.Net.Uri.Parse("package:" + Platform.CurrentActivity.ApplicationInfo.PackageName);
 
-            GetPermissionTask = new();
-            Intent intent = new(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission,uri);
-            Platform.CurrentActivity.StartActivityForResult(intent, RequestCode);
-        }
-        catch (Exception ex)
-        {
-            // Handle Exception
+                GetPermissionTask = new();
+                Intent intent = new(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
+                Platform.CurrentActivity.StartActivityForResult(intent, RequestCode);
+            }
+            catch (Exception ex)
+            {
+                // Handle Exception
+            }
+
+            return await GetPermissionTask.Task;
         }
 
-        return await GetPermissionTask.Task;
+        else
+            return true;
     }
 
     public static void OnActivityResult()
