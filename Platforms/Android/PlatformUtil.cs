@@ -47,6 +47,7 @@ internal class PlatformUtil
 
     static string savePath;
     static string userLibraryPath;
+    static string autoSavePath;
 
     public static void RequestSelectLogFolder()
     {
@@ -914,6 +915,22 @@ internal class PlatformUtil
 
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {userLibDir}");
         return userLibraryPath = userLibDir;
+    }
+
+    public static string getAutoSavePath(bool highLevelAutoSave)
+    {
+        if (autoSavePath != null)
+        {
+            logger.debug($"getAutoSavePath: returning previous {userLibraryPath}");
+            return autoSavePath;
+        }
+
+        var docDir = getSavePath();
+
+        if (highLevelAutoSave)
+            docDir = "/storage/emulated/0/Documents";
+
+        return autoSavePath = docDir;
     }
 
 

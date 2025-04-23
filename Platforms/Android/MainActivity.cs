@@ -4,6 +4,7 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Content;
 using AndroidX.Core.App;
+using EnlightenMAUI.Common;
 
 namespace EnlightenMAUI
 {
@@ -23,6 +24,9 @@ namespace EnlightenMAUI
         }
         protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
         {
+            if (requestCode == StorageHelper.RequestCode)
+                StorageHelper.OnActivityResult();
+
             base.OnActivityResult(requestCode, resultCode, data);
 
             if (resultCode == Result.Ok)

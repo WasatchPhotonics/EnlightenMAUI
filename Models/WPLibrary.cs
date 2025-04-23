@@ -194,6 +194,12 @@ namespace EnlightenMAUI.Models
         protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
         protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
         protected string unitSN = "";
+        public bool loadSucceeded 
+        { 
+            get; 
+            set; 
+        } = false;
+        public bool isLoading = false;
 
         public string mostRecentCompound;
         public double mostRecentScore;
@@ -228,7 +234,6 @@ namespace EnlightenMAUI.Models
         protected Wavecal wavecal;
         protected int roiStart = 0;
         protected int roiEnd = 0;
-
         public WPLibrary(string root, Spectrometer spec, bool doLoad = true) : base(root, spec) 
         {
             logger.debug($"instantiating Library from {root}");
@@ -324,6 +329,7 @@ namespace EnlightenMAUI.Models
 
         async Task loadFiles(string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
         {
+            isLoading = true;
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
             foreach (var cDir in cacheDirs)
@@ -341,7 +347,13 @@ namespace EnlightenMAUI.Models
             }
 
             if (libraryFolder == null)
+            {
+                if (library.Count > 0)
+                    loadSucceeded = true;
+                isLoading = false;
+                InvokeLoadFinished();
                 return;
+            }
 
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");
@@ -373,6 +385,9 @@ namespace EnlightenMAUI.Models
                     }
                 }
             }
+            if (library.Count > 0)
+                loadSucceeded = true;
+            isLoading = false;
             logger.debug("finished loading library files");
             InvokeLoadFinished();
             logger.debug("prepping data for decon");

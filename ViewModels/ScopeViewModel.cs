@@ -172,6 +172,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             });
             libraryLoader.Wait();
             settings.libraryLabel = "Wasatch";
+            if (!library.loadSucceeded)
+                notifyToast?.Invoke("Issue loading library, make sure phone is paired");
             library.LoadFinished += Library_LoadFinished;
             
             /*
@@ -197,6 +199,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             Task.Run(() => findUserFiles());
         }
 
+        settings.checkHighLevel();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
         settings.LibraryChanged += Settings_LibraryChanged;
@@ -349,6 +352,9 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     private async void Library_LoadFinished(object sender, Library e)
     {
+        if (!settings.library.loadSucceeded)
+            notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+
         if (library is DPLibrary)
         {
             bool loaded = await (library as DPLibrary).isLoaded();
@@ -1096,7 +1102,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
 
         if (settings.autoSave)
-            await spec.measurement.saveAsync();
+            await spec.measurement.saveAsync(autoSave: true);
 
         if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();

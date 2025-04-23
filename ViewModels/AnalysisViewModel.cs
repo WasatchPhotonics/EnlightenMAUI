@@ -211,6 +211,9 @@ namespace EnlightenMAUI.ViewModels
 
         private void Settings_LibraryChanged(object sender, Settings e)
         {
+            if (!settings.library.loadSucceeded)
+                notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+
             if (settings.library is DPLibrary)
             {
                 if ((settings.library as DPLibrary).isLoading)

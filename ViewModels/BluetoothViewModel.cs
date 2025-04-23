@@ -256,6 +256,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             return false;
         }
 
+
         logger.debug("BVM.doResetAsync: inferring successful Bluetooth enable...sleeping");
         await Task.Delay(2000);
 

@@ -1,5 +1,6 @@
 ﻿using EnlightenMAUI.Platforms;
 using EnlightenMAUI.ViewModels;
+using EnlightenMAUI.Common;
 using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
@@ -81,7 +82,7 @@ public class Settings : INotifyPropertyChanged
     {
         logger.info($"EnlightenMAUI {version}");
         logger.info($"hostDescription = {hostDescription}");
-        logger.info($"OS = {os}");
+        logger.info($"OS = {os}"); 
         if (spec == null || !spec.paired)
             spec = API6BLESpectrometer.getInstance();
         if (spec == null || !spec.paired)
@@ -110,6 +111,11 @@ public class Settings : INotifyPropertyChanged
     // SaveOptions / FileManager
     ////////////////////////////////////////////////////////////////////////
 
+    public async Task checkHighLevel()
+    {
+        _highLevelAutoSave = await Util.enableAutoSave();
+    }
+
     public async Task setLibrary(string type)
     {
         bool libraryChanged = false;
@@ -131,6 +137,7 @@ public class Settings : INotifyPropertyChanged
                     {
                         //library = new DPLibrary("database", spec);
                         library = new WPLibrary("library", spec);
+                        library.LoadFinished += Library_LoadFinished;
                     });
                 }
             }
@@ -151,7 +158,7 @@ public class Settings : INotifyPropertyChanged
                     await Task.Run(() =>
                     {
                         library = new DPLibrary("database", spec);
-                        //library = new WPLibrary("library", spec);
+                        library.LoadFinished += Library_LoadFinished;
                     });
                 }
             }
@@ -160,8 +167,12 @@ public class Settings : INotifyPropertyChanged
         if (libraryChanged)
         {
             libraryLabel = type;
-            LibraryChanged.Invoke(this, this);
         }
+    }
+
+    private void Library_LoadFinished(object sender, Library e)
+    {
+        LibraryChanged.Invoke(this, this);
     }
 
     public string libraryLabel = "Wasatch";
@@ -187,6 +198,18 @@ public class Settings : INotifyPropertyChanged
     {
         return PlatformUtil.getUserLibraryPath();
     }
+
+    public string getAutoSavePath()
+    {
+        return PlatformUtil.getAutoSavePath(highLevelAutoSave);
+    }
+
+    public bool highLevelAutoSave
+    {
+        get=> _highLevelAutoSave;
+    }
+    bool _highLevelAutoSave = false;
+
 
     // Write the file content to the app data directory
     public void writeFile(string pathname, string text)

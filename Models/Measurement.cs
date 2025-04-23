@@ -553,7 +553,7 @@ public class Measurement : INotifyPropertyChanged
     /// - support full ENLIGHTEN metadata
     /// - support SaveOptions (selectable output fields)
     /// </todo>
-    public async Task<bool> saveAsync(bool librarySave = false)
+    public async Task<bool> saveAsync(bool librarySave = false, bool autoSave = false)
     {
         logger.debug("Measurement.saveAsync: starting");
 
@@ -573,6 +573,8 @@ public class Measurement : INotifyPropertyChanged
         string savePath = settings.getSavePath();
         if (librarySave)
             savePath = settings.getUserLibraryPath();
+        if (autoSave)
+            savePath = settings.getAutoSavePath();
 
         if (savePath == null)
         {

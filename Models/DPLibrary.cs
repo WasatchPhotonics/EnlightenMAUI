@@ -33,7 +33,6 @@ namespace EnlightenMAUI.Models
         private byte[] _data = new byte[250000];
         public dpSpectrum spectrum = new dpSpectrum();
         public bool loaded = false;
-        public bool isLoading = false;
         Logger logger = Logger.getInstance();
         Dictionary<string, string> libraryIDs = new Dictionary<string, string>();
         Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
@@ -198,6 +197,7 @@ namespace EnlightenMAUI.Models
                     */
 
                     logger.info("library loaded successfully");
+                    loadSucceeded = true;
                     isLoading = false;
                     InvokeLoadFinished();
                 }
