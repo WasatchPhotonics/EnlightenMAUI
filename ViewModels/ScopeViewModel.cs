@@ -172,8 +172,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             });
             libraryLoader.Wait();
             settings.libraryLabel = "Wasatch";
-            if (!library.loadSucceeded)
-                notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+            //if (!library.loadSucceeded)
+                //notifyToast?.Invoke("Issue loading library, make sure phone is paired");
             library.LoadFinished += Library_LoadFinished;
             
             /*

@@ -3,6 +3,7 @@ using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
 using EnlightenMAUI.Popups;
+using Microsoft.Maui.ApplicationModel;
 using Google.Android.Material.Shape;
 using MathNet.Numerics.Statistics;
 using System;
@@ -209,11 +210,15 @@ namespace EnlightenMAUI.ViewModels
             settings.setLibrary(key);
         }
 
-        private void Settings_LibraryChanged(object sender, Settings e)
+        private async void Settings_LibraryChanged(object sender, Settings e)
         {
             if (!settings.library.loadSucceeded)
-                notifyToast?.Invoke("Issue loading library, make sure phone is paired");
-
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+                });
+            }
             if (settings.library is DPLibrary)
             {
                 if ((settings.library as DPLibrary).isLoading)
