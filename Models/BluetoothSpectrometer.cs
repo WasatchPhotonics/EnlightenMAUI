@@ -18,6 +18,9 @@ public class BluetoothSpectrometer : Spectrometer
 { 
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
 
+    protected delegate void ToastNotification(string msg);
+    protected event ToastNotification notifyToast;
+
     // Singleton
     static BluetoothSpectrometer instance = null;
 
@@ -1445,6 +1448,12 @@ public class BluetoothSpectrometer : Spectrometer
                 UInt16 complete = (UInt16)((data[3] << 8) | data[4]);
                 UInt16 total = (UInt16)((data[5] << 8) | data[6]);
 
+                if (!optimizationDone)
+                {
+                    optimizationDone = true;
+                    syncAcqParams();
+                }
+
                 if (optimizationDone && !dataCollectingStarted)
                 {
                     //if (autoRamanEnabled)
@@ -1507,6 +1516,11 @@ public class BluetoothSpectrometer : Spectrometer
             logger.hexdump(data, "pixel data: ");
             if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
             {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    notifyToast?.Invoke("dropped packet detected");
+                });
+
                 totalPixelsRead += startPixel;
             }
             else if (totalPixelsRead != startPixel)

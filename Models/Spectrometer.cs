@@ -24,6 +24,7 @@ namespace EnlightenMAUI.Models
         // @see https://forums.xamarin.com/discussion/93330/mutex-is-bugged-in-xamarin
         protected static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1);
 
+
         // hardware model
         public uint pixels;
         public float laserExcitationNM;
