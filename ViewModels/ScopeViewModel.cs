@@ -102,6 +102,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        if (spec != null && spec is BluetoothSpectrometer)
+        {
+            (spec as BluetoothSpectrometer).notifyToast += (string msg) => EnlightenMAUI.Common.Util.toast(msg);
+        }
+
         Task loader = PlatformUtil.loadONNXModel("onnx", "etalon_correction.json");
         loader.Wait();
         //Thread.Sleep(100);

@@ -18,8 +18,8 @@ public class BluetoothSpectrometer : Spectrometer
 { 
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
 
-    protected delegate void ToastNotification(string msg);
-    protected event ToastNotification notifyToast;
+    public delegate void ToastNotification(string msg);
+    public event ToastNotification notifyToast;
 
     // Singleton
     static BluetoothSpectrometer instance = null;
