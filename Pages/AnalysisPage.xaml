@@ -160,6 +160,9 @@
                     <Button WidthRequest="100" Command="{Binding retryCmd}"  VerticalOptions="CenterAndExpand" Grid.Column="2" Grid.RowSpan="2" Text="Re-Analyze" HorizontalOptions="Center" Margin="5"/>
 
                 </Grid>
+
+                <Button WidthRequest="250" HorizontalOptions="Center" Margin="5" Text="Retry with High Precision Settings" Command="{Binding precisionCmd}"/>
+
             </StackLayout>
 
             

@@ -25,6 +25,7 @@ namespace EnlightenMAUI.ViewModels
         public event PropertyChangedEventHandler PropertyChanged;
         public event EventHandler<AnalysisViewModel> SpectraChanged;
         public event EventHandler<AnalysisViewModel> TriggerRetry;
+        public event EventHandler<AnalysisViewModel> TriggerIncreasedPrecision;
         public delegate void ToastNotification(string msg);
         public event ToastNotification notifyToast;
         Measurement lastMeas;
@@ -59,6 +60,7 @@ namespace EnlightenMAUI.ViewModels
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
+            precisionCmd = new Command(() => { _ = triggerPrecision(); });
 
             if (instance != null)
                 updateFromInstance();
@@ -95,6 +97,7 @@ namespace EnlightenMAUI.ViewModels
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
+            precisionCmd = new Command(() => { _ = triggerPrecision(); });
 
             SetData(null, null);
 
@@ -111,10 +114,17 @@ namespace EnlightenMAUI.ViewModels
         public Command saveCmd { get; private set; }
         public Command correctionCmd { get; private set; }
         public Command retryCmd { get; private set; }
+        public Command precisionCmd { get; private set; }
 
         bool triggerReanalyze()
         {
             TriggerRetry?.Invoke(this, this);
+            return true;
+        }
+
+        bool triggerPrecision()
+        {
+            TriggerIncreasedPrecision?.Invoke(this, this);
             return true;
         }
 
@@ -322,6 +332,12 @@ namespace EnlightenMAUI.ViewModels
             foreach (var listener in instance.TriggerRetry.GetInvocationList())
             {
                 TriggerRetry += (System.EventHandler<AnalysisViewModel>)listener;
+            }
+
+            TriggerIncreasedPrecision = null;
+            foreach (var listener in instance.TriggerIncreasedPrecision.GetInvocationList())
+            {
+                TriggerIncreasedPrecision += (System.EventHandler<AnalysisViewModel>)listener;
             }
 
             chartData.Clear();

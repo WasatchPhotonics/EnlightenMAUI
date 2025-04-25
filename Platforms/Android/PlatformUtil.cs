@@ -928,7 +928,13 @@ internal class PlatformUtil
         var docDir = getSavePath();
 
         if (highLevelAutoSave)
-            docDir = "/storage/emulated/0/Documents";
+        {
+            string temp = Path.Join("/storage/emulated/0", "EnlightenSpectra");
+            if (writeable(temp)) 
+                docDir = temp;
+            else
+                docDir = "/storage/emulated/0/Documents";
+        }
 
         return autoSavePath = docDir;
     }

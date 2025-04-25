@@ -471,6 +471,7 @@ public class Measurement : INotifyPropertyChanged
         postProcess();
 
         rawDark = spec.dark;
+        wavelengths = spec.wavelengths;
         rawWavenumbers = wavenumbers = spec.wavenumbers;
         roiStart = spec is null ? 0 : (uint)spec.eeprom.ROIHorizStart;
         roiEnd = spec is null ? pixels - 1 : (uint)spec.eeprom.ROIHorizEnd;
