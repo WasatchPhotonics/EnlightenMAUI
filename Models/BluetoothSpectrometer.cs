@@ -329,10 +329,10 @@ public class BluetoothSpectrometer : Spectrometer
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
         }
+        waitingForGeneric = true;
         var ok = await writeGenericCharacteristic(request);
         sem.Release();
 
-        waitingForGeneric = true;
         while (waitingForGeneric)
         {
             await Task.Delay(10);
@@ -347,10 +347,10 @@ public class BluetoothSpectrometer : Spectrometer
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
         }
+        waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
         sem.Release();
 
-        waitingForGeneric = true;
         while (waitingForGeneric)
         {
             await Task.Delay(10);
@@ -365,16 +365,19 @@ public class BluetoothSpectrometer : Spectrometer
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
         }
+        waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
         sem.Release();
 
-        waitingForGeneric = true;
         while (waitingForGeneric)
         {
             await Task.Delay(10);
         }
 
         acqSynced = true;
+        measurement.integrationTimeMS = integrationTimeMS;
+        measurement.detectorGain = gainDb;
+        measurement.scansToAverage = scansToAverage;
 
         return true;
     }
@@ -1273,6 +1276,8 @@ public class BluetoothSpectrometer : Spectrometer
             return null;
         }
 
+        await syncAcqParams();
+
         // apply 2x2 binning
         if (eeprom.featureMask.bin2x2)
         {
@@ -1436,7 +1441,7 @@ public class BluetoothSpectrometer : Spectrometer
                     optimizationDone = true;
                     double estimatedMilliseconds = (maxCollectionTimeMS + 2500);
                     autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
-                    syncAcqParams();
+                    //syncAcqParams();
                 }
                 else
                 {
@@ -1451,7 +1456,8 @@ public class BluetoothSpectrometer : Spectrometer
                 if (!optimizationDone)
                 {
                     optimizationDone = true;
-                    syncAcqParams();
+                    double estimatedMilliseconds = (maxCollectionTimeMS + 2500);
+                    autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
                 }
 
                 if (optimizationDone && !dataCollectingStarted)

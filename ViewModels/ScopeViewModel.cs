@@ -209,6 +209,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: done");
         settings.LibraryChanged += Settings_LibraryChanged;
         AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
+        AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -267,6 +268,22 @@ public class ScopeViewModel : INotifyPropertyChanged
             await Shell.Current.GoToAsync("//AnalysisPage");
         }
 
+    }
+    
+    private async void ScopeViewModel_TriggerIncreasedPrecision(object sender, AnalysisViewModel e)
+    {
+        logger.info("testing re-analyze trigger");
+        await Task.Delay(50);
+        await Shell.Current.GoToAsync("//ScopePage");
+        waitingForMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
+        if (sender is ScopeViewModel)
+            notifyToast?.Invoke("Retrying with enhanced precision settings");
+        AnalysisViewModel.getInstance().currentParamSet = "Default";
+        await Task.Delay(200);
+        await doAcquireAsync();
+        AnalysisViewModel.getInstance().currentParamSet = "Faster";
     }
 
     private void Settings_LibraryChanged(object sender, Settings e)
@@ -1691,6 +1708,9 @@ public class ScopeViewModel : INotifyPropertyChanged
             {
                 if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
                 {
+                    ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
+
+                    /*
                     waitingForMatch = false;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
@@ -1700,6 +1720,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     await doAcquireAsync();
                     AnalysisViewModel.getInstance().currentParamSet = "Faster";
                     return true;
+                    */
                 }
                 else
                     AnalysisViewModel.getInstance().SetData(spec.measurement, null);
