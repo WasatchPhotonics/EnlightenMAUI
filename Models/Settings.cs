@@ -119,6 +119,7 @@ public class Settings : INotifyPropertyChanged
     public async Task setLibrary(string type)
     {
         bool libraryChanged = false;
+        bool initialLoad = false;
 
         if (type == "Wasatch")
         {
@@ -133,6 +134,7 @@ public class Settings : INotifyPropertyChanged
                     library = wpLibrary;
                 else
                 {
+                    initialLoad = true;
                     await Task.Run(() =>
                     {
                         //library = new DPLibrary("database", spec);
@@ -155,6 +157,7 @@ public class Settings : INotifyPropertyChanged
                     library = dpLibrary;
                 else
                 {
+                    initialLoad = true;
                     await Task.Run(() =>
                     {
                         library = new DPLibrary("database", spec);
@@ -167,6 +170,8 @@ public class Settings : INotifyPropertyChanged
         if (libraryChanged)
         {
             libraryLabel = type;
+            if (!initialLoad)
+                LibraryChanged.Invoke(this, this);
         }
     }
 

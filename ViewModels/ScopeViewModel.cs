@@ -1112,20 +1112,19 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (runPSCorrection)
-        {
-            spec.FindAndApplyRamanShiftCorrection(spec.measurement, "Polystyrene");
-            runPSCorrection = false;
-        }
-
-        if (settings.autoSave)
-            await spec.measurement.saveAsync(autoSave: true);
-
         if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
         else
+        {
+            if (settings.autoSave)
+                await spec.measurement.saveAsync(autoSave: true);
+            if (runPSCorrection)
+            {
+                notifyToast?.Invoke("Polystyrene correction could not be completed, not prepped for library match");
+                runPSCorrection = false;
+            }
             AnalysisViewModel.getInstance().SetData(spec.measurement, null);
-
+        }
         return ok;
     }
 
@@ -1688,37 +1687,40 @@ public class ScopeViewModel : INotifyPropertyChanged
                 hasMatch = true;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
-                
-                //if (matchCompound.ToLower() == "polystyrene")
-                //{
-                //}
 
+                if (matchCompound.ToLower() == "polystyrene")
+                {
+                    if (runPSCorrection)
+                    {
+                        bool ok = spec.FindAndApplyRamanShiftCorrection(spec.measurement, "Polystyrene");
+                        runPSCorrection = false;
+                        if (!ok)
+                            notifyToast?.Invoke("Polystyrene correction could not be completed, peaks not found");
+                    }
+                }
+
+                if (settings.autoSave)
+                    await spec.measurement.saveAsync(autoSave: true);
                 AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
-
-
-                //if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
-                    //displayMatch = true;
             }
             else
             {
                 if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
                 {
                     ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
-
-                    /*
-                    waitingForMatch = false;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
-                    notifyToast?.Invoke("Retrying with through barrier settings");
-                    AnalysisViewModel.getInstance().currentParamSet = "Default";
-                    await Task.Delay(200);
-                    await doAcquireAsync();
-                    AnalysisViewModel.getInstance().currentParamSet = "Faster";
-                    return true;
-                    */
                 }
                 else
+                {
+                    if (settings.autoSave)
+                        await spec.measurement.saveAsync(autoSave: true);
                     AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+                }
+
+                if (runPSCorrection)
+                { 
+                    notifyToast?.Invoke("Polystyrene correction could not be completed, could not match compound");
+                    runPSCorrection = false;
+                }
             }
 
             await Shell.Current.GoToAsync("//AnalysisPage");
@@ -1727,6 +1729,13 @@ public class ScopeViewModel : INotifyPropertyChanged
         else
         {
             hasMatch = false;
+            if (settings.autoSave)
+                await spec.measurement.saveAsync(autoSave: true);
+            if (runPSCorrection)
+            { 
+                notifyToast?.Invoke("Polystyrene correction could not be completed, library match failed");
+                runPSCorrection = false;
+            }
             AnalysisViewModel.getInstance().SetData(spec.measurement, null);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
