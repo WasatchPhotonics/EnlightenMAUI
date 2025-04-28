@@ -131,6 +131,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         guidByName["eepromData"]        = _makeGuid("ff08");
         guidByName["batteryStatus"]     = _makeGuid("ff09");
         guidByName["generic"]           = _makeGuid("ff0a"); // was ROI
+        guidByName["spectrum"]          = _makeGuid("ff0b"); // was ROI
 
         foreach (var pair in guidByName)
             nameByGuid[pair.Value] = pair.Key;
@@ -998,6 +999,14 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
                     c.ValueUpdated += (spec as BluetoothSpectrometer).receiveSpectralUpdate;
+
+                    await c.StartUpdatesAsync();
+                }
+                else if (c.CanUpdate && name == "spectrum" && spec is BluetoothSpectrometer)
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += (spec as BluetoothSpectrometer).receivePixels;
 
                     await c.StartUpdatesAsync();
                 }

@@ -1417,6 +1417,56 @@ public class BluetoothSpectrometer : Spectrometer
     bool firstCollect = true;
     int delta = 0;
 
+    public void receivePixels(
+        object sender,
+        CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
+    {
+        logger.debug($"BVM.receivePixels: start");
+        var c = characteristicUpdatedEventArgs.Characteristic;
+
+        byte[] data = c.Value;
+
+        int pixelsInPacket = (int)data.Length / 2 - 1;
+
+        ushort startPixel = (ushort)(data[1] | data[0] << 8);
+        logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
+        logger.hexdump(data, "pixel data: ");
+        if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                notifyToast?.Invoke("dropped packet detected");
+            });
+
+            totalPixelsRead += startPixel;
+        }
+        else if (totalPixelsRead != startPixel)
+        {
+            collectionErrorDetected = true;
+        }
+
+        for (int i = 1; i <= pixelsInPacket; i++)
+        {
+            var offset = i * 2;
+            ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
+
+            //logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
+            //logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
+
+            if (totalPixelsRead >= spectrum.Length)
+                logger.error("more received data than expected...");
+            else
+                spectrum[totalPixelsRead] = intensity;
+            totalPixelsRead += 1;
+        }
+
+        if (autoRamanEnabled || autoDarkEnabled)
+            raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
+        else
+            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+        logger.debug($"BVM.receivePixels: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
+    }
+
     public void receiveSpectralUpdate(
             object sender,
             CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
@@ -1515,46 +1565,11 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else
         {
-            int pixelsInPacket = (int)data.Length / 2 - 1;
-
-            ushort startPixel = (ushort)(data[1] | data[0] << 8);
-            logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
-            logger.hexdump(data, "pixel data: ");
-            if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    notifyToast?.Invoke("dropped packet detected");
-                });
-
-                totalPixelsRead += startPixel;
-            }
-            else if (totalPixelsRead != startPixel)
-            {
-                collectionErrorDetected = true;
-            }
-
-            for (int i = 1; i <= pixelsInPacket; i++)
-            {
-                var offset = i * 2;
-                ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
-
-                //logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
-                //logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
-
-                 if (totalPixelsRead >= spectrum.Length)
-                    logger.error("more received data than expected...");
-                else
-                    spectrum[totalPixelsRead] = intensity;
-                totalPixelsRead += 1;
-            }
-
-            if (autoRamanEnabled || autoDarkEnabled)
-                raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
-            else
-                raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
-            logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
+                notifyToast?.Invoke("unexpected data on receiveSpectra command");
+            });
+            logger.hexdump(data, "unexpected data on receiveSpectra command: ");
         }
-        //characteristicUpdatedEventArgs.Characteristic.
     }
 }
