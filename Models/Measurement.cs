@@ -558,18 +558,6 @@ public class Measurement : INotifyPropertyChanged
     {
         logger.debug("Measurement.saveAsync: starting");
 
-        if (pathname != null)
-        {
-            logger.debug($"Measurement.saveAsync: already saved ({pathname})");
-            return true;
-        }
-
-        if (processed is null || raw is null || spec is null)
-        {
-            logger.error("saveAsync: nothing to save");
-            return false;
-        }
-
         Settings settings = Settings.getInstance();
         string savePath = settings.getSavePath();
         if (librarySave)
@@ -580,6 +568,20 @@ public class Measurement : INotifyPropertyChanged
         if (savePath == null)
         {
             logger.error("saveAsync: can't get savePath");
+            return false;
+        }
+
+        string tempPath = Path.Join(savePath, filename);
+
+        if (pathname != null && tempPath == pathname)
+        {
+            logger.debug($"Measurement.saveAsync: already saved ({pathname})");
+            return true;
+        }
+
+        if (processed is null || raw is null || spec is null)
+        {
+            logger.error("saveAsync: nothing to save");
             return false;
         }
 
