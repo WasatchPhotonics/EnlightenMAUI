@@ -22,6 +22,7 @@ namespace EnlightenMAUI.Common
         GET_ADC_RAW,
         GET_AMBIENT_TEMPERATURE_ARM,
         GET_AREA_SCAN_ENABLE,
+        GET_AUTO_RAMAN_STATUS,
         GET_BATTERY_STATE,
         GET_BLE_FW_VER_INFO,
         GET_CF_SELECT,
@@ -171,6 +172,7 @@ namespace EnlightenMAUI.Common
             cmd[Opcodes.GET_ACTUAL_INTEGRATION_TIME] = 0xdf;
             cmd[Opcodes.GET_ADC_RAW] = 0xd5;
             cmd[Opcodes.GET_AREA_SCAN_ENABLE] = 0xea; // was: GET_LASER_RAMPING_ENABLE
+            cmd[Opcodes.GET_AUTO_RAMAN_STATUS] = 0x94; // was: GET_LASER_RAMPING_ENABLE
             cmd[Opcodes.GET_CF_SELECT] = 0xec;
             cmd[Opcodes.GET_CONTINUOUS_ACQUISITION] = 0xcc;
             cmd[Opcodes.GET_CONTINUOUS_FRAMES] = 0xcd;

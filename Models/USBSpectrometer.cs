@@ -409,6 +409,26 @@ namespace EnlightenMAUI.Models
             }
         }
 
+        public enum AUTO_RAMAN_PROGRESS_STATE
+        {
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_IDLE = 1,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_ACTIVATE_IMG_SNSR = 2,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_WAIT_LASER_SWITCH_ON = 3,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_WAIT_LASER_WARM_UP = 4,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_CALC_INIT_SCALE_FACTOR = 5,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_OPTIMIZATION = 6,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_SPEC_AVG_WITH_LASER_ON = 7,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_SPEC_AVG_WITH_LASER_OFF = 8,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_DONE = 9,
+            AUTO_RAMAN_TOP_LVL_FSM_STATE_ERROR = 10
+        }
+
+        public async Task<byte[]> getAutoRamanStatus()
+        {
+            var buf = new byte[8];
+            return await getCmdAsync(Opcodes.SET_LASER_ENABLE, 8);
+        }
+
         protected override void processGeneric(byte[] data)
         {
             throw new NotImplementedException();
@@ -517,6 +537,10 @@ namespace EnlightenMAUI.Models
         DateTime endTime;
         bool acqDone = false;
 
+        void parseAutoRamanStatus(byte[] buffer)
+        {
+            logger.hexdump(buffer, "auto raman progress update: ");
+        }
 
         public async Task<bool> monitorAcqProgress()
         {
@@ -525,19 +549,10 @@ namespace EnlightenMAUI.Models
 
             while (true)
             {
-                DateTime now = DateTime.Now;
-                double estimatedMilliseconds = (endTime - startTime).TotalMilliseconds;
-                double progress = (now - startTime).TotalMilliseconds / estimatedMilliseconds;
-
-                logger.debug("estimated progress currently at {0:f3}", progress);
-                if (progress > 0) 
-                    raiseAcquisitionProgress(0.95 * progress);
-
-                if (progress >= 1 || acqDone)
-                {
-                    logger.debug("exiting acq monitor loop");
+                byte[] progress = await getAutoRamanStatus();
+                parseAutoRamanStatus(progress);
+                if (acqDone)
                     break;
-                }
 
                 await Task.Delay(33);
             }
