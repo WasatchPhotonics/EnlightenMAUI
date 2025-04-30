@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Android.Hardware.Usb;
+using Android.OS;
 using CommunityToolkit.Maui.Converters;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
@@ -576,12 +577,16 @@ namespace EnlightenMAUI.Models
                 if (counts != prevCounts)
                 {
                     DateTime now = DateTime.Now;
-
                     double ratio = (counts) / targetCounts;
-                    double slope = (now - prevUpdate).TotalMilliseconds / (ratio - prevRatio);
-                    double estMSToGo = slope * (90 - ratio);
-                    double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS);
-                    endTime = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+
+                    if (prevCounts != 0)
+                    {
+                        double slope = (now - prevUpdate).TotalMilliseconds / (ratio - prevRatio);
+                        double estMSToGo = slope * (90 - ratio);
+                        double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS);
+                        endTime = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+                        logger.debug("new endtime estimate via optimization {0}", endTime.ToString("hh:mm:ss.fff"));
+                    }
 
                     prevCounts = counts;
                     prevRatio = ratio;
@@ -595,9 +600,14 @@ namespace EnlightenMAUI.Models
                     optDone = true;
                     await syncParams();
 
-                    double estimatedMilliseconds = scansToAverage * integrationTimeMS;
+                    double estimatedMilliseconds = 2 * scansToAverage * integrationTimeMS;
                     endTime = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+                    logger.debug("new endtime estimate via param sync {0}", endTime.ToString("hh:mm:ss.fff"));
                 }
+            }
+            else if (buffer[1] == (byte)AUTO_RAMAN_PROGRESS_STATE.AUTO_RAMAN_TOP_LVL_FSM_STATE_DONE)
+            {
+                acqDone = true;
             }
         }
 
@@ -605,6 +615,8 @@ namespace EnlightenMAUI.Models
         {
             logger.debug("monitor auto starting at {0}", startTime.ToString("hh:mm:ss.fff"));
             logger.debug("initial end estimate at {0}", endTime.ToString("hh:mm:ss.fff"));
+            prevCounts = 0;
+            prevRatio = 0;
 
             while (true)
             {
@@ -617,13 +629,13 @@ namespace EnlightenMAUI.Models
                 
                 logger.debug("estimated progress currently at {0:f3}", timeProgress);
                 if (timeProgress > 0)
-                    Task.Run(() => raiseAcquisitionProgress(0.95 * timeProgress));
+                    raiseAcquisitionProgress(0.95 * timeProgress);
                 logger.debug("progress raised");
 
                 if (acqDone)
                     break;
 
-                await Task.Delay(67);
+                await Task.Delay(33);
                 logger.debug("progress monitor loop going back to start");
             }
 
@@ -648,9 +660,9 @@ namespace EnlightenMAUI.Models
             if (acquisitionMode == AcquisitionMode.STANDARD)
                 endTime = DateTime.Now.AddMilliseconds(integrationTimeMS * scansToAverage);
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
-                endTime = DateTime.Now.AddMilliseconds(maxCollectionTimeMS * 3);
+                endTime = DateTime.Now.AddMilliseconds(maxCollectionTimeMS * 3 + 4000);
             acqDone = false;
-            Task<int> transfer = null; 
+            Task transfer = null; 
             Task monitor = null;
 
             logger.info("sending spectrum trigger");
@@ -668,6 +680,7 @@ namespace EnlightenMAUI.Models
                 spectrumBuff = new byte[pixels * 2];
                 monitor = Task.Delay(10);
                 transfer = transferAndReturn(spectrumBuff, (int)(integrationTimeMS * 8 + 500));
+                await Task.WhenAll([monitor, transfer]);
                 //transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
             }
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
@@ -681,12 +694,12 @@ namespace EnlightenMAUI.Models
                     monitor = monitorAcqProgress();
                     int autoTimeout = maxCollectionTimeMS * 10;
                     spectrumBuff = new byte[pixels * 2];
-                    transfer = transferAndReturn(spectrumBuff, autoTimeout);
+                    await monitor;
+                    await transferAndReturn(spectrumBuff, autoTimeout);
                     //transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
                 }
             }
 
-            await Task.WhenAll([monitor, transfer]);
             logger.debug("buffer transfer complete with {0} in pix 0", spectrumBuff[0]);
             raiseAcquisitionProgress(0.95);
 
@@ -739,6 +752,8 @@ namespace EnlightenMAUI.Models
                 bytesToRead = Math.Min(8, bytesToRead);
             byte[] buf = new byte[bytesToRead];
 
+            logger.debug("about to send getCmd...");
+            
             int okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, cmd[opcode], 0, wIndex, buf, bytesToRead, 100);
 
             if (logger.debugEnabled())
@@ -746,6 +761,27 @@ namespace EnlightenMAUI.Models
 
             // extract just the bytes we really needed
             return await Task.Run(() => Util.truncateArray(buf, len));
+        }
+
+        internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
+        {
+            if (shuttingDown)
+                return null;
+
+            int bytesToRead = Math.Max(len, fullLen);
+            if (isARM || isStroker) // ARM should always read at least 8 bytes
+                bytesToRead = Math.Min(8, bytesToRead);
+            byte[] buf = new byte[bytesToRead];
+
+            logger.debug("about to send getCmd...");
+            
+            int okI = udc.ControlTransfer((UsbAddressing)DEVICE_TO_HOST, cmd[opcode], 0, wIndex, buf, bytesToRead, 100);
+
+            if (logger.debugEnabled())
+                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
+
+            // extract just the bytes we really needed
+            return Util.truncateArray(buf, len);
         }
 
         /// <summary>
