@@ -267,6 +267,7 @@ namespace EnlightenMAUI.Common
             cmd[Opcodes.PROCESS_LIBRARY] = 0x29;
             cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM] = 0x2a;
             cmd[Opcodes.GET_BLE_FW_VER_INFO] = 0x2d;
+            cmd[Opcodes.GET_SCANS_TO_AVERAGE] = 0x63;
             cmd[Opcodes.SET_SCANS_TO_AVERAGE] = 0x62;
             cmd[Opcodes.SET_ACQUIRE_AUTO_RAMAN] = 0xFD;
 

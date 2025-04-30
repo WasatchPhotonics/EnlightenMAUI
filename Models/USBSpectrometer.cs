@@ -8,6 +8,7 @@ using Android.Hardware.Usb;
 using CommunityToolkit.Maui.Converters;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
+using Java.Nio;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
@@ -273,6 +274,29 @@ namespace EnlightenMAUI.Models
             }
         }
 
+        async Task syncParams()
+        {
+            byte[] buf = await getCmdAsync(Opcodes.GET_INTEGRATION_TIME, 3, fullLen: 6);
+            logger.hexdump(buf, "int time sync to: ");
+            _nextIntegrationTimeMS = Unpack.toUint(buf);
+            buf = await (getCmdAsync(Opcodes.GET_DETECTOR_GAIN, 2));
+            logger.hexdump(buf, "gain sync to: ");
+            _nextGainDb = FunkyFloat.toFloat(Unpack.toUshort(buf));
+
+            buf = await (getCmd2Async(Opcodes.GET_SCANS_TO_AVERAGE, 2));
+            logger.hexdump(buf, "averaging sync to: ");
+            _scansToAverage = (byte)Unpack.toUint(buf);
+
+            NotifyPropertyChanged(nameof(integrationTimeMS));
+            NotifyPropertyChanged(nameof(gainDb));
+            NotifyPropertyChanged(nameof(scansToAverage));
+
+            measurement.integrationTimeMS = integrationTimeMS;
+            measurement.detectorGain = gainDb;
+            measurement.scansToAverage = scansToAverage;
+        }
+
+
         public override ushort verticalROIStartLine
         {
             get => _nextVerticalROIStartLine;
@@ -426,7 +450,7 @@ namespace EnlightenMAUI.Models
         public async Task<byte[]> getAutoRamanStatus()
         {
             var buf = new byte[8];
-            return await getCmdAsync(Opcodes.SET_LASER_ENABLE, 8);
+            return await getCmdAsync(Opcodes.GET_AUTO_RAMAN_STATUS, 8);
         }
 
         protected override void processGeneric(byte[] data)
@@ -536,10 +560,45 @@ namespace EnlightenMAUI.Models
         DateTime startTime;
         DateTime endTime;
         bool acqDone = false;
+        bool optDone = false;
+        int prevCounts = 0;
+        double prevRatio = 0;
+        DateTime prevUpdate;
 
-        void parseAutoRamanStatus(byte[] buffer)
+        async Task parseAutoRamanStatus(byte[] buffer)
         {
             logger.hexdump(buffer, "auto raman progress update: ");
+
+            if (buffer[1] == (byte)AUTO_RAMAN_PROGRESS_STATE.AUTO_RAMAN_TOP_LVL_FSM_STATE_OPTIMIZATION)
+            {
+                int counts = buffer[4] << 8 + buffer[5];
+
+                if (counts != prevCounts)
+                {
+                    DateTime now = DateTime.Now;
+
+                    double ratio = (counts) / targetCounts;
+                    double slope = (now - prevUpdate).TotalMilliseconds / (ratio - prevRatio);
+                    double estMSToGo = slope * (90 - ratio);
+                    double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS);
+                    endTime = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+
+                    prevCounts = counts;
+                    prevRatio = ratio;
+                    prevUpdate = now;
+                }
+            }
+            else if (buffer[1] == (byte)AUTO_RAMAN_PROGRESS_STATE.AUTO_RAMAN_TOP_LVL_FSM_STATE_SPEC_AVG_WITH_LASER_ON)
+            {
+                if (!optDone)
+                {
+                    optDone = true;
+                    await syncParams();
+
+                    double estimatedMilliseconds = scansToAverage * integrationTimeMS;
+                    endTime = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
+                }
+            }
         }
 
         public async Task<bool> monitorAcqProgress()
@@ -549,28 +608,50 @@ namespace EnlightenMAUI.Models
 
             while (true)
             {
-                byte[] progress = await getAutoRamanStatus();
-                parseAutoRamanStatus(progress);
+                byte[] autoProgress = await getAutoRamanStatus();
+                await parseAutoRamanStatus(autoProgress);
+
+                DateTime now = DateTime.Now;
+                double estimatedMilliseconds = (endTime - startTime).TotalMilliseconds;
+                double timeProgress = (now - startTime).TotalMilliseconds / estimatedMilliseconds;
+                
+                logger.debug("estimated progress currently at {0:f3}", timeProgress);
+                if (timeProgress > 0)
+                    Task.Run(() => raiseAcquisitionProgress(0.95 * timeProgress));
+                logger.debug("progress raised");
+
                 if (acqDone)
                     break;
 
-                await Task.Delay(33);
+                await Task.Delay(67);
+                logger.debug("progress monitor loop going back to start");
             }
 
             return true;
         }
 
+        public async Task<int> transferAndReturn(byte[] spectrumBuff, int timeout)
+        {
+            logger.debug("buffer init with {0} in pix 0", spectrumBuff[0]);
+            int result = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, spectrumBuff.Length, timeout);
+            logger.debug("buffer transfered with {0} in pix 0", spectrumBuff[0]);
+            acqDone = true;
+            return result;
+        }
+
+
 
         protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
         {
+            logger.level = LogLevel.DEBUG;
             startTime = DateTime.Now;
             if (acquisitionMode == AcquisitionMode.STANDARD)
                 endTime = DateTime.Now.AddMilliseconds(integrationTimeMS * scansToAverage);
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
                 endTime = DateTime.Now.AddMilliseconds(maxCollectionTimeMS * 3);
             acqDone = false;
-            Task monitor = monitorAcqProgress();
-            Task<int> transfer = null;
+            Task<int> transfer = null; 
+            Task monitor = null;
 
             logger.info("sending spectrum trigger");
             byte[] buf = null;
@@ -585,7 +666,9 @@ namespace EnlightenMAUI.Models
                 logger.debug("sending SW trigger");
                 await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf); 
                 spectrumBuff = new byte[pixels * 2];
-                transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+                monitor = Task.Delay(10);
+                transfer = transferAndReturn(spectrumBuff, (int)(integrationTimeMS * 8 + 500));
+                //transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
             }
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
             {
@@ -594,13 +677,17 @@ namespace EnlightenMAUI.Models
                 if (autoOk)
                 {
                     logger.debug("auto raman params and trigger set successfully");
+                    optDone = false;
+                    monitor = monitorAcqProgress();
                     int autoTimeout = maxCollectionTimeMS * 10;
                     spectrumBuff = new byte[pixels * 2];
-                    transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
+                    transfer = transferAndReturn(spectrumBuff, autoTimeout);
+                    //transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
                 }
             }
 
-            await Task.WhenAll([transfer, monitor]);
+            await Task.WhenAll([monitor, transfer]);
+            logger.debug("buffer transfer complete with {0} in pix 0", spectrumBuff[0]);
             raiseAcquisitionProgress(0.95);
 
             if (okI >= 0)
