@@ -426,7 +426,7 @@ namespace EnlightenMAUI.Models
         public async Task<byte[]> getAutoRamanStatus()
         {
             var buf = new byte[8];
-            return await getCmdAsync(Opcodes.SET_LASER_ENABLE, 8);
+            return await getCmdAsync(Opcodes.GET_AUTO_RAMAN_STATUS, 8);
         }
 
         protected override void processGeneric(byte[] data)
@@ -559,7 +559,14 @@ namespace EnlightenMAUI.Models
 
             return true;
         }
-
+        public async Task<int> transferAndReturn(byte[] spectrumBuff, int timeout)
+        {
+            logger.debug("buffer init with {0} in pix 0", spectrumBuff[0]);
+            int result = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, spectrumBuff.Length, timeout);
+            logger.debug("buffer transfered with {0} in pix 0", spectrumBuff[0]);
+            acqDone = true;
+            return result;
+        }
 
         protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
         {
@@ -596,7 +603,8 @@ namespace EnlightenMAUI.Models
                     logger.debug("auto raman params and trigger set successfully");
                     int autoTimeout = maxCollectionTimeMS * 10;
                     spectrumBuff = new byte[pixels * 2];
-                    transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
+                    transfer = transferAndReturn(spectrumBuff, autoTimeout);
+                    //transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
                 }
             }
 
