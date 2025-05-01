@@ -352,12 +352,10 @@ internal class PlatformUtil
 
             int outputSize = p.spectrum.GetLength(0);
             double[] output = new double[outputSize];
+            double min = p.spectrum.Min();
             for (int i = 0; i < outputSize; ++i)
             {
-                if (p.spectrum[i] < 0)
-                    output[i] = 0;
-                else
-                    output[i] = p.spectrum[i]; // * max;
+                output[i] = p.spectrum[i] - min; // * max;
             }
 
             /*
