@@ -938,7 +938,16 @@ internal class PlatformUtil
                 docDir = "/storage/emulated/0/Documents";
         }
 
-        return autoSavePath = docDir;
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var todayDir = Path.Join(docDir, today);
+
+        if (!writeable(todayDir))
+        {
+            logger.error($"getAutoSavePath: unable to write autoSaveDir {todayDir}");
+            return null;
+        }
+
+        return autoSavePath = todayDir;
     }
 
 

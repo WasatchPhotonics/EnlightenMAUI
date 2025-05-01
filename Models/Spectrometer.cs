@@ -853,7 +853,7 @@ namespace EnlightenMAUI.Models
                 return pixel;
         }
 
-        public void FindAndApplyRamanShiftCorrection(Measurement spectrum, string compoundName)
+        public bool FindAndApplyRamanShiftCorrection(Measurement spectrum, string compoundName)
         {
             //
             // Use code here to open file, look for peak list based on compound
@@ -906,9 +906,14 @@ namespace EnlightenMAUI.Models
                 }
             }
 
-            double averageOffset = offsets.Average();
-
-            wavenumberOffset = averageOffset;
+            if (offsets.Count > 0)
+            {
+                double averageOffset = offsets.Average();
+                wavenumberOffset = averageOffset;
+                return true;
+            }
+            else
+                return false;
             //measurement.wavenumbers = wavenumbers;
         }
 
