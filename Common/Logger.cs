@@ -150,6 +150,36 @@ namespace EnlightenMAUI
             }
             debug($"{label} [len {a.Length}]: {s}");
         }
+        
+        // log all elements of a labeled array 
+        public void logArray(string label, double[] a) 
+        {
+            StringBuilder s = new StringBuilder();
+            if (a != null && a.Length > 0)
+            {
+                s.Append(string.Format("{0:f2}", a[0]));
+                for (int i = 1; i < a.Length; i++)
+                {
+                    s.Append(string.Format(", {0:f2}", a[i]));
+                }
+            }
+            debug($"{label} [len {a.Length}]: {s}");
+        }
+
+        // log all elements of a labeled array 
+        public void logArray(string label, float[] a) 
+        {
+            StringBuilder s = new StringBuilder();
+            if (a != null && a.Length > 0)
+            {
+                s.Append(string.Format("{0:f2}", a[0]));
+                for (int i = 1; i < a.Length; i++)
+                {
+                    s.Append(string.Format(", {0:f2}", a[i]));
+                }
+            }
+            debug($"{label} [len {a.Length}]: {s}");
+        }
 
         public void update() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(history)));
 

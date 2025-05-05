@@ -302,12 +302,17 @@ internal class PlatformUtil
     {
         try
         {
+            logger.logArray("pre-processed wavenum", wavenumbers);
+            logger.logArray("pre-processed counts", counts);
+
             if (correctionFactors != null && correctionFactors.ContainsKey(serial))
             {
                 double[] corrections = correctionFactors[serial];
                 for (int i = 0; i < counts.Length; i++)
                     counts[i] /= corrections[i];
             }
+
+            logger.logArray("etalon-corrected counts", counts);
 
             double[] targetWavenum = new double[2376];
             for (int i = 0; i < targetWavenum.Length; i++)
@@ -317,6 +322,10 @@ internal class PlatformUtil
 
             double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
             double max = interpolatedCounts.Max();
+
+
+            logger.logArray("interpolated wavenum", targetWavenum);
+            logger.logArray("interpolated counts", interpolatedCounts);
 
             /*
             for (int i = 0; i < interpolatedCounts.Length; i++)
@@ -350,6 +359,9 @@ internal class PlatformUtil
             p = engine.Predict(modelInput);
             logger.debug("packing prediction");
 
+
+            logger.logArray("transformed counts", p.spectrum);
+
             int outputSize = p.spectrum.GetLength(0);
             double[] output = new double[outputSize];
             double min = p.spectrum.Min();
@@ -358,6 +370,7 @@ internal class PlatformUtil
                 output[i] = p.spectrum[i] - min; // * max;
             }
 
+            logger.logArray("rebased counts", output);
             /*
             for (int i = 0; i < output.Length / 200; ++i)
             {
@@ -372,6 +385,7 @@ internal class PlatformUtil
             */
 
             output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
+            logger.logArray("deconvoluted counts", output);
             //output = numpyDecon(targetWavenum, output, fwhm);
 
             logger.debug("returning processed spectrum");
