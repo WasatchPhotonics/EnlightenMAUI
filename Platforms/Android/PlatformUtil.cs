@@ -302,8 +302,8 @@ internal class PlatformUtil
     {
         try
         {
-            logger.logArray("pre-processed wavenum", wavenumbers);
-            logger.logArray("pre-processed counts", counts);
+            //logger.logArray("pre-processed wavenum", wavenumbers);
+            //logger.logArray("pre-processed counts", counts);
 
             if (correctionFactors != null && correctionFactors.ContainsKey(serial))
             {
@@ -312,7 +312,7 @@ internal class PlatformUtil
                     counts[i] /= corrections[i];
             }
 
-            logger.logArray("etalon-corrected counts", counts);
+            //logger.logArray("etalon-corrected counts", counts);
 
             double[] targetWavenum = new double[2376];
             for (int i = 0; i < targetWavenum.Length; i++)
@@ -324,8 +324,8 @@ internal class PlatformUtil
             double max = interpolatedCounts.Max();
 
 
-            logger.logArray("interpolated wavenum", targetWavenum);
-            logger.logArray("interpolated counts", interpolatedCounts);
+            //logger.logArray("interpolated wavenum", targetWavenum);
+            //logger.logArray("interpolated counts", interpolatedCounts);
 
             /*
             for (int i = 0; i < interpolatedCounts.Length; i++)
@@ -360,7 +360,7 @@ internal class PlatformUtil
             logger.debug("packing prediction");
 
 
-            logger.logArray("transformed counts", p.spectrum);
+            //logger.logArray("transformed counts", p.spectrum);
 
             int outputSize = p.spectrum.GetLength(0);
             double[] output = new double[outputSize];
@@ -370,7 +370,7 @@ internal class PlatformUtil
                 output[i] = p.spectrum[i] - min; // * max;
             }
 
-            logger.logArray("rebased counts", output);
+            //logger.logArray("rebased counts", output);
             /*
             for (int i = 0; i < output.Length / 200; ++i)
             {
@@ -385,7 +385,7 @@ internal class PlatformUtil
             */
 
             output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
-            logger.logArray("deconvoluted counts", output);
+            //logger.logArray("deconvoluted counts", output);
             //output = numpyDecon(targetWavenum, output, fwhm);
 
             logger.debug("returning processed spectrum");
