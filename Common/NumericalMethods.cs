@@ -80,6 +80,42 @@ namespace EnlightenMAUI.Common
 
     public class NumericalMethods
     {
+        static public double rmsdEstimate(double[] pixels, double[] counts)
+        {
+            double[] derivs = derivative(pixels, counts, 1);
+            double[] derivsPadded = new double[derivs.Length + 2];
+            Array.Copy(derivs, 0, derivsPadded, 1, derivs.Length);
+            List<double> sums = new List<double>();
+
+            for (int i = 0; i < derivs.Length + 1; i++)
+            {
+                if (derivsPadded[i] * derivsPadded[i + 1] <= 0)
+                {
+                    sums.Add(derivsPadded[i] * derivsPadded[i] + derivsPadded[i + 1] * derivsPadded[i + 1]);
+                }
+            }
+
+            double med = median(sums.ToArray());
+            double final = Math.Sqrt(med);
+            return final;
+        }
+
+        public static double order(double[] data, double order)
+        {
+            if (order < 0.0 || order > 1.0)
+                return double.NaN;
+
+            List<double> sortedList = new List<double>(data);
+            sortedList.Sort();
+            return sortedList[(int)(data.Length * order)];
+        }
+
+        public static double median(double[] data)
+        {
+            return order(data, 0.5);
+        }
+
+
         static public Point2D computeIntersection(Point2D P1, Point2D P2, Point2D P3, Point2D P4)
         {
             double x1 = P1.x;

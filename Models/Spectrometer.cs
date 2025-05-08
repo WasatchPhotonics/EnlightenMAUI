@@ -1,5 +1,6 @@
 ﻿using Accord;
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
 using EnlightenMAUI.ViewModels;
 using Plugin.BLE.Abstractions.Contracts;
 using System;
@@ -684,6 +685,20 @@ namespace EnlightenMAUI.Models
         // There is no need to disable the laser if returning NULL, as the caller
         // will do so anyway.
         protected abstract Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket);
+
+        public void redoBackgroundProcessing(bool simpleModel)
+        {
+            try
+            {
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, lastSpectrum, eeprom.serialNumber, eeprom.avgResolution, simpleModel);
+                measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                measurement.postProcessed = smoothed;
+            }
+            catch (Exception ex)
+            {
+                logger.error("processing redo failed out with issues", ex.Message);
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // BLE Characteristic Notifications (routed via BluetoothViewModel)

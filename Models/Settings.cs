@@ -48,6 +48,16 @@ public class Settings : INotifyPropertyChanged
         }
     }
     float _matchThreshold = 0.6f;
+    public int snrThreshold
+    {
+        get => _snrThreshold;
+        set
+        {
+            _snrThreshold = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
+        }
+    }
+    int _snrThreshold = 120;
 
     public Spectrometer spec = BluetoothSpectrometer.getInstance();
 

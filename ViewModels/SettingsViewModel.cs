@@ -402,6 +402,16 @@ namespace EnlightenMAUI.ViewModels
             }
         }
 
+        public int snrThreshold
+        {
+            get => settings.snrThreshold;
+            set
+            {
+                settings.snrThreshold = value;
+                Preferences.Set("snrThreshold", value);
+            }
+        }
+
         public void updateLaserProperties()
         {
             logger.debug("SVM.updateLaserProperties: start");

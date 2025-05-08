@@ -134,6 +134,8 @@
                                 <!-- Perform Deconvolution      -->
                                 <RowDefinition Height="Auto"/>
                                 <!-- Match Threshold      -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- SNR Threshold      -->
                             </Grid.RowDefinitions>
 
                             <Grid.ColumnDefinitions>
@@ -171,12 +173,32 @@
                             <Switch Grid.Row="7" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performDeconvolution}" />
                             <Label Grid.Row="7" VerticalOptions="Center" Grid.Column="0" Text="Deconvolution Matching" TextColor="#eee" />
 
-                            <Label Text="Match Threshold" TextColor="#eee" VerticalTextAlignment="Center"/>
+                            <Label Grid.Row="8" Text="Match Threshold" TextColor="#eee" VerticalTextAlignment="Center"/>
                             <telerik:RadNumericInput x:Name="matchThresh" 
+                                                     Grid.Row="8"
                                                      Value="{Binding matchThreshold}" 
                                                      IsEnabled="{Binding advancedModeEnabled}"
                                                      StringFormat="{}{0:f2}"
                                                      Minimum="0" Maximum="1" Step="0.1"
+                                                     HorizontalOptions="End">      
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+
+                            <Label Grid.Row="9" Text="SNR Threshold" TextColor="#eee" VerticalTextAlignment="Center"/>
+                            <telerik:RadNumericInput x:Name="snrThresh" 
+                                                     Grid.Row="9"
+                                                     Value="{Binding snrThreshold}" 
+                                                     IsEnabled="{Binding advancedModeEnabled}"
+                                                     Minimum="0" Maximum="500" Step="1"
                                                      HorizontalOptions="End">      
                                 <telerik:RadNumericInput.IncreaseButtonStyle>
                                     <Style TargetType="telerik:RadNumericInput">

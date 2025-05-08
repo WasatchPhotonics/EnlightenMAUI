@@ -1088,12 +1088,29 @@ public class ScopeViewModel : INotifyPropertyChanged
             updateChart();
         }
 
+
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
             // info-level logging so we can QC timing w/o verbose logging
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
+
+            double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+            double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+            logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+            if (AnalysisViewModel.getInstance().currentParamSet == "Default")
+            {
+                if (snr < settings.snrThreshold)
+                {
+                    spec.redoBackgroundProcessing(false);
+                    rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+                    snr = spec.measurement.postProcessed.Max() / rmsd;
+                    logger.info("after re-analysis, sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+                }
+            }
 
             updateChart();
 
