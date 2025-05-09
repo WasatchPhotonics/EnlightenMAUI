@@ -680,7 +680,8 @@ namespace EnlightenMAUI.Models
 
             mostRecentCompound = finalSample;
             mostRecentScore = maxScore;
-            mostRecentMeasurement = library[finalSample];
+            if (finalSample != "")
+                mostRecentMeasurement = library[finalSample];
 
             if (finalSample != "")
                 return new Tuple<string, double>(finalSample, maxScore);
