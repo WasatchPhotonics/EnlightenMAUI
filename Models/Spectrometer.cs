@@ -690,7 +690,7 @@ namespace EnlightenMAUI.Models
         {
             try
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, lastSpectrum, eeprom.serialNumber, eeprom.avgResolution, simpleModel);
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, lastSpectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, simpleModel);
                 measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 measurement.postProcessed = smoothed;
             }

@@ -388,7 +388,7 @@ internal class PlatformUtil
         }
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, bool useSimple = false)
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
     {
         try
         {
@@ -410,7 +410,17 @@ internal class PlatformUtil
                 targetWavenum[i] = i + 216;
             }
 
-            double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
+            List<double> trimmedWN = new List<double>();
+            List<double> trimmedCounts = new List<double>();
+
+            for (int i = roiStart; i < wavenumbers.Length; i++)
+            {
+                trimmedWN.Add(wavenumbers[i]);
+                trimmedCounts.Add(counts[i]);
+            }
+
+            double[] interpolatedCounts = Wavecal.mapWavenumbers(trimmedWN.ToArray(), trimmedCounts.ToArray(), targetWavenum);
+
             double max = interpolatedCounts.Max();
 
             if (useSimple)

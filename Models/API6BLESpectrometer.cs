@@ -806,7 +806,7 @@ public class API6BLESpectrometer : Spectrometer
                 }
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution);
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             stretchedDark = new double[smoothed.Length];
             measurement.dark = stretchedDark;
