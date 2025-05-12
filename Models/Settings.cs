@@ -43,6 +43,7 @@ public class Settings : INotifyPropertyChanged
         get => _matchThreshold;
         set
         {
+            logger.info("setting match thresh to {0:f2}", value);
             _matchThreshold = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
         }
