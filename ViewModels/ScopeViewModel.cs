@@ -1684,6 +1684,20 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.info("calling library match function");
         spec.measurement.libraryUsed = settings.libraryLabel;
 
+        double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+        double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+        logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+        if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
+        {
+            if (snr < settings.snrThreshold)
+            {
+                ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
+                return false;
+            }
+        }
+
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
