@@ -392,8 +392,8 @@ internal class PlatformUtil
     {
         try
         {
-            logger.logArray("pre-processed wavenum", wavenumbers);
-            logger.logArray("pre-processed counts", counts);
+            //logger.logArray("pre-processed wavenum", wavenumbers);
+            //logger.logArray("pre-processed counts", counts);
 
             double[] local = new double[counts.Length];
 
@@ -403,8 +403,12 @@ internal class PlatformUtil
                 for (int i = 0; i < counts.Length; i++)
                     local[i] = counts[i] / corrections[i];
             }
+            else
+            {
+                Array.Copy(counts, local, counts.Length);
+            }
 
-            logger.logArray("etalon-corrected counts", counts);
+            //logger.logArray("etalon-corrected counts", counts);
 
             double[] targetWavenum = new double[2376];
             for (int i = 0; i < targetWavenum.Length; i++)
@@ -460,7 +464,7 @@ internal class PlatformUtil
                 //logger.logArray("rebased counts", output);
 
                 output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
-                //logger.logArray("deconvoluted counts", output);
+                ////logger.logArray("deconvoluted counts", output);
 
                 logger.debug("returning processed spectrum");
                 return output;
@@ -469,8 +473,8 @@ internal class PlatformUtil
 
             else
             {
-                logger.logArray("interpolated wavenum", targetWavenum);
-                logger.logArray("interpolated counts", interpolatedCounts);
+                ////logger.logArray("interpolated wavenum", targetWavenum);
+                //logger.logArray("interpolated counts", interpolatedCounts);
 
                 ModelInput modelInput = new ModelInput();
                 modelInput.spectrum = new float[2376];
@@ -484,7 +488,7 @@ internal class PlatformUtil
                 logger.debug("packing prediction");
 
 
-                logger.logArray("transformed counts", p.spectrum);
+                //logger.logArray("transformed counts", p.spectrum);
 
                 int outputSize = p.spectrum.GetLength(0);
                 double[] output = new double[outputSize];
@@ -494,10 +498,10 @@ internal class PlatformUtil
                     output[i] = p.spectrum[i] - min; // * max;
                 }
 
-                logger.logArray("rebased counts", output);
+                //logger.logArray("rebased counts", output);
 
                 output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
-                logger.logArray("deconvoluted counts", output);
+                //logger.logArray("deconvoluted counts", output);
 
                 logger.debug("returning processed spectrum");
                 return output;
