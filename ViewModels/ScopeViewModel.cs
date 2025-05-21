@@ -732,7 +732,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         runPSCorrection = true;
         polyCorrectionStep = false;
         laserArmed = true;
-        notifyToast?.Invoke("When PS sample ready, press capture button  to perform correction");
+        notifyToast?.Invoke("When PS sample ready, press capture button to perform correction");
         return true;
     }
     

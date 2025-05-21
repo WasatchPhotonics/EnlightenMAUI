@@ -133,6 +133,11 @@ namespace EnlightenMAUI.ViewModels
             updateFromInstance();
         }
 
+
+        //
+        // need to resolve the parameter set duplicates here and in settings
+        //
+
         Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
         {
             {

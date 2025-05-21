@@ -151,7 +151,9 @@ public class API6BLESpectrometer : Spectrometer
 
         //await updateBatteryAsync(); 
 
-        // for now, ignore EEPROM configuration and hardcode
+        // ignore EEPROM configuration and hardcode int time and gain. Our preferred defaults here
+        // are different than those written to EEPROM and since there is strong data binding between the
+        // UI and the spectro we have to use static values rather than those in EEPROM 
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
         integrationTimeMS = 400;

@@ -794,6 +794,7 @@ namespace EnlightenMAUI.Models
         // 2x2 Binning
         ////////////////////////////////////////////////////////////////////////
 
+        // To-do: add other binning methods
         protected void apply2x2Binning(double[] spectrum)
         {
             if (eeprom.featureMask.bin2x2)
