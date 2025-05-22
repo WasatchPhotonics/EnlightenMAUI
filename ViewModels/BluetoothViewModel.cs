@@ -31,6 +31,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     public ObservableCollection<USBViewDevice> usbDeviceList { get; private set; }
     BLEDevice bleDevice;
     Android.Hardware.Usb.UsbDevice acc;
+    //Task libraryTester;
 
     public Command scanCmd { get; }
     public Command scanUSBCmd { get; }
@@ -101,7 +102,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.ctor: grabbing ble handle");
         ble = CrossBluetoothLE.Current;
         logger.debug("BVM.ctor: grabbing adapter handle");
-        adapter = CrossBluetoothLE.Current.Adapter;
+        adapter = CrossBluetoothLE.Current.Adapter; 
+        adapter.ScanMode = ScanMode.LowLatency;
+        adapter.ScanTimeout = 20000;
 
         adapter.ScanMode = ScanMode.LowLatency;
         adapter.ScanTimeout = 20000;
@@ -145,6 +148,13 @@ public class BluetoothViewModel : INotifyPropertyChanged
         // as the Spectrometer connection proceeds, allow it to flow updates
         // through this ViewModel for visualization to the user
         spec.showConnectionProgress += showSpectrometerConnectionProgress;
+
+        /*
+        libraryTester = Task.Run(() =>
+        {
+            DPLibrary library = new DPLibrary("database", spec);
+        });
+        */
 
         logger.debug("BVM.ctor: done");
 }
@@ -245,6 +255,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             logger.error("BVM.doResetAsync: Unable to re-enable Bluetooth");
             return false;
         }
+
 
         logger.debug("BVM.doResetAsync: inferring successful Bluetooth enable...sleeping");
         await Task.Delay(2000);
@@ -543,7 +554,24 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         status = await Permissions.RequestAsync<Permissions.StorageRead>();
         if (status != PermissionStatus.Granted)
+
             logger.debug("ENLIGHTEN requires StorageRead permission to load spectra.");
+
+        /*
+        try
+        {
+
+            Android.Net.Uri uri = Android.Net.Uri.Parse("package:" + Android.App.Application.Context.ApplicationInfo.PackageName); 
+            Intent intent = new Intent(Android.Provider.Settings.ActionManageAppAllFilesAccessPermission,uri);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Context con = Android.App.Application.Context;
+            con.StartActivity(intent);
+        }
+        catch (Exception ex)
+        {
+            logger.info("lost permission with exception", ex.Message);
+        }
+        */
 
         return true;
     }
@@ -593,7 +621,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         else
         {
             logger.debug("BVM.doConnectOrDisconnect: connecting");
-            await doConnectAsync(true);
+            await doConnectBluetoothAsync(true);
             if (BLEDevice.paired)
             {
                 try
@@ -606,6 +634,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                     logger.error("spectrometer connect event failed with exception {0}", e.Message);
                 }
                     logger.debug("BVM.doConnectOrDisconnect: calling Shell.Current.GoToAsync");
+                Settings.getInstance().spec = spec;
                 await Shell.Current.GoToAsync("//ScopePage");
             }
         }
@@ -620,29 +649,49 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             try
             {
+                buttonConnectEnabled = false;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
                 Context con = Android.App.Application.Context;
                 UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
+                connectionProgress = 0.025;
                 int interfaces = acc.InterfaceCount;
+                connectionProgress = 0.05;
 
                 logger.info("usb device has {0} interfaces", interfaces);
                 for (int i = 0; i < interfaces; i++)
                 {
                     logger.info("interface {0} has {1} endpoints", i, acc.GetInterface(i).EndpointCount);
                 }
+                connectionProgress = 0.075;
 
                 UsbDeviceConnection udc = manager.OpenDevice(acc);
+                connectionProgress = 0.1;
                 logger.info("device has {0} configurations", acc.ConfigurationCount);
                 if (udc != null)
                 {
                     logger.info("successfully opened device");
                     USBSpectrometer usbSpectrometer = new USBSpectrometer(udc, acc);
+                    connectionProgress = 0.125;
                     spec = usbSpectrometer;
+                    spec.showConnectionProgress += showSpectrometerConnectionProgress;
+
+                    connectionProgress = 0.15;
                     bool ok = await (spec as USBSpectrometer).initAsync();
                     if (ok)
-                        Spectrometer.NewConnection.Invoke(this, spec);
-
+                    {
+                        logger.debug("invoking new connection");
+                        if (Spectrometer.NewConnection != null)
+                            Spectrometer.NewConnection.Invoke(this, spec);
+                    }
+                    logger.debug("init complete setting instance and paired");
                     USBSpectrometer.setInstance(usbSpectrometer);
                     USBViewDevice.paired = true;
+                    connectionProgress = 1;
+                    buttonConnectEnabled = true;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+                    Settings.getInstance().spec = spec;
+                    await Shell.Current.GoToAsync("//ScopePage");
+                    connectionProgress = 0;
                     return ok;
                 }
                 else
@@ -735,7 +784,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /*
      *  I personally think this should probably live in a model class since nothing going on here needs to be displayed
      */
-    async Task<bool> doConnectAsync(bool isBluetooth)
+    async Task<bool> doConnectBluetoothAsync(bool isBluetooth)
     {
         logger.debug("BVM.doConnectAsync: start");
         buttonConnectEnabled = false;
@@ -896,7 +945,37 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
             // populate Spectrometer
             logger.debug("BVM.doConnectAsync: initializing spectrometer");
-            await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
+
+            if (isAPI6((spec as BluetoothSpectrometer).bleDeviceInfo.softwareRevision))
+            {
+                Spectrometer tempSpec = API6BLESpectrometer.getInstance();
+                (tempSpec as API6BLESpectrometer).bleDevice = (spec as BluetoothSpectrometer).bleDevice;
+                spec = tempSpec;
+                spec.showConnectionProgress += showSpectrometerConnectionProgress;
+            }
+
+            foreach (var pair in characteristicsByName)
+            {
+                var name = pair.Key;
+                var c = pair.Value;
+
+                // disabled until I can troubleshoot with Nic
+                if (c.CanUpdate && name == "generic")
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += _characteristicUpdated;
+
+                    await c.StartUpdatesAsync();
+                }
+            }
+
+            if (spec is API6BLESpectrometer)
+            {
+                await (spec as API6BLESpectrometer).initAsync(characteristicsByName);
+            }
+            else
+                await (spec as BluetoothSpectrometer).initAsync(characteristicsByName);
 
             //subscribeToUpdates();
             // start notifications
@@ -905,14 +984,21 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 var name = pair.Key;
                 var c = pair.Value;
 
-                // disabled until I can troubleshoot with Nic
                 if (c.CanUpdate && ((name == "batteryStatus" && spec.eeprom.hasBattery) || name == "laserState"))
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                     //c.ValueUpdated -= _characteristicUpdated;
                     c.ValueUpdated += _characteristicUpdated;
 
-                    // don't see a need to await this?
+                    await c.StartUpdatesAsync();
+                    await Task.Delay(10);
+                }
+                else if (c.CanUpdate && name == "acquireSpectrum" && spec is BluetoothSpectrometer)
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += (spec as BluetoothSpectrometer).receiveSpectralUpdate;
+
                     await c.StartUpdatesAsync();
                 }
             }
@@ -920,8 +1006,17 @@ public class BluetoothViewModel : INotifyPropertyChanged
             ////////////////////////////////////////////////////////////////////
             // all done
             ////////////////////////////////////////////////////////////////////
+            if (spec is BluetoothSpectrometer)
+            {
+                (spec as BluetoothSpectrometer).bleDevice = bleDevice;
+                (spec as BluetoothSpectrometer).updateRSSI();
+            }
+            else if (spec is API6BLESpectrometer)
+            {
+                (spec as API6BLESpectrometer).bleDevice = bleDevice;
+                (spec as API6BLESpectrometer).updateRSSI();
+            }
 
-            (spec as BluetoothSpectrometer).bleDevice = bleDevice;
             BLEDevice.paired = true;
         }
         else
@@ -938,6 +1033,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
         return true;
     }
 
+    static bool isAPI6(string versionString)
+    {
+        string[] parts = versionString.Split('.');
+        if (Int16.Parse(parts[1]) <= 9)
+            return true;
+        else
+            return false;
+    }
+
 
     async Task subscribeToUpdates()
     {
@@ -950,7 +1054,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             var c = pair.Value;
 
             // disabled until I can troubleshoot with Nic
-            if (c.CanUpdate && (name == "batteryStatus" && spec.eeprom.hasBattery))
+            if (c.CanUpdate && (name == "batteryStatus" && spec.eeprom.hasBattery) || name == "generic")
             {
                 logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
                 //c.ValueUpdated -= _characteristicUpdated;
@@ -997,6 +1101,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
             spec.processBatteryNotification(c.Value);
         else if (name == "laserState")
             spec.processLaserStateNotificationAsync(c.Value);
+        else if (name == "generic")
+            spec.processGenericNotification(c.Value);
         else
             logger.error($"no registered processor for {name} notifications");
 

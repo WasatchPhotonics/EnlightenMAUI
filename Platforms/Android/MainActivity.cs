@@ -4,10 +4,11 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Content;
 using AndroidX.Core.App;
+using EnlightenMAUI.Common;
 
 namespace EnlightenMAUI
 {
-    [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
+    [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density, ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : MauiAppCompatActivity
     {
         public static int REQUEST_TREE = 85;
@@ -23,6 +24,9 @@ namespace EnlightenMAUI
         }
         protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
         {
+            if (requestCode == StorageHelper.RequestCode)
+                StorageHelper.OnActivityResult();
+
             base.OnActivityResult(requestCode, resultCode, data);
 
             if (resultCode == Result.Ok)

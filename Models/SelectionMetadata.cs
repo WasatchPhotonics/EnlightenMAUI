@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace EnlightenMAUI.Models
 {
-    public  class SpectrumOverlayMetadata : INotifyPropertyChanged
+    public  class SelectionMetadata : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public SpectrumOverlayMetadata(string name, bool selected = false)
+        public SelectionMetadata(string name, bool selected = false)
         {
             this.name = name;
             this.selected = selected;

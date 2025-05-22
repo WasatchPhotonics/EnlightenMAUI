@@ -4,7 +4,7 @@ namespace EnlightenMAUI.Popups;
 
 public partial class OverlaysPopup : Popup
 {
-	public OverlaysPopup(OverlaysPopupViewModel vm)
+	public OverlaysPopup(SelectionPopupViewModel vm)
 	{
 		InitializeComponent();
 		BindingContext = vm;

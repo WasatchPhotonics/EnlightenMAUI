@@ -5,61 +5,45 @@ using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using static Android.Widget.GridLayout;
 using Java.Util.Functions;
-using Plugin.BLE.Abstractions.EventArgs;
-using System.Diagnostics;
-using Xamarin.Google.Crypto.Tink.Prf;
 
 namespace EnlightenMAUI.Models;
 
 // This more-or-less corresponds to WasatchNET.Spectrometer, or 
 // SiGDemo.Spectrometer.  Spectrometer state and logic should be 
 // encapsulated here.
-public class BluetoothSpectrometer : Spectrometer
-{ 
+public class API6BLESpectrometer : Spectrometer
+{
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
 
     // Singleton
-    static BluetoothSpectrometer instance = null;
+    static API6BLESpectrometer instance = null;
 
     // BLE comms
     Dictionary<string, ICharacteristic> characteristicsByName;
     // WhereAmI whereAmI;
 
-    public BLEDevice bleDevice { get; set; } = null;
+    public BLEDevice bleDevice = null;
 
     ushort lastCRC;
 
     const int MAX_RETRIES = 5;
     const int THROWAWAY_SPECTRA = 9;
 
-    const int AUTO_OPT_TARGET_RATIO = 32;
-    const int AUTO_TAKING_DARK = 33;
-    const int AUTO_LASER_WARNING_DELAY = 34;
-    const int AUTO_LASER_WARMUP = 35;
-    const int AUTO_TAKING_RAMAN = 36;
-
-    bool dataCollectingStarted = false;
-    bool optimizationDone = false;
-    bool waitingForGeneric = false;
-    bool acqSynced = false;
-
     uint totalPixelsToRead;
     uint totalPixelsRead;
-    bool collectionErrorDetected = false;
-    double[] spectrum;
 
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle 
     ////////////////////////////////////////////////////////////////////////
 
-    static public BluetoothSpectrometer getInstance()
+    static public API6BLESpectrometer getInstance()
     {
         if (instance is null)
-            instance = new BluetoothSpectrometer();
+            instance = new API6BLESpectrometer();
         return instance;
     }
 
-    BluetoothSpectrometer()
+    API6BLESpectrometer()
     {
         reset();
     }
@@ -69,13 +53,12 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug("Spectrometer.disconnect: start");
         laserEnabled = false;
         autoDarkEnabled = false;
-        autoRamanEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
     }
 
     public override void reset()
-    { 
+    {
         logger.debug("Spectrometer.reset: start");
         paired = false;
 
@@ -162,7 +145,7 @@ public class BluetoothSpectrometer : Spectrometer
         ////////////////////////////////////////////////////////////////////
 
         raiseConnectionProgress(1);
-        
+
         logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
@@ -174,9 +157,7 @@ public class BluetoothSpectrometer : Spectrometer
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
         integrationTimeMS = 400;
-        await Task.Delay(10);
         gainDb = 8;
-        await Task.Delay(10);
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
@@ -188,9 +169,9 @@ public class BluetoothSpectrometer : Spectrometer
         logger.info($"  gainDb: {gainDb}");
         // logger.info($"  verticalROI: ({verticalROIStartLine}, {verticalROIStopLine})");
         logger.info($"  excitation: {laserExcitationNM:f3}nm");
-        logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels-1]:f2})");
+        logger.info($"  wavelengths: ({wavelengths[0]:f2}, {wavelengths[pixels - 1]:f2})");
         if (wavenumbers != null)
-            logger.info($"  wavenumbers: ({wavenumbers[0]:f2}, {wavenumbers[pixels-1]:f2})");
+            logger.info($"  wavenumbers: ({wavenumbers[0]:f2}, {wavenumbers[pixels - 1]:f2})");
 
         // I'm honestly not sure where we should initialize location, but it 
         // should probably happen after we've successfully connected to a
@@ -198,12 +179,6 @@ public class BluetoothSpectrometer : Spectrometer
         // at this point we know the user has already granted location privs.
         //
         // whereAmI = WhereAmI.getInstance();
-
-        //test set
-        //dropFactor = 0.8f;
-        await syncAutoRamanParameters();
-
-        //updateRSSI();
 
         logger.debug("Spectrometer.initAsync: done");
         return true;
@@ -215,37 +190,53 @@ public class BluetoothSpectrometer : Spectrometer
         ICharacteristic eepromCmd;
         ICharacteristic eepromData;
 
-        List<byte[]> pages = new List<byte[]>();
-        EEPROMReadComplete = false;
-        EEPROMBytesRead = 0;
-        CurrentEEPROMPage = 0;
-        EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
-
-        while (!EEPROMReadComplete)
+        if (characteristicsByName.ContainsKey("eepromCmd") && characteristicsByName.ContainsKey("eepromData"))
         {
-            genericReturned = false;
-
-            logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {CurrentEEPROMPage}, offset {EEPROMBytesRead % EEPROM.PAGE_LENGTH}");
-            byte[] request = { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
-            bool ok = await writeGenericCharacteristic(request);
-            if (!ok)
-            {
-                logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
-                return null;
-            }
-
-            while (!genericReturned)
-                await Task.Delay(5);
+            eepromCmd = characteristicsByName["eepromCmd"];
+            eepromData = characteristicsByName["eepromData"];
         }
-
-        for (int i = 0; i < EEPROM.MAX_PAGES; i++)
+        else
+        {
+            logger.error("Can't read EEPROM w/o characteristics");
+            return null;
+        }
+        logger.debug("Spectrometer.readEEPROMAsync: reading EEPROM");
+        List<byte[]> pages = new List<byte[]>();
+        for (int page = 0; page < EEPROM.MAX_PAGES; page++)
         {
             byte[] buf = new byte[EEPROM.PAGE_LENGTH];
-            Array.Copy(EEPROMBuffer, i *  EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
-            logger.hexdump(buf, $"adding page {i}: ");
-            pages.Add(buf);
-        }
+            int pos = 0;
+            for (int subpage = 0; subpage < EEPROM.API6_SUBPAGE_COUNT; subpage++)
+            {
+                byte[] request = ToBLEData.convert((byte)page, (byte)subpage);
+                logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {page}, subpage {subpage}");
+                bool ok = 0 == await eepromCmd.WriteAsync(request);
+                if (!ok)
+                {
+                    logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({page}, {subpage})");
+                    return null;
+                }
 
+                try
+                {
+                    logger.debug($"Spectrometer.readEEPROMAsync: reading eepromData");
+                    var response = await eepromData.ReadAsync();
+                    logger.hexdump(response.data, "response: ");
+                    logger.info($"The length of buf is {buf.Length} and length of response is {response.data.Length}");
+
+                    for (int i = 0; i < response.data.Length; i++)
+                        buf[pos++] = response.data[i];
+                }
+                catch (Exception ex)
+                {
+                    logger.error($"Caught exception when trying to read EEPROM characteristic: {ex}");
+                    return null;
+                }
+            }
+            logger.hexdump(buf, $"adding page {page}: ");
+            pages.Add(buf);
+            raiseConnectionProgress(.15 + .85 * page / EEPROM.MAX_PAGES);
+        }
         logger.debug($"Spectrometer.readEEPROMAsync: done");
         return pages;
     }
@@ -254,8 +245,8 @@ public class BluetoothSpectrometer : Spectrometer
     // scansToAverage
     ////////////////////////////////////////////////////////////////////////
 
-    public override byte scansToAverage 
-    { 
+    public override byte scansToAverage
+    {
         get => _scansToAverage;
         set
         {
@@ -273,8 +264,8 @@ public class BluetoothSpectrometer : Spectrometer
     public override uint integrationTimeMS
     {
         get => _nextIntegrationTimeMS;
-        set 
-        { 
+        set
+        {
             _nextIntegrationTimeMS = value;
             logger.debug($"Spectrometer.integrationTimeMS: next = {value}");
             _ = syncIntegrationTimeMSAsync();
@@ -290,24 +281,22 @@ public class BluetoothSpectrometer : Spectrometer
         if (_nextIntegrationTimeMS == _lastIntegrationTimeMS)
             return true;
 
-        ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
-        byte[] data = ToBLEData.convert(value, len: 3);
+        var characteristic = characteristicsByName["integrationTimeMS"];
+        if (characteristic is null)
+        {
+            logger.error("can't find integrationTimeMS characteristic");
+            return false;
+        }
 
-        byte[] request = { 0xb2, 0, 0, 0 };
-        Array.Copy(data, 0, request, 1, data.Length);
+        ushort value = Math.Min((ushort)5000, Math.Max((ushort)1, (ushort)Math.Round((decimal)_nextIntegrationTimeMS)));
+        byte[] request = ToBLEData.convert(value, len: 4);
 
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
 
-        if (!await sem.WaitAsync(100))
-        {
-            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
-            return false;
-        }
-        var ok = await writeGenericCharacteristic(request);
-        sem.Release();
+        var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
-        { 
+        {
             _lastIntegrationTimeMS = _nextIntegrationTimeMS;
             await pauseAsync("syncIntegrationTimeMSAsync");
         }
@@ -315,70 +304,6 @@ public class BluetoothSpectrometer : Spectrometer
             logger.error($"Failed to set integrationTimeMS {value}");
 
         return ok;
-    }
-
-    async Task<bool> syncAcqParams()
-    {
-        byte[] request = { 0xbf };
-        lastRequest = Opcodes.GET_INTEGRATION_TIME;
-
-        logger.hexdump(request, "sync acq int time data: ");
-
-        if (!await sem.WaitAsync(100))
-        {
-            logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
-        }
-        waitingForGeneric = true;
-        var ok = await writeGenericCharacteristic(request);
-        sem.Release();
-
-        while (waitingForGeneric)
-        {
-            await Task.Delay(10);
-        } 
-        
-        request = new byte[]{ 0xff, 0x63 };
-        lastRequest = Opcodes.GET_SCANS_TO_AVERAGE;
-
-        logger.hexdump(request, "sync acq avg data: ");
-
-        if (!await sem.WaitAsync(100))
-        {
-            logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
-        }
-        waitingForGeneric = true;
-        ok = await writeGenericCharacteristic(request);
-        sem.Release();
-
-        while (waitingForGeneric)
-        {
-            await Task.Delay(10);
-        }
-        
-        request = new byte[]{ 0xc5 };
-        lastRequest = Opcodes.GET_DETECTOR_GAIN;
-
-        logger.hexdump(request, "sync acq gain data: ");
-
-        if (!await sem.WaitAsync(100))
-        {
-            logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
-        }
-        waitingForGeneric = true;
-        ok = await writeGenericCharacteristic(request);
-        sem.Release();
-
-        while (waitingForGeneric)
-        {
-            await Task.Delay(10);
-        }
-
-        acqSynced = true;
-        measurement.integrationTimeMS = integrationTimeMS;
-        measurement.detectorGain = gainDb;
-        measurement.scansToAverage = scansToAverage;
-
-        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -391,8 +316,8 @@ public class BluetoothSpectrometer : Spectrometer
     public override float gainDb
     {
         get => _nextGainDb;
-        set 
-        { 
+        set
+        {
             if (0 <= value && value <= 72)
             {
                 _nextGainDb = value;
@@ -414,42 +339,28 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (_nextGainDb == _lastGainDb)
             return true;
-                        
+
+        var characteristic = characteristicsByName["gainDb"];
+        if (characteristic is null)
+        {
+            logger.error("gainDb characteristic not found");
+            return false;
+        }
+
         byte msb = (byte)Math.Floor(_nextGainDb);
-        byte lsb = (byte)(((byte)Math.Round( (_nextGainDb - msb) * 256.0)) & 0xff);
+        byte lsb = (byte)(((byte)Math.Round((_nextGainDb - msb) * 256.0)) & 0xff);
 
         ushort value = (ushort)((msb << 8) | lsb);
         ushort len = 2;
 
-        byte[] data = ToBLEData.convert(value, len: len);
-        byte[] request = { 0xb7, 0, 0 };
-        Array.Copy(data, 0, request, 1, data.Length);
-
-        /*
-        byte[] data = ToBLEData.convert(value, len: 4);
-
-        byte[] request = { 0xb2, 0, 0, 0, 0 };
-        Array.Copy(data, 0, request, 1, data.Length);
-
-        logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
-        logger.hexdump(request, "data: ");
-
-        var ok = await writeGenericCharacteristic(request);
-        */
-
+        byte[] request = ToBLEData.convert(value, len: len);
 
         logger.debug($"converting gain {_nextGainDb:f4} to msb 0x{msb:x2}, lsb 0x{lsb:x2}, value 0x{value:x4}, request {request}");
 
-        logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
+        logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})");
         logger.hexdump(request, "data: ");
 
-        if (!await sem.WaitAsync(100))
-        {
-            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
-            return false;
-        }
-        var ok = await writeGenericCharacteristic(request);
-        sem.Release();
+        var ok = 0 == await characteristic.WriteAsync(request);
         if (ok)
         {
             _lastGainDb = _nextGainDb;
@@ -471,39 +382,8 @@ public class BluetoothSpectrometer : Spectrometer
 
     protected override void processGeneric(byte[] data)
     {
-        byte[] payload = new byte[data.Length - 2];
-
-        logger.debug("BLE Generic process copying payload");
-        Array.Copy(data, 2, payload, 0, data.Length - 2);
-        logger.debug("BLE Generic process copied payload");
-
-        UInt64 val = ToBLEData.toUInt64(payload);
-        logger.debug("BLE Generic process value parsed as {0} with last request as {1}", val, lastRequest.ToString());
-
-        if (lastRequest == Opcodes.GET_INTEGRATION_TIME)
-        {
-            _nextIntegrationTimeMS = (uint)val;
-            logger.debug("generic integration time getter returned {0}", val);
-            NotifyPropertyChanged(nameof(integrationTimeMS));
-        }
-        else if (lastRequest == Opcodes.GET_SCANS_TO_AVERAGE)
-        {
-            _scansToAverage = (byte)val;
-            logger.debug("generic scans to average getter returned {0}", val);
-            NotifyPropertyChanged(nameof(scansToAverage));
-        }
-        else if (lastRequest == Opcodes.GET_DETECTOR_GAIN)
-        {
-            float gain = data[2];
-            gain += (data[3] / 256f);
-            _lastGainDb = gain;
-            logger.debug("generic gain getter returned {0}", val);
-            NotifyPropertyChanged(nameof(gainDb));
-        }
-
-        waitingForGeneric = false;
+        throw new NotImplementedException();
     }
-
 
     ////////////////////////////////////////////////////////////////////////
     // Vertical ROI Start/Stop
@@ -512,8 +392,8 @@ public class BluetoothSpectrometer : Spectrometer
     public override ushort verticalROIStartLine
     {
         get => _nextVerticalROIStartLine;
-        set 
-        { 
+        set
+        {
             if (value > 0 && value < eeprom.activePixelsVert)
             {
                 _nextVerticalROIStartLine = value;
@@ -537,13 +417,13 @@ public class BluetoothSpectrometer : Spectrometer
     public override ushort verticalROIStopLine
     {
         get => _nextVerticalROIStopLine;
-        set 
-        { 
+        set
+        {
             if (value > 0 && value < eeprom.activePixelsVert)
             {
                 _nextVerticalROIStopLine = value;
                 logger.debug($"Spectrometer.verticalROIStopLine -> {value}");
-                
+
                 byte[] data = ToBLEData.convert(value, len: 2);
                 byte[] dataToSend = { 0xff, 0x23, 0, 0 };
                 Array.Copy(data, 0, dataToSend, 2, data.Length);
@@ -575,266 +455,6 @@ public class BluetoothSpectrometer : Spectrometer
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Auto-Raman Parameters
-    ////////////////////////////////////////////////////////////////////////
-
-    public override ushort maxCollectionTimeMS
-    {
-        get => _maxCollectionTimeMS;
-        set
-        {
-            if (value != _maxCollectionTimeMS)
-            {
-                _maxCollectionTimeMS = value;
-                logger.debug($"Spectrometer.maxTimeMS -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override ushort startIntTimeMS
-    {
-        get => _startIntTimeMS;
-        set
-        {
-            if (value != _startIntTimeMS)
-            {
-                _startIntTimeMS = value;
-                logger.debug($"Spectrometer.startIntTimeMS -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override byte startGainDb
-    {
-        get => _startGainDB;
-        set
-        {
-            if (0 <= value && value <= 72)
-            {
-                _startGainDB = value;
-                logger.debug($"Spectrometer.startGainDb: next = {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-            else
-            {
-                logger.error($"ignoring out-of-range gainDb {value}");
-            }
-        }
-    }
-
-    public override ushort minIntTimeMS
-    {
-        get => _minIntTimeMS;
-        set
-        {
-            if (value != _minIntTimeMS)
-            {
-                _minIntTimeMS = value;
-                logger.debug($"Spectrometer.minIntTimeMS -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override ushort maxIntTimeMS
-    {
-        get => _maxIntTimeMS;
-        set
-        {
-            if (value != _maxIntTimeMS)
-            {
-                _maxIntTimeMS = value;
-                logger.debug($"Spectrometer.maxIntTimeMS -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override byte minGainDb
-    {
-        get => _minGainDb;
-        set
-        {
-            if (0 <= value && value <= 72)
-            {
-                _minGainDb = value;
-                logger.debug($"Spectrometer.minGainDb: next = {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-            else
-            {
-                logger.error($"ignoring out-of-range gainDb {value}");
-            }
-        }
-    }
-
-    public override byte maxGainDb
-    {
-        get => _maxGainDb;
-        set
-        {
-            if (0 <= value && value <= 72)
-            {
-                _maxGainDb = value;
-                logger.debug($"Spectrometer.maxGainDb: next = {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-            else
-            {
-                logger.error($"ignoring out-of-range gainDb {value}");
-            }
-        }
-    }
-
-    public override ushort targetCounts
-    {
-        get => _targetCounts;
-        set
-        {
-            if (value != _targetCounts)
-            {
-                _targetCounts = value;
-                logger.debug($"Spectrometer.targetCounts -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override ushort minCounts
-    {
-        get => _minCounts;
-        set
-        {
-            if (value != _minCounts)
-            {
-                _minCounts = value;
-                logger.debug($"Spectrometer.minCounts -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override ushort maxCounts
-    {
-        get => _maxCounts;
-        set
-        {
-            if (value != _maxCounts)
-            {
-                _maxCounts = value;
-                logger.debug($"Spectrometer.maxCounts -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override byte maxFactor
-    {
-        get => _maxFactor;
-        set
-        {
-            if (value != _maxFactor)
-            {
-                _maxFactor = value;
-                logger.debug($"Spectrometer.maxFactor -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override float dropFactor
-    {
-        get => _dropFactor;
-        set
-        {
-            _dropFactor = value;
-            logger.debug($"Spectrometer.dropFactor: next = {value}");
-            _ = syncAutoRamanParameters();
-            NotifyPropertyChanged();
-        }
-    }
-
-    public override ushort saturationCounts
-    {
-        get => _saturationCounts;
-        set
-        {
-            if (value != _saturationCounts)
-            {
-                _saturationCounts = value;
-                logger.debug($"Spectrometer.saturationCounts -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public override byte maxAverage
-    {
-        get => _maxAverage;
-        set
-        {
-            if (value != _maxAverage)
-            {
-                _maxAverage = value;
-                logger.debug($"Spectrometer.maxAverage -> {value}");
-                _ = syncAutoRamanParameters();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    async Task<bool> syncAutoRamanParameters()
-    {
-        if (!paired || characteristicsByName is null || holdAutoRamanParameterSet)
-            return false;
-
-        byte[] paramPack = packAutoRamanParameters();
-
-        byte[] request = new byte[paramPack.Length + 2];
-        request[0] = 0x95;    
-        //request[1] = 0xfd;    
-        Array.Copy(paramPack, 0, request, 1, paramPack.Length);
-        logger.hexdump(request, "data: ");
-
-        if (!await sem.WaitAsync(1000))
-        {
-            logger.error("Spectrometer.syncAutoRamanParameters: couldn't get semaphore");
-            return false;
-        }
-        var ok = await writeGenericCharacteristic(request);
-        sem.Release();
-        if (ok)
-        {
-            await pauseAsync("syncAutoRamanParameters");
-        }
-        else
-            logger.error($"Failed to set auto raman params");
-
-        // kludge
-        if (!ok)
-        {
-            logger.error("KLUDGE: ignoring auto params failure");
-            ok = true;
-        }
-
-        return ok;
-    }
-
-    ////////////////////////////////////////////////////////////////////////
     // genericCharacteristic
     ////////////////////////////////////////////////////////////////////////
 
@@ -842,9 +462,9 @@ public class BluetoothSpectrometer : Spectrometer
 
     private async Task<bool> writeGenericCharacteristic(byte[] data)
     {
-        if (characteristicsByName is null)
+        if (!paired || characteristicsByName is null)
         {
-            logger.error("writeGenericCharacteristic: no characteristics");
+            logger.error("writeGenericCharacteristic: not paired or no characteristics");
             return false;
         }
 
@@ -856,7 +476,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
 
         // prepend sequence byte
-        byte[] dataToSend = new byte[data.Length + 1]; 
+        byte[] dataToSend = new byte[data.Length + 1];
         dataToSend[0] = genericSequence++;
         Array.Copy(data, 0, dataToSend, 1, data.Length);
 
@@ -1052,7 +672,7 @@ public class BluetoothSpectrometer : Spectrometer
             return false;
         }
         logger.hexdump(response.data, "batteryStatus: ");
-        battery.parse(response.data);
+        battery.parseAPI6(response.data);
         await pauseAsync("Spectrometer.updateBatteryAsync");
 
         logger.debug("Spectrometer.updateBatteryAsync: sending batteryStatus notification");
@@ -1067,10 +687,10 @@ public class BluetoothSpectrometer : Spectrometer
     {
         while (paired)
         {
-            
+
             //logger.debug("current RSSI {0}", rssi);
             NotifyPropertyChanged("rssi");
-            await Task.Delay(500); 
+            await Task.Delay(500);
 
         }
     }
@@ -1096,11 +716,11 @@ public class BluetoothSpectrometer : Spectrometer
 
         // push-down any changed acquisition parameters
         logger.debug("Spectrometer.takeOneAveragedAsync: syncing integration time");
-        if (! await syncIntegrationTimeMSAsync())
+        if (!await syncIntegrationTimeMSAsync())
             return false;
 
         logger.debug("Spectrometer.takeOneAveragedAsync: syncing gain");
-        if (! await syncGainDbAsync())
+        if (!await syncGainDbAsync())
             return false;
 
         // update battery FIRST
@@ -1110,7 +730,6 @@ public class BluetoothSpectrometer : Spectrometer
         // for progress bar
         totalPixelsToRead = pixels; // * scansToAverage;
         totalPixelsRead = 0;
-        collectionErrorDetected = false;
         acquiring = true;
 
         // TODO: integrate laserDelayMS into showProgress
@@ -1140,8 +759,16 @@ public class BluetoothSpectrometer : Spectrometer
 
         bool disableLaserAfterFirstPacket = swRamanMode;
 
+        if (!await sem.WaitAsync(100))
+        {
+            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            return false;
+        }
+
         double[] spectrum = await takeOneAsync(disableLaserAfterFirstPacket);
         logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
+
+        sem.Release();
 
         if (spectrum is null)
         {
@@ -1164,7 +791,7 @@ public class BluetoothSpectrometer : Spectrometer
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
 
-        lastRaw = spectrum; 
+        lastRaw = spectrum;
         lastSpectrum = spectrum;
 
         measurement.reset();
@@ -1181,11 +808,9 @@ public class BluetoothSpectrometer : Spectrometer
                 }
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, PlatformUtil.simpleTransformerLoaded ? true : false);
-            //double[] smoothedB = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, false);
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             stretchedDark = new double[smoothed.Length];
-            measurement.rawDark = dark;
             measurement.dark = stretchedDark;
             measurement.postProcessed = smoothed;
         }
@@ -1200,10 +825,10 @@ public class BluetoothSpectrometer : Spectrometer
         ////////////////////////////////////////////////////////////////////////
 
         logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
-        
+
         logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
 
-        logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}", 
+        logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}",
             measurement.processed == null ? "null" : "NOT NULL");
         if (measurement.processed != null)
         {
@@ -1235,48 +860,165 @@ public class BluetoothSpectrometer : Spectrometer
             return null;
         }
 
-        spectrum = new double[pixels];
-        totalPixelsRead = 0;
-        totalPixelsToRead = pixels;
-        collectionErrorDetected = false;
-
-        dataCollectingStarted = false;
-        optimizationDone = false;
-        acqSynced = false;
-        collectionsCompleted = 0;  
-        prevUpdate = DateTime.MinValue;
-        prevValue = 0;
-        firstCollect = true;
-        delta = 0;
-
-        // send acquire command
-        if (!await sem.WaitAsync(100))
+        var spectrumRequestChar = characteristicsByName["spectrumRequest"];
+        if (spectrumRequestChar is null)
         {
-            logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
+            logger.error("can't find characteristic spectrumRequest");
             return null;
         }
+
+        var spectrumChar = characteristicsByName["readSpectrum"];
+        if (spectrumChar is null)
+        {
+            logger.error("can't find characteristic spectrum");
+            return null;
+        }
+
+        // send acquire command
         logger.debug("takeOneAsync: sending SPECTRUM_ACQUIRE");
-        byte[] request = new byte[] { (byte)acquisitionMode };
+        byte[] request = ToBLEData.convert(autoDarkEnabled);
         if (0 != await acquireChar.WriteAsync(request))
         {
             logger.error("failed to send acquire");
-            sem.Release();
-            return null;
-        }
-        sem.Release();
-        monitorAutoRamanProgress();
-        logger.debug("waiting for spectral data");
-        bool ok = await monitorSpectrumAcquire();
-        if (!ok)
-        {
-            if (collectionErrorDetected)
-                logger.debug("collection error detected");
-            else
-                logger.debug("spectrum collection timed out");
             return null;
         }
 
-        await syncAcqParams();
+        // wait for acquisition to complete
+        logger.debug($"takeOneAsync: waiting {integrationTimeMS}ms");
+
+        int waitTime = (int)integrationTimeMS;
+        if (laserState.mode == LaserMode.AUTO_DARK)
+            waitTime = 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+
+        await Task.Delay(waitTime);
+
+        var spectrum = new double[pixels];
+        UInt16 pixelsRead = 0;
+        var retryCount = 0;
+        bool requestRetry = false;
+        bool haveDisabledLaser = false;
+
+        while (pixelsRead < pixels)
+        {
+            if (requestRetry)
+            {
+                retryCount++;
+                if (retryCount > MAX_RETRIES)
+                {
+                    logger.error($"giving up after {MAX_RETRIES} retries");
+                    return null;
+                }
+
+                int delayMS = (int)Math.Pow(5, retryCount);
+
+                // if this is the first retry, assume that the sensor was
+                // powered-down, and we need to wait for some throwaway
+                // spectra 
+                if (retryCount == 1)
+                    delayMS = (int)(integrationTimeMS * THROWAWAY_SPECTRA);
+
+                logger.error($"Retry requested, so waiting for {delayMS}ms");
+                await Task.Delay(delayMS);
+
+                requestRetry = false;
+            }
+
+            logger.debug($"takeOneAsync: requesting spectrum packet starting at pixel {pixelsRead}");
+            request = ToBLEData.convert(pixelsRead, len: 2);
+            if (0 != await spectrumRequestChar.WriteAsync(request))
+            {
+                logger.error($"failed to write spectrum request for pixel {pixelsRead}");
+                return null;
+            }
+
+            logger.debug($"reading spectrumChar (pixelsRead {pixelsRead})");
+            var response = await spectrumChar.ReadAsync();
+
+            // make sure response length is even, and has both header and at least one pixel of data
+            var responseLen = response.data.Length;
+
+            if (responseLen == 3)
+            {
+                if (response.data[2] != 0)
+                {
+                    logger.error("attempted spectrum read returned error code 0x{0:x2},0x{1:x2},0x{2:x2}", response.data[0], response.data[1], response.data[2]);
+                    return null;
+                }
+                else
+                {
+                    requestRetry = true;
+                    continue;
+                }
+
+            }
+            else if (responseLen < headerLen || responseLen % 2 != 0)
+            {
+                logger.error($"received invalid response of {responseLen} bytes");
+                requestRetry = true;
+                continue;
+            }
+
+            // firstPixel is a big-endian UInt16
+            short firstPixel = (short)((response.data[0] << 8) | response.data[1]);
+            if (firstPixel > 2048 || firstPixel < 0)
+            {
+                logger.error($"received NACK (firstPixel {firstPixel}, retrying)");
+                requestRetry = true;
+                continue;
+            }
+
+            var pixelsInPacket = (responseLen - headerLen) / 2;
+
+            logger.debug($"received spectrum packet starting at pixel {firstPixel} with {pixelsInPacket} pixels");
+            // logger.hexdump(response);
+
+            var crc = Crc16.checksum(response.data);
+            if (crc == lastCRC)
+            {
+                logger.error($"received duplicate CRC 0x{crc:x4}, retrying");
+                requestRetry = true;
+                continue;
+            }
+
+            lastCRC = crc;
+
+            for (int i = 0; i < pixelsInPacket; i++)
+            {
+                // pixel intensities are little-endian UInt16
+                var offset = headerLen + i * 2;
+                ushort intensity = (ushort)((response.data[offset + 1] << 8) | response.data[offset]);
+                spectrum[pixelsRead] = intensity;
+
+                pixelsRead++;
+                totalPixelsRead++;
+
+                if (pixelsRead == pixels)
+                {
+                    logger.debug("read complete spectrum");
+                    if (i + 1 != pixelsInPacket)
+                        logger.error($"ignoring {pixelsInPacket - (i + 1)} trailing pixels");
+                    break;
+                }
+            }
+            // response = null;
+
+            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+        }
+
+        // YOU ARE HERE: kludge at end
+        if (disableLaserAfterFirstPacket && !haveDisabledLaser)
+        {
+            logger.debug("disabling laser after complete spectrum received");
+            laserEnabled = false;
+            logger.debug("continuing end-of-spectrum processing after triggering laser disable");
+        }
+
+        // kludge: first four pixels are zero, so overwrite from 5th
+        for (int i = 0; i < 4; i++)
+            spectrum[i] = spectrum[4];
+
+        // kludge: last pixel seems to be 0xff, so re-write from previous
+        spectrum[pixels - 1] = spectrum[pixels - 2];
 
         // apply 2x2 binning
         if (eeprom.featureMask.bin2x2)
@@ -1292,264 +1034,4 @@ public class BluetoothSpectrometer : Spectrometer
         return spectrum;
     }
 
-    public async Task<bool> monitorSpectrumAcquire()
-    {
-        int bufferTime = 10000;
-
-        int waitTime = (int)integrationTimeMS + bufferTime;
-        if (acquisitionMode == AcquisitionMode.AUTO_DARK)
-            waitTime = 2 * (int)(integrationTimeMS + 25) * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
-        else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
-        {
-            waitTime = 30000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
-        }
-
-        int timeout = waitTime * 2 + 6000;
-
-        Stopwatch sw = Stopwatch.StartNew();
-        sw.Start();
-
-        while (sw.ElapsedMilliseconds <= timeout)
-        {
-            await Task.Delay(33);
-
-            if (totalPixelsRead == totalPixelsToRead)
-                return true;
-            else if (collectionErrorDetected)
-                return false;
-        }
-
-        logger.info("collection timed out");
-
-        sw.Stop();
-
-        return false;
-    }
-
-    DateTime autoStart;
-    DateTime autoEnd;
-    int collectionsCompleted = 0;
-
-    public async Task<bool> monitorAutoRamanProgress()
-    {
-        DateTime now = autoStart = DateTime.Now;
-        logger.debug("monitor auto starting at {0}", autoStart.ToString("hh:mm:ss.fff"));
-        double estimatedSeconds = 15 + maxCollectionTimeMS / 1000;
-        double estimatedMilliseconds = estimatedSeconds * 1000;
-        double prevProgress = 0;
-        autoEnd = autoStart.AddSeconds(estimatedSeconds);
-        logger.debug("initial auto end estimate at {0}", autoEnd.ToString("hh:mm:ss.fff"));
-
-        await Task.Delay(67);
-
-        while (true)
-        {
-            if (totalPixelsRead > 0)
-                break;
-
-            now = DateTime.Now;
-            estimatedMilliseconds = (autoEnd - autoStart).TotalMilliseconds;
-            double progress = (now - autoStart).TotalMilliseconds / estimatedMilliseconds;
-
-            logger.debug("estimated progress currently at {0:f3}", progress);
-
-            if (progress > prevProgress && progress <= 1)
-            {
-                raiseAcquisitionProgress(0.75 * progress);
-
-                prevProgress = progress;
-            }
-
-            await Task.Delay(33);
-        }
-
-        return true;
-    }
-
-    public async Task<bool> monitorAutoDarkProgresS()
-    {
-
-        return true;
-    }
-
-    DateTime prevUpdate = DateTime.MinValue;
-    int prevValue = 0;
-
-    void updateAutoEstimate(int autoStep, int arg)
-    {
-        //double estimatedSeconds = 15 + maxCollectionTimeMS * 1000;
-        //double estimatedMilliseconds = estimatedSeconds * 1000;
-        //autoEnd = autoStart.AddSeconds(estimatedSeconds);
-        if (autoStep == AUTO_OPT_TARGET_RATIO)
-        {
-            DateTime now = DateTime.Now;
-            if (prevUpdate.Year != DateTime.MinValue.Year)
-            {
-                if (arg != prevValue)
-                {
-                    double slope = (now - prevUpdate).TotalMilliseconds / (arg - prevValue);
-                    double estMSToGo = slope * (90 - arg);
-                    double estimatedMilliseconds = (estMSToGo + maxCollectionTimeMS + 2500);
-                    autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
-                }
-            }
-
-            prevUpdate = now;
-            prevValue = arg;
-        }
-        else if (autoStep > AUTO_OPT_TARGET_RATIO)
-        {
-            logger.debug("{0} scans to average with {1} remaining in arg at {2} int time", scansToAverage, arg, integrationTimeMS);
-
-            if (acqSynced)
-            {
-                double estimatedMilliseconds = arg * integrationTimeMS;
-                if (autoStep == AUTO_TAKING_RAMAN)
-                    estimatedMilliseconds += 1700;
-                logger.debug("scan completion estimated in {0} ms", estimatedMilliseconds);
-                autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
-            }
-        }
-
-        logger.debug("after update auto end estimate at {0}", autoEnd.ToString("hh:mm:ss.fff"));
-    }
-
-    bool firstCollect = true;
-    int delta = 0;
-
-    public void receiveSpectralUpdate(
-            object sender,
-            CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
-    {
-        logger.debug($"BVM.receiveSpectralUpdate: start");
-        var c = characteristicUpdatedEventArgs.Characteristic;
-
-        byte[] data = c.Value;
-
-        if (data[0] == 0xff && data[1] == 0xff)
-        {
-            logger.hexdump(data, "collection status update: ");
-
-            if (data[2] == AUTO_OPT_TARGET_RATIO)
-            {
-                //raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));
-
-                logger.debug("auto-raman optimize progress at {0} of 255", data[3]);
-
-                if (Math.Abs(100 - data[3]) <= 11)
-                {
-                    optimizationDone = true;
-                    double estimatedMilliseconds = (maxCollectionTimeMS + 2500);
-                    autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
-                    //syncAcqParams();
-                }
-                else
-                {
-                    updateAutoEstimate(data[2], data[3]);
-                }
-            }
-            else if (data[2] > AUTO_OPT_TARGET_RATIO)
-            {
-                UInt16 complete = (UInt16)((data[3] << 8) | data[4]);
-                UInt16 total = (UInt16)((data[5] << 8) | data[6]);
-
-                if (!optimizationDone)
-                {
-                    optimizationDone = true;
-                    double estimatedMilliseconds = (maxCollectionTimeMS + 2500);
-                    autoEnd = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
-                }
-
-                if (optimizationDone && !dataCollectingStarted)
-                {
-                    //if (autoRamanEnabled)
-                    //    raiseAcquisitionProgress(0.25);
-                    dataCollectingStarted = true;
-                }
-
-                if (total > 0)
-                {
-                    if (firstCollect)
-                    {
-                        firstCollect = false;
-                        delta = total - complete + 1;
-                    }
-
-                    int completeProg = complete;
-                    if (autoRamanEnabled)
-                        completeProg = complete - delta;
-                    int totalProg = total;
-                    if (autoRamanEnabled)
-                        totalProg = total - 5;
-
-                    if (data[2] == AUTO_TAKING_RAMAN)
-                        updateAutoEstimate(data[2], total - complete - 1);
-                    else if (data[2] == AUTO_TAKING_DARK)
-                        updateAutoEstimate(data[2], total - complete);
-
-                    /*
-                    if (autoDarkEnabled)
-                        raiseAcquisitionProgress(0.75 * (completeProg / totalProg));
-                    else if (autoRamanEnabled)
-                        raiseAcquisitionProgress(0.25 + 0.5 * ((double)completeProg / totalProg));
-                    */
-                }
-
-                if (data[2] == AUTO_TAKING_DARK)
-                {
-                    logger.debug("dark collection progress at {0} of {1}", complete, total);
-                }
-                else if (data[2] == AUTO_LASER_WARNING_DELAY)
-                {
-                    logger.debug("laser warning progress at {0} of {1}", complete, total);
-                }
-                else if (data[2] == AUTO_LASER_WARMUP)
-                {
-                    logger.debug("laser warmup progress at {0} of {1}", complete, total);
-                }
-                else if (data[2] == AUTO_TAKING_RAMAN)
-                {
-                    logger.debug("raman collection progress at {0} of {1}", complete, total);
-                }
-            }
-        }
-        else
-        {
-            int pixelsInPacket = (int)data.Length / 2 - 1;
-
-            ushort startPixel = (ushort)(data[1] | data[0] << 8);
-            logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
-            logger.hexdump(data, "pixel data: ");
-            if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
-            {
-                totalPixelsRead += startPixel;
-            }
-            else if (totalPixelsRead != startPixel)
-            {
-                collectionErrorDetected = true;
-            }
-
-            for (int i = 1; i <= pixelsInPacket; i++)
-            {
-                var offset = i * 2;
-                ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
-
-                //logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
-                //logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
-
-                 if (totalPixelsRead >= spectrum.Length)
-                    logger.error("more received data than expected...");
-                else
-                    spectrum[totalPixelsRead] = intensity;
-                totalPixelsRead += 1;
-            }
-
-            if (autoRamanEnabled || autoDarkEnabled)
-                raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
-            else
-                raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
-            logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
-        }
-        //characteristicUpdatedEventArgs.Characteristic.
-    }
 }

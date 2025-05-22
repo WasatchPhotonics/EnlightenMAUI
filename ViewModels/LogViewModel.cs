@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.ComponentModel;
+using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -17,7 +18,7 @@ public class LogViewModel : INotifyPropertyChanged
     {
         logger.debug("LogViewModel.ctor: start");
 
-        saveCmd = new Command(() => { doSave(); });
+        saveCmd = new Command(() => { _ = doSave(); });
         logger.PropertyChanged += Logger_PropertyChanged;
     }
 
@@ -49,8 +50,26 @@ public class LogViewModel : INotifyPropertyChanged
 
     public Command saveCmd { get; }
 
-    void doSave()
+
+    async Task doSave()
     {
-        logger.save();
+        string path = logger.save();
+
+        if (path != null)
+        {
+            try
+            {
+                await Share.Default.RequestAsync(new ShareFileRequest
+                {
+                    Title = path.Split('/').Last(),
+                    File = new ShareFile(path)
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.error("Log share failed with exception {0}", ex.Message);
+            }
+        }
     }
+
 }

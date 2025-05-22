@@ -20,7 +20,7 @@
 
             <!-- Page header -->
             <StackLayout Orientation="Horizontal">
-                <Button Command="{Binding saveCmd}" Text="Save" Margin="30, 10, 30, 10"/>
+                <Button Command="{Binding saveCmd}" Text="Export" Margin="30, 10, 30, 10"/>
                 <StackLayout Orientation="Horizontal">
                     <Label Text="Verbose"/>
                     <Switch IsToggled="{Binding verbose}" />

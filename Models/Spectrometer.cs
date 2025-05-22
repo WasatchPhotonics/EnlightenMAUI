@@ -1,4 +1,6 @@
-﻿using EnlightenMAUI.Common;
+﻿using Accord;
+using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
 using EnlightenMAUI.ViewModels;
 using Plugin.BLE.Abstractions.Contracts;
 using System;
@@ -9,13 +11,17 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static Android.Provider.ContactsContract.CommonDataKinds;
+using static Android.Telephony.CarrierConfigManager;
 
 namespace EnlightenMAUI.Models
 {
+    public enum AcquisitionMode { STANDARD=0, AUTO_DARK=1, AUTO_RAMAN=2 };
+
     public abstract class Spectrometer : INotifyPropertyChanged
     {
         public static EventHandler<Spectrometer> NewConnection;
         protected Logger logger = Logger.getInstance();
+        public BLEDeviceInfo bleDeviceInfo = new BLEDeviceInfo();
         // @see https://forums.xamarin.com/discussion/93330/mutex-is-bugged-in-xamarin
         protected static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1);
 
@@ -24,6 +30,8 @@ namespace EnlightenMAUI.Models
         public float laserExcitationNM;
         public EEPROM eeprom = EEPROM.getInstance();
         public Battery battery;
+        public AcquisitionMode acquisitionMode = AcquisitionMode.AUTO_RAMAN;
+        public Opcodes lastRequest;
 
         ////////////////////////////////////////////////////////////////////////
         // laserState
@@ -32,14 +40,22 @@ namespace EnlightenMAUI.Models
 
         // software state
         public double[] wavelengths;
-        public double[] wavenumbers;
+        public double[] originalWavenumbers;
+        public double[] wavenumbers { get; set; }
         public double[] xAxisPixels;
 
+        public double[] lastRaw;
         public double[] lastSpectrum;
         public double[] dark;
         public double[] stretchedDark;
 
         public Measurement measurement;
+
+        protected bool EEPROMReadComplete = false;
+        protected uint EEPROMBytesRead = 0;
+        protected uint CurrentEEPROMPage = 0;
+        protected byte[] EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+        protected bool genericReturned = false;
 
         public Spectrometer() { }
 
@@ -218,19 +234,51 @@ namespace EnlightenMAUI.Models
 
         public virtual bool autoDarkEnabled
         {
-            get => laserState.mode == LaserMode.AUTO_DARK;
+            get => acquisitionMode == AcquisitionMode.AUTO_DARK;
             set
             {
-                var mode = value ? LaserMode.AUTO_DARK : LaserMode.MANUAL;
-                if (laserState.mode != mode)
+                if (value && acquisitionMode != AcquisitionMode.AUTO_DARK)
                 {
-                    logger.debug($"Spectrometer.ramanModeEnabled: laserState.mode -> {mode}");
-                    laserState.mode = mode;
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                    acquisitionMode = AcquisitionMode.AUTO_DARK;
                     laserState.enabled = false;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
                 }
-                else
-                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {mode}");
+                else if (!value && !autoRamanEnabled)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoDark -> {value}");
+                    acquisitionMode = AcquisitionMode.STANDARD;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+                }
+                else if (value)
+                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_DARK}");
+            }
+        }
+
+        public virtual bool autoRamanEnabled
+        {
+            get => acquisitionMode == AcquisitionMode.AUTO_RAMAN;
+            set
+            {
+                if (value && acquisitionMode != AcquisitionMode.AUTO_RAMAN)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                    acquisitionMode = AcquisitionMode.AUTO_RAMAN;
+                    laserState.enabled = false;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+                }
+                else if (!value && !autoDarkEnabled)
+                {
+                    logger.debug($"Spectrometer.ramanModeEnabled: autoRaman -> {value}");
+                    acquisitionMode = AcquisitionMode.STANDARD;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+                }
+                else if (value)
+                    logger.debug($"Spectrometer.ramanModeEnabled: mode already {AcquisitionMode.AUTO_RAMAN}");
             }
         }
 
@@ -288,7 +336,8 @@ namespace EnlightenMAUI.Models
                 else
                     logger.debug($"Spectrometer.laserWatchdogSec: already {value}");
             }
-        }
+        }   
+        public virtual double rssi { get; }
 
         public void toggleLaser()
         {
@@ -342,6 +391,265 @@ namespace EnlightenMAUI.Models
         // seems to work better?
         internal abstract Task<bool> updateBatteryAsync();
 
+
+        ////////////////////////////////////////////////////////////////////////
+        // Auto-Raman Parameters
+        ////////////////////////////////////////////////////////////////////////
+
+        public bool holdAutoRamanParameterSet = false;
+
+        public virtual ushort maxCollectionTimeMS
+        {
+            get => _maxCollectionTimeMS;
+            set
+            {
+                if (value != _maxCollectionTimeMS)
+                {
+                    _maxCollectionTimeMS = value;
+                    logger.debug($"Spectrometer.maxCollectionTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxCollectionTimeMS)));
+                }
+            }
+        }
+        protected ushort _maxCollectionTimeMS = 2000;
+        
+        public virtual ushort startIntTimeMS
+        {
+            get => _startIntTimeMS;
+            set
+            {
+                if (value != _startIntTimeMS)
+                {
+                    _startIntTimeMS = value;
+                    logger.debug($"Spectrometer.startIntTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(startIntTimeMS)));
+                }
+            }
+        }
+        protected ushort _startIntTimeMS = 200;
+
+        public virtual byte startGainDb
+        {
+            get => _startGainDB;
+            set
+            {
+                if (0 <= value && value <= 72)
+                {
+                    _startGainDB = value;
+                    logger.debug($"Spectrometer.startGainDb: next = {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(startGainDb)));
+                }
+                else
+                {
+                    logger.error($"ignoring out-of-range gainDb {value}");
+                }
+            }
+        }
+        protected byte _startGainDB = 8;
+
+        public virtual ushort minIntTimeMS
+        {
+            get => _minIntTimeMS;
+            set
+            {
+                if (value != _minIntTimeMS)
+                {
+                    _minIntTimeMS = value;
+                    logger.debug($"Spectrometer.minIntTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minIntTimeMS)));
+                }
+            }
+        }
+        protected ushort _minIntTimeMS = 10;
+        
+        public virtual ushort maxIntTimeMS
+        {
+            get => _maxIntTimeMS;
+            set
+            {
+                if (value != _maxIntTimeMS)
+                {
+                    _maxIntTimeMS = value;
+                    logger.debug($"Spectrometer.maxIntTimeMS -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxIntTimeMS)));
+                }
+            }
+        }
+        protected ushort _maxIntTimeMS = 1000;
+
+        public virtual byte minGainDb
+        {
+            get => _minGainDb;
+            set
+            {
+                if (0 <= value && value <= 72)
+                {
+                    _minGainDb = value;
+                    logger.debug($"Spectrometer.minGainDb: next = {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minGainDb)));
+                }
+                else
+                {
+                    logger.error($"ignoring out-of-range gainDb {value}");
+                }
+            }
+        }
+        protected byte _minGainDb = 0;
+
+        public virtual byte maxGainDb
+        {
+            get => _maxGainDb;
+            set
+            {
+                if (0 <= value && value <= 72)
+                {
+                    _maxGainDb = value;
+                    logger.debug($"Spectrometer.maxGainDb: next = {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxGainDb)));
+                }
+                else
+                {
+                    logger.error($"ignoring out-of-range gainDb {value}");
+                }
+            }
+        }
+        protected byte _maxGainDb = 30;
+
+        public virtual ushort targetCounts
+        {
+            get => _targetCounts;
+            set
+            {
+                if (value != _targetCounts)
+                {
+                    _targetCounts = value;
+                    logger.debug($"Spectrometer.targetCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(targetCounts)));
+                }
+            }
+        }
+        protected ushort _targetCounts = 40000;
+        
+        public virtual ushort minCounts
+        {
+            get => _minCounts;
+            set
+            {
+                if (value != _minCounts)
+                {
+                    _minCounts = value;
+                    logger.debug($"Spectrometer.minCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minCounts)));
+                }
+            }
+        }
+        protected ushort _minCounts = 30000;
+
+        public virtual ushort maxCounts
+        {
+            get => _maxCounts;
+            set
+            {
+                if (value != _maxCounts)
+                {
+                    _maxCounts = value;
+                    logger.debug($"Spectrometer.maxCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxCounts)));
+                }
+            }
+        }
+        protected ushort _maxCounts = 50000;
+        
+        public virtual byte maxFactor
+        {
+            get => _maxFactor;
+            set
+            {
+                if (value != _maxFactor)
+                {
+                    _maxFactor = value;
+                    logger.debug($"Spectrometer.maxFactor -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxFactor)));
+                }
+            }
+        }
+        protected byte _maxFactor = 10;
+
+        public virtual float dropFactor
+        {
+            get => _dropFactor;
+            set
+            {
+                _dropFactor = value;
+                logger.debug($"Spectrometer.dropFactor: next = {value}");
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(dropFactor)));
+            }
+        }
+        protected float _dropFactor = 0.5f;
+
+        public virtual ushort saturationCounts
+        {
+            get => _saturationCounts;
+            set
+            {
+                if (value != _saturationCounts)
+                {
+                    _saturationCounts = value;
+                    logger.debug($"Spectrometer.saturationCounts -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saturationCounts)));
+                }
+            }
+        }
+        protected ushort _saturationCounts = 65000;
+
+        public virtual byte maxAverage
+        {
+            get => _maxAverage;
+            set
+            {
+                if (value != _maxAverage)
+                {
+                    _maxAverage = value;
+                    logger.debug($"Spectrometer.maxAverage -> {value}");
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxAverage)));
+                }
+            }
+        }
+        protected byte _maxAverage = 1;
+
+        protected byte[] packAutoRamanParameters()
+        {
+            List<byte> data = new List<byte>();
+
+            data.Add((byte)(maxCollectionTimeMS & 0xFF));
+            data.Add((byte)((maxCollectionTimeMS >> 8) & 0xFF));
+            data.Add((byte)(startIntTimeMS & 0xFF));
+            data.Add((byte)((startIntTimeMS >> 8) & 0xFF));
+            data.Add((byte)(startGainDb & 0xFF));
+            data.Add((byte)(maxIntTimeMS & 0xFF));
+            data.Add((byte)((maxIntTimeMS >> 8) & 0xFF));
+            data.Add((byte)(minIntTimeMS & 0xFF));
+            data.Add((byte)((minIntTimeMS >> 8) & 0xFF));
+            data.Add((byte)(maxGainDb & 0xFF));
+            data.Add((byte)(minGainDb & 0xFF));
+            data.Add((byte)(targetCounts & 0xFF));
+            data.Add((byte)((targetCounts >> 8) & 0xFF));
+            data.Add((byte)(maxCounts & 0xFF));
+            data.Add((byte)((maxCounts >> 8) & 0xFF));
+            data.Add((byte)(minCounts & 0xFF));
+            data.Add((byte)((minCounts >> 8) & 0xFF));
+            data.Add((byte)(maxFactor & 0xFF));
+            data.Add((byte)((int)dropFactor & 0xFF));
+            data.Add((byte)((int)((dropFactor - (int)dropFactor) * 0x100) & 0xFF));
+            data.Add((byte)(saturationCounts & 0xFF));
+            data.Add((byte)((saturationCounts >> 8) & 0xFF));
+            data.Add((byte)(maxAverage & 0xFF));
+
+
+            byte[] serializedParams = data.ToArray();
+            return serializedParams;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // dark
         ////////////////////////////////////////////////////////////////////////
@@ -377,6 +685,20 @@ namespace EnlightenMAUI.Models
         // There is no need to disable the laser if returning NULL, as the caller
         // will do so anyway.
         protected abstract Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket);
+
+        public void redoBackgroundProcessing(bool simpleModel)
+        {
+            try
+            {
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, lastSpectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, simpleModel);
+                measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                measurement.postProcessed = smoothed;
+            }
+            catch (Exception ex)
+            {
+                logger.error("processing redo failed out with issues", ex.Message);
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // BLE Characteristic Notifications (routed via BluetoothViewModel)
@@ -419,9 +741,44 @@ namespace EnlightenMAUI.Models
             laserState.parse(data);
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("laserState"));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWatchdogSec)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserDelayMS)));
+            //type = newType;
+            //enabled = newEnabled laserEnabled;
+            //watchdogSec = newWatchdog; laserWatchdogSec
+            //laserDelayMS = newLaserDelayMS;  laserDelayMS
 
             sem.Release();
         }
+
+        protected abstract void processGeneric(byte[] data);
+
+        public void processGenericNotification(byte[] data)
+        {
+            logger.hexdump(data, "received generic notification: ");
+            logger.info($"the length of notification is {data.Length}");
+
+            if (EEPROMReadComplete)
+            {
+                if (data.Length > 2)
+                    processGeneric(data);
+                return;
+            }
+            
+            int bytesToRead = data.Length - 2;
+            Array.Copy(data, 2, EEPROMBuffer, EEPROMBytesRead, Math.Min(bytesToRead, EEPROM.PAGE_LENGTH));
+            EEPROMBytesRead += (uint)bytesToRead;
+            if (EEPROMBytesRead % EEPROM.PAGE_LENGTH == 0 || bytesToRead > EEPROM.PAGE_LENGTH)
+                ++CurrentEEPROMPage;
+            if (CurrentEEPROMPage == EEPROM.MAX_PAGES)
+                EEPROMReadComplete = true;
+
+            raiseConnectionProgress(.15 + .85 * CurrentEEPROMPage / EEPROM.MAX_PAGES);
+
+            genericReturned = true;
+        }
+
 
         // I'm never sure if this is needed or not
         protected async Task<bool> pauseAsync(string caller)
@@ -437,6 +794,7 @@ namespace EnlightenMAUI.Models
         // 2x2 Binning
         ////////////////////////////////////////////////////////////////////////
 
+        // To-do: add other binning methods
         protected void apply2x2Binning(double[] spectrum)
         {
             if (eeprom.featureMask.bin2x2)
@@ -493,5 +851,102 @@ namespace EnlightenMAUI.Models
                 spectrum[i] *= factor;
             }
         }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Raman Wavenumber Correction (ASTM 1840-96 Calibration)
+        ////////////////////////////////////////////////////////////////////////
+
+        public int getPixelFromWavenumber(double cm)
+        {
+            if (wavenumbers == null)
+                return -1;
+            int pixel = Array.BinarySearch(wavenumbers, cm);
+            if (pixel < 0)
+                return ~pixel;
+            else if (pixel >= wavenumbers.Length)
+                return wavenumbers.Length - 1;
+            else
+                return pixel;
+        }
+
+        public bool FindAndApplyRamanShiftCorrection(Measurement spectrum, string compoundName)
+        {
+            //
+            // Use code here to open file, look for peak list based on compound
+            //
+
+            List<double> peaksToFind = new List<double>()
+            {
+                1001.4,
+                1031.8,
+                1602.3
+            };
+
+
+            //
+            // Perform peak finding here
+            //
+
+            List<double> offsets = new List<double>();
+            PeakFindingConfig pfc = new PeakFindingConfig();
+            PeakFinder pf = new PeakFinder(pfc);
+
+            SortedDictionary<int, PeakInfo> peakInfos = pf.findPeaks(originalWavenumbers, spectrum.processed);
+
+
+            foreach (double peak in peaksToFind)
+            {
+                int pixel = getPixelFromWavenumber(peak);
+
+                try
+                {
+                    double minDelta = double.MaxValue;
+                    PeakInfo info = null;
+                    foreach (PeakInfo pi in peakInfos.Values)
+                    {
+                        double delta = Math.Abs(peak - pi.wavelength);
+                        if (delta < minDelta)
+                        {
+                            minDelta = delta;
+                            info = pi;
+                        }
+                    }
+
+                    offsets.Add(minDelta);
+                    logger.info("found peak {0}-{1}cm-1 at pixel {2}", compoundName, peak, info.interpolatedPixel);
+
+                }
+                catch (Exception ex)
+                {
+                    logger.info("failed to find peak {0}-{1}cm-1", compoundName, peak);
+                }
+            }
+
+            if (offsets.Count > 0)
+            {
+                double averageOffset = offsets.Average();
+                wavenumberOffset = averageOffset;
+                return true;
+            }
+            else
+                return false;
+            //measurement.wavenumbers = wavenumbers;
+        }
+
+        public double wavenumberOffset
+        {
+            get => _wavenumberOffset;
+            set
+            {
+                _wavenumberOffset = value;
+                for (int i = 0; i < wavenumbers.Length; ++i)
+                {
+                    wavenumbers[i] = originalWavenumbers[i] + _wavenumberOffset;
+                }
+            }
+        }
+        double _wavenumberOffset = 0;
+
+
     }
 }

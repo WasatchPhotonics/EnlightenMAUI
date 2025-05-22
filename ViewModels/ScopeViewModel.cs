@@ -20,6 +20,9 @@ using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using System.Reflection.Metadata;
 using System.Text;
+using Xamarin.Google.Crypto.Tink.Signature;
+using DeconvolutionMAUI;
+using System.Security.AccessControl;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -55,7 +58,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     public event EventHandler<ScopeViewModel> OverlaysChanged;
     public event EventHandler<ScopeViewModel> WipeOverlays;
     SaveSpectrumPopupViewModel saveViewModel;
-    OverlaysPopupViewModel overlaysViewModel;
+    SelectionPopupViewModel overlaysViewModel;
     SaveSpectrumPopup savePopup;
     bool popupClosing = false;
     public Dictionary<string, bool> fullLibraryOverlayStatus = new Dictionary<string, bool>();
@@ -82,6 +85,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     public delegate void UserNotification(string title, string message, string button);
     public event UserNotification notifyUser;
 
+    bool runPSCorrection = false;
+
     ////////////////////////////////////////////////////////////////////////
     // Lifecycle
     ////////////////////////////////////////////////////////////////////////
@@ -93,22 +98,15 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
+            spec = API6BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        Task loader = PlatformUtil.loadONNXModel("background_model.onnx");
+        Task loader = PlatformUtil.loadONNXModel("onnx", "etalon_correction.json");
         loader.Wait();
         //Thread.Sleep(100);
 
-        if (spec != null && spec.paired)
-        {
-            libraryLoader = Task.Run(() => library = new Library("library", spec));
-            libraryLoader.Wait();
-            library.LoadFinished += Library_LoadFinished;
-            Task.Run(() => findUserFiles());
-        }
-
-
-        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
+        overlaysViewModel = new SelectionPopupViewModel(new List<SelectionMetadata>());
         settings = Settings.getInstance();
         string savePath = settings.getSavePath();
 
@@ -126,6 +124,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         // bind ScopePage Commands
         laserCmd = new Command(() => { _ = doLaser(); });
+        laserWarningCmd = new Command(() => { _ = advanceLaserWarning(); });
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); });
         darkCmd = new Command(() => { _ = doDark(); });
@@ -134,6 +133,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         uploadCmd = new Command(() => { _ = doUpload(); });
         addCmd = new Command(() => { _ = doAdd(); });
         clearCmd = new Command(() => { _ = doClear(); });
+
+        confirmPSCmd = new Command(() => { _ = confirmPS(); });
+        denyPSCmd = new Command(() => { _ = denyPS(); });
+
         //matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
         xAxisNames = new ObservableCollection<string>();
@@ -141,14 +144,149 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
 
+        if (spec != null && spec.paired && spec.eeprom.hasBattery)
+            spec.updateBatteryAsync();
+        if (spec != null && spec.paired)
+        {
+            if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
+                spec.autoRamanEnabled = true;
+            else
+            {
+                spec.autoRamanEnabled = false;
+                spec.autoDarkEnabled = false;
+            }
+        }
+
         logger.debug("SVM.ctor: updating chart");
         updateChart();
 
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
-            spec.updateBatteryAsync();
+        if (spec != null && spec.paired)
+        {
+            libraryLoader = Task.Run(() =>
+            {
+                //library = new DPLibrary("database", spec);
+                library = new WPLibrary("library", spec); 
+                AnalysisViewModel.getInstance().library = library;
+                Settings.getInstance().library = library;
+                (library as WPLibrary).showMatchProgress += showMatchProgress;
+            });
+            libraryLoader.Wait();
+            settings.libraryLabel = "Wasatch";
+            //if (!library.loadSucceeded)
+                //notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+            library.LoadFinished += Library_LoadFinished;
+            
+            /*
+            bool loaded = library.samples.Count > 0;
+            if (!loaded)
+            {
+                logger.info("trying alternative library load");
 
+                libraryLoader = Task.Run(() =>
+                {
+                    library = new DPLibrary("database", spec);
+                    //library = new WPLibrary("library", spec);
+                    AnalysisViewModel.getInstance().library = library;
+                    Settings.getInstance().library = library;
+                });
+                libraryLoader.Wait();
+                if ((library as DPLibrary).isLoading)
+                    library.LoadFinished += Library_LoadFinished;
+                return;
+            }
+            */
+
+            Task.Run(() => findUserFiles());
+        }
+
+        settings.checkHighLevel();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         logger.debug("SVM.ctor: done");
+        settings.LibraryChanged += Settings_LibraryChanged;
+        AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
+        AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
+    }
+
+    private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
+    {
+        logger.info("testing re-analyze trigger");
+        await Task.Delay(50);
+        await Shell.Current.GoToAsync("//ScopePage");
+        spec.measurement.libraryUsed = settings.libraryLabel;
+
+        waitingForMatch = true;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
+        var result = await library.findMatch(spec.measurement);
+
+        acquisitionProgress = 0;
+
+        if (result != null)
+        {
+            logger.info("returned from library match function with result {0}", result);
+
+            if (result.Item2 >= settings.matchThreshold)
+            {
+                matchCompound = result.Item1;
+                matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
+                spec.measurement.declaredMatch = new string[] { result.Item1 };
+                spec.measurement.declaredScore = result.Item2;
+                hasMatch = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+
+                //if (matchCompound.ToLower() == "polystyrene")
+                //{
+                //}
+
+                AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
+
+
+                //if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
+                //displayMatch = true;
+            }
+            else
+            {
+                AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+            }
+
+            await Task.Delay(50);
+            await Shell.Current.GoToAsync("//AnalysisPage");
+
+        }
+        else
+        {
+            hasMatch = false;
+            AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+            await Shell.Current.GoToAsync("//AnalysisPage");
+        }
+
+    }
+    
+    private async void ScopeViewModel_TriggerIncreasedPrecision(object sender, AnalysisViewModel e)
+    {
+        logger.info("testing re-analyze trigger");
+        await Task.Delay(50);
+        await Shell.Current.GoToAsync("//ScopePage");
+        waitingForMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
+        if (sender is ScopeViewModel)
+            notifyToast?.Invoke("Retrying with enhanced precision settings");
+        AnalysisViewModel.getInstance().currentParamSet = "Default";
+        await Task.Delay(200);
+        await doAcquireAsync();
+        AnalysisViewModel.getInstance().currentParamSet = "Faster";
+    }
+
+    private void Settings_LibraryChanged(object sender, Settings e)
+    {
+        (library as WPLibrary).showMatchProgress -= showMatchProgress;
+        library = settings.library;
+        (library as WPLibrary).showMatchProgress += showMatchProgress;
+        AnalysisViewModel.getInstance().library = library;
     }
 
     void handleNewSpectrometer(object sender, Spectrometer e)
@@ -163,15 +301,24 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        logger.debug("refreshing from USB spec");
+
         if (spec != null && spec.paired)
         {
-            libraryLoader = Task.Run(() => library = new Library("library", spec));
+            libraryLoader = Task.Run(() =>
+            {
+                library = new WPLibrary("library", spec);
+                AnalysisViewModel.getInstance().library = library;
+                Settings.getInstance().library = library;
+            });
             libraryLoader.Wait();
             library.LoadFinished += Library_LoadFinished;
             Task.Run(() => findUserFiles());
         }
 
-        overlaysViewModel = new OverlaysPopupViewModel(new List<SpectrumOverlayMetadata>());
+        logger.debug("finished loading library in refresh");
+
+        overlaysViewModel = new SelectionPopupViewModel(new List<SelectionMetadata>());
 
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress;
@@ -187,6 +334,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         addCmd = new Command(() => { _ = doAdd(); });
         clearCmd = new Command(() => { _ = doClear(); });
 
+        confirmPSCmd = new Command(() => { _ = confirmPS(); });
+        denyPSCmd = new Command(() => { _ = denyPS(); });
+
         if (spec != null && spec.paired)
         {
             spec.laserWatchdogSec = 0;
@@ -198,6 +348,9 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
             spec.updateBatteryAsync();
+
+        if (spec != null && spec.paired)
+            spec.autoRamanEnabled = true;
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
 
@@ -214,14 +367,36 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.ctor: done");
     }
 
-    private void Library_LoadFinished(object sender, Library e)
+    private async void Library_LoadFinished(object sender, Library e)
     {
+        if (!settings.library.loadSucceeded)
+            notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+
+        if (library is DPLibrary)
+        {
+            bool loaded = await (library as DPLibrary).isLoaded();
+            if (!loaded)
+            {
+                libraryLoader = Task.Run(() =>
+                {
+                    //library = new DPLibrary("database", spec);
+                    library = new WPLibrary("library", spec); 
+                    AnalysisViewModel.getInstance().library = library;
+                    Settings.getInstance().library = library;
+                });
+                libraryLoader.Wait();
+                library.LoadFinished += Library_LoadFinished;
+                return;
+            }
+        }
+
+
         foreach (string sample in library.samples)
         {
             if (!fullLibraryOverlayStatus.ContainsKey(sample))
             {
                 fullLibraryOverlayStatus.Add(sample, false);
-                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(sample, false));
+                overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
             }
         }
     }
@@ -296,7 +471,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 await loadCSV(file);
 
             fullLibraryOverlayStatus.Add(name, false);
-            overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(name, false));
+            overlaysViewModel.selections.Add(new SelectionMetadata(name, false));
         }
     }
 
@@ -332,7 +507,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -430,6 +605,16 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => spec.dark != null ? "#ba0a0a" : "#515151";
     }
 
+    public string progressBarColor
+    {
+        get
+        {
+            // string color = "#ff0000";
+            string color = waitingForMatch ? "#27c0a1" : "#1894f2";
+            return color;
+        }
+    }
+
     private void updateDarkButton()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(darkButtonForegroundColor)));
@@ -458,6 +643,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public Command laserCmd { get; private set; }
+    public Command laserWarningCmd { get; private set; }
 
     public string laserButtonForegroundColor
     {
@@ -465,6 +651,11 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
 
     public string laserButtonBackgroundColor
+    {
+        get => spec.laserEnabled ? "#ba0a0a" : "#515151";
+    }
+
+    public string laserWarningBackgroundColor
     {
         get => spec.laserEnabled ? "#ba0a0a" : "#515151";
     }
@@ -484,6 +675,122 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.doLaser: done");
         return true;
     }
+
+    bool advanceLaserWarning()
+    {
+        switch (laserWarningStep)
+        {
+            case 0:
+                laserWarningStep = 1;
+                laserWarningText = "Onboard Class 3B Laser";
+                break;
+            case 1: 
+                laserWarningStep = 2;
+                laserWarningText = "Avoid eye exposure";
+                break;
+            case 2: 
+                laserWarningStep = 3;
+                laserWarningText = "Acknowledge to Arm Class 3B Laser";
+                break;
+            case 3: 
+                laserWarningStep = 4;
+                polyCorrectionStep = true;
+                //laserArmed = true;
+                laserWarningText = "WARNING: Laser Armed";
+                break;
+            case 4:
+                laserWarningStep = 0;
+                laserArmed = false;
+                laserWarningText = "Click for Laser Warnings";
+                break;
+        }
+        
+        return true;
+    }
+
+
+
+    public string laserWarningText
+    {
+        get
+        {
+            return _laserWarningText;
+        }
+        set
+        {
+            _laserWarningText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningText)));
+        }
+    }
+    string _laserWarningText = "Acknowledge to Arm Class 3B Laser";
+
+    public Command confirmPSCmd { get; private set; }
+    public Command denyPSCmd { get; private set; }
+
+    bool confirmPS()
+    {
+        runPSCorrection = true;
+        polyCorrectionStep = false;
+        laserArmed = true;
+        notifyToast?.Invoke("When PS sample ready, press capture button to perform correction");
+        return true;
+    }
+    
+    bool denyPS()
+    {
+        runPSCorrection = false;
+        polyCorrectionStep = false;
+        laserArmed = true;
+        return true;
+    }
+
+    public bool polyCorrectionStep
+    {
+        get => _polyCorrectionStep;
+        set
+        {
+            _polyCorrectionStep = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(polyCorrectionStep)));
+        }
+    }
+    bool _polyCorrectionStep = false;
+
+    public bool laserArmIncomplete
+    {
+        get
+        {
+            return laserWarningStep != 4;
+        }
+    }
+
+    public bool laserArmed
+    {
+        get
+        {
+            return _laserArmed;
+        }
+        set
+        {
+            _laserArmed = value; 
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmed)));
+        }
+    }
+    bool _laserArmed;
+
+    public int laserWarningStep
+    { 
+        get
+        { 
+            return _laserWarningStep; 
+        }
+        set
+        {
+            _laserWarningStep = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningStep)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmIncomplete)));
+        }
+    }
+    int _laserWarningStep = 3;
 
     public string laserButtonText
     {
@@ -508,9 +815,9 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         get
         {
-            var available = !spec.autoDarkEnabled && spec.battery.level >= 5;
+            var available = !spec.autoRamanEnabled && !spec.autoDarkEnabled && spec.battery.level >= 5;
             if (!available)
-                logger.debug($"laser not available because ramanModeEnabled ({spec.autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
+                logger.debug($"laser not available because ramanModeEnabled ({spec.autoRamanEnabled}) or autoDark enabled ({spec.autoDarkEnabled}) or bettery < 5 ({spec.battery.level})");
             return available;
         }
     }
@@ -526,12 +833,24 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => Settings.getInstance().authenticated;
     }
 
+    public bool manualModeEnabled
+    {
+        get => spec.acquisitionMode == AcquisitionMode.STANDARD;
+    }
+
+    public bool manualModeDisabled
+    {
+        get => spec.acquisitionMode != AcquisitionMode.STANDARD;
+    }
+
     // Provided so any changes to Settings.authenticated will immediately
     // take effect on our View.
     void handleSettingsChange(object sender, PropertyChangedEventArgs e)
     {
         logger.debug($"SVM.handleSettingsChange: received notification from {sender}, so refreshing isAuthenticated");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(manualModeEnabled)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(manualModeDisabled)));
 
         updateLaserProperties();
     }
@@ -578,6 +897,51 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => spec.battery.level > 20 ? "#eee" : "#f33";
     }
 
+    public bool batteryCharging
+    {
+        get => spec.battery.charging && spec.battery.level > 15;
+    }
+
+    public bool batteryCritical
+    {
+        get => spec.battery.level < 15;
+    }
+
+    public bool battery25
+    {
+        get => !spec.battery.charging && spec.battery.level >= 15 && spec.battery.level < 39;
+    }
+
+    public bool battery50
+    {
+        get => !spec.battery.charging && spec.battery.level >= 39 && spec.battery.level < 63;
+    }
+    
+    public bool battery75
+    {
+        get => !spec.battery.charging && spec.battery.level >= 63 && spec.battery.level < 87;
+    }
+
+    public bool battery100
+    {
+        get => !spec.battery.charging && spec.battery.level >= 87;
+    }
+
+    public bool ble3Bar
+    {
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -60; 
+    }
+    
+    public bool ble2Bar
+    {
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -85 && spec.rssi < -60;
+    }
+    
+    public bool ble1Bar
+    {
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi < -85;
+    }
+
     public string qrText
     {
         get => spec.qrValue;
@@ -607,6 +971,12 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryState)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryCharging)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryCritical)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery25)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery50)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery75)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery100)));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -712,12 +1082,35 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         // take a fresh Measurement
         var startTime = DateTime.Now;
+        if (spec.autoDarkEnabled || spec.autoRamanEnabled)
+        {
+            spec.measurement.zero(spec);
+            updateChart();
+        }
+
+
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
             // info-level logging so we can QC timing w/o verbose logging
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
+
+            double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+            double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+            logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+            if (AnalysisViewModel.getInstance().currentParamSet == "Default")
+            {
+                if (snr < settings.snrThreshold)
+                {
+                    spec.redoBackgroundProcessing(false);
+                    rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+                    snr = spec.measurement.postProcessed.Max() / rmsd;
+                    logger.info("after re-analysis, sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+                }
+            }
 
             updateChart();
 
@@ -736,13 +1129,24 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && spec.dark != null)
+        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
-
+        else
+        {
+            if (settings.autoSave)
+                await spec.measurement.saveAsync(autoSave: true);
+            if (runPSCorrection)
+            {
+                notifyToast?.Invoke("Polystyrene correction could not be completed, not prepped for library match");
+                runPSCorrection = false;
+            }
+            AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+        }
         return ok;
     }
 
     void showAcquisitionProgress(double progress) => acquisitionProgress = progress;
+    void showMatchProgress(double progress) => acquisitionProgress = progress;
 
     // this is a floating-point "percentage completion" backing the 
     // ProgressBar on the ScopeView
@@ -886,10 +1290,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("refreshChartData: start");
 
         // use last Measurement from the Spectrometer
-        uint pixels = (uint)spec.measurement.processed.Length;
-        double[] intensities = spec.measurement.processed;
+        uint pixels = (uint)spec.measurement.postProcessed.Length;
+        double[] intensities = spec.measurement.postProcessed;
 
-        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.measurement.dark != null;
+        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
         try
         {
@@ -898,7 +1302,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
             {
-                if (usingRemovalAxis)
+                if (usingRemovalAxis && spec.measurement.wavenumbers != null)
                     xAxis = spec.measurement.wavenumbers;
                 else
                     xAxis = spec.wavenumbers;
@@ -994,7 +1398,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         bool somethingChanged = false;
 
-        foreach (SpectrumOverlayMetadata omd in overlaysViewModel.overlays)
+        foreach (SelectionMetadata omd in overlaysViewModel.selections)
         {
             bool wasDisplayed = fullLibraryOverlayStatus[omd.name];
 
@@ -1045,7 +1449,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         WipeOverlays.Invoke(this, this);
 
-        foreach (var overlay in overlaysViewModel.overlays)
+        foreach (var overlay in overlaysViewModel.selections)
         {
             overlay.selected = false;
         }
@@ -1116,7 +1520,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 else
                     fullLibraryOverlayStatus[saveViewModel.saveName] = saveViewModel.addToDisplay;
 
-                overlaysViewModel.overlays.Add(new SpectrumOverlayMetadata(saveViewModel.saveName, saveViewModel.addToDisplay));
+                overlaysViewModel.selections.Add(new SelectionMetadata(saveViewModel.saveName, saveViewModel.addToDisplay));
 
                 if (saveViewModel.addToLibrary && library.getSample(saveViewModel.saveName) == null)
                 {
@@ -1133,7 +1537,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     if (m != null)
                     {
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.postProcessed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(saveViewModel.saveName))
                             DataOverlays[saveViewModel.saveName] = newOverlay;
                         else
@@ -1179,6 +1583,13 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
         else if (name == "laserState" || name == "ramanModeEnabled" || name == "laserEnabled")
             updateLaserProperties();
+        else if (name == "rssi")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ble1Bar)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ble2Bar)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ble3Bar)));
+        }
+
 
     }
 
@@ -1222,7 +1633,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
             if (wasDisplayed != selected)
             {
-                foreach (var o in overlaysViewModel.overlays)
+                foreach (var o in overlaysViewModel.selections)
                 {
                     if (o.name == matchCompound)
                         o.selected = selected;
@@ -1241,7 +1652,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                     if (m != null)
                     {
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = m.postProcessed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(matchCompound))
                             DataOverlays[matchCompound] = newOverlay;
                         else
@@ -1262,42 +1673,104 @@ public class ScopeViewModel : INotifyPropertyChanged
     public bool hasMatchingLibrary {get; private set;}
     public bool hasMatch {get; private set;}
     public bool hasDecon {get; private set;}
-    public bool waitingForMatch {get; private set;}
+    public bool waitingForMatch { get; private set; } = false;
     public string matchResult {get; private set;}
     string matchCompound = "";
     public string deconResult {get; private set;}
 
-    public const double MATCH_THRESHOLD = 0.6;
 
     async Task<bool> doMatchAsync()
     {
         logger.info("calling library match function");
+        spec.measurement.libraryUsed = settings.libraryLabel;
+
+        double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+        double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+        logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+        if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
+        {
+            if (snr < settings.snrThreshold)
+            {
+                ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
+                return false;
+            }
+        }
 
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
         var result = await library.findMatch(spec.measurement);
+
+        acquisitionProgress = 0;
 
         if (result != null)
         {
             logger.info("returned from library match function with result {0}", result);
 
-            if (result.Item2 >= MATCH_THRESHOLD)
+            if (result.Item2 >= settings.matchThreshold)
             {
                 matchCompound = result.Item1;
                 matchResult = String.Format("{0} : {1:f2}", result.Item1, result.Item2);
+                spec.measurement.declaredMatch = new string[] { result.Item1 };
+                spec.measurement.declaredScore = result.Item2;
                 hasMatch = true;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
 
-                if (fullLibraryOverlayStatus.ContainsKey(matchCompound) && fullLibraryOverlayStatus[matchCompound])
-                    displayMatch = true;
+                if (matchCompound.ToLower() == "polystyrene")
+                {
+                    if (runPSCorrection)
+                    {
+                        bool ok = spec.FindAndApplyRamanShiftCorrection(spec.measurement, "Polystyrene");
+                        runPSCorrection = false;
+                        if (!ok)
+                            notifyToast?.Invoke("Polystyrene correction could not be completed, peaks not found");
+                    }
+                }
+
+                if (settings.autoSave)
+                    await spec.measurement.saveAsync(autoSave: true);
+                AnalysisViewModel.getInstance().SetData(spec.measurement, library.mostRecentMeasurement);
             }
+            else
+            {
+                if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
+                {
+                    ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
+                }
+                else
+                {
+                    if (settings.autoSave)
+                        await spec.measurement.saveAsync(autoSave: true);
+                    AnalysisViewModel.getInstance().SetData(spec.measurement, null);
+                }
+
+                if (runPSCorrection)
+                { 
+                    notifyToast?.Invoke("Polystyrene correction could not be completed, could not match compound");
+                    runPSCorrection = false;
+                }
+            }
+
+            await Shell.Current.GoToAsync("//AnalysisPage");
+
         }
         else
         {
             hasMatch = false;
+            if (settings.autoSave)
+                await spec.measurement.saveAsync(autoSave: true);
+            if (runPSCorrection)
+            { 
+                notifyToast?.Invoke("Polystyrene correction could not be completed, library match failed");
+                runPSCorrection = false;
+            }
+            AnalysisViewModel.getInstance().SetData(spec.measurement, null);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchResult)));
+            await Shell.Current.GoToAsync("//AnalysisPage");
         }
 
         if (spec.performDeconvolution)
@@ -1347,8 +1820,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
 
         waitingForMatch = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(progressBarColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));
-
 
         return true;
     }

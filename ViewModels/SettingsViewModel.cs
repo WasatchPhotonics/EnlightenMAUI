@@ -1,290 +1,670 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 using EnlightenMAUI.Models;
+using EnlightenMAUI.Popups;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Views;
+using Telerik.Windows.Documents.Spreadsheet.History;
+using System.Runtime.CompilerServices;
+using EnlightenMAUI.Platforms;
+using WPProduction.Utils;
+using Newtonsoft.Json;
+using Telerik.Maui.Controls;
 
-namespace EnlightenMAUI.ViewModels;
-
-// Provides the backing logic and bound properties shown on the SettingsView.
-public class SettingsViewModel : INotifyPropertyChanged
+namespace EnlightenMAUI.ViewModels
 {
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    Settings settings = Settings.getInstance();
-
-    BluetoothSpectrometer spec = BluetoothSpectrometer.getInstance();
-    Logger logger = Logger.getInstance();
-
-    public SettingsViewModel()
+    public class PersistentSettings
     {
-        laserWatchdogTimeoutSec = 0;
-        laserWarningDelaySec = 0;
+        public Dictionary<string, AutoRamanParameters> AutoParameters;
+        public double  MatchThereshold;
+        public int SNRThreshold;
     }
 
-    public void loadSettings()
+    public class AutoRamanParameters
     {
-        bool savePixelValue = Preferences.Get("savePixel", false);
-        bool saveWavelengthValue = Preferences.Get("saveWavelength", false);
-        bool saveWavenumberValue = Preferences.Get("saveWavenumber", false);
-        bool saveRawValue = Preferences.Get("saveRaw", false);
-        bool saveDarkValue = Preferences.Get("saveDark", false);
-        bool saveReferenceValue = Preferences.Get("saveReference", false);
-        bool authValue = Preferences.Get("authenticated", false);
-
-        settings.savePixel = savePixelValue;
-        settings.saveWavelength = saveWavelengthValue;
-        settings.saveWavenumber = saveWavenumberValue;
-        settings.saveRaw = saveRawValue;
-        settings.saveDark = saveDarkValue;
-        settings.saveReference = saveReferenceValue;
-        settings.authenticated = authValue;
-
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(savePixel)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveWavelength)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveWavenumber)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveRaw)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveDark)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveReference)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
+        public ushort maxCollectionTimeMS;
+        public ushort startIntTimeMS;
+        public byte startGainDb;
+        public ushort minIntTimeMS;
+        public ushort maxIntTimeMS;
+        public byte minGainDb;
+        public byte maxGainDb;
+        public ushort targetCounts;
+        public ushort minCounts;
+        public ushort maxCounts;
+        public byte maxFactor;
+        public float dropFactor;
+        public ushort saturationCounts;
+        public byte maxAverage;
     }
 
-    public string title
+    // Provides the backing logic and bound properties shown on the SettingsView.
+    public class SettingsViewModel : INotifyPropertyChanged
     {
-        get => "Application Settings";
-    }
+        public event PropertyChangedEventHandler PropertyChanged;
 
+        Settings settings = Settings.getInstance();
 
-    ////////////////////////////////////////////////////////////////////////
-    // Acquisition Parameters
-    ////////////////////////////////////////////////////////////////////////
+        Spectrometer spec = BluetoothSpectrometer.getInstance();
+        Logger logger = Logger.getInstance();
+        bool initialized = false;
 
-    public UInt32 integrationTimeMS
+        Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
     {
-        get => spec.integrationTimeMS;
-        set
         {
-            spec.integrationTimeMS = value;
+            "Default" ,
+            new AutoRamanParameters()
+            {
+                maxCollectionTimeMS = 10000,
+                startIntTimeMS = 100,
+                startGainDb = 0,
+                minIntTimeMS = 10,
+                maxIntTimeMS = 2000,
+                minGainDb = 0,
+                maxGainDb = 30,
+                targetCounts = 45000,
+                minCounts = 40000,
+                maxCounts = 50000,
+                maxFactor = 5,
+                dropFactor = 0.5f,
+                saturationCounts = 65000,
+                maxAverage = 100
+            }
+        },
+        {
+            "Faster" ,
+            new AutoRamanParameters()
+            {
+                maxCollectionTimeMS = 2000,
+                startIntTimeMS = 200,
+                startGainDb = 8,
+                minIntTimeMS = 10,
+                maxIntTimeMS = 1000,
+                minGainDb = 0,
+                maxGainDb = 30,
+                targetCounts = 40000,
+                minCounts = 30000,
+                maxCounts = 50000,
+                maxFactor = 10,
+                dropFactor = 0.5f,
+                saturationCounts = 65000,
+                maxAverage = 1
+            }
         }
-    }
 
-    public float gainDb
-    {
-        get => spec.gainDb;
-        set
+    };
+
+        public ObservableCollection<string> paramSets
         {
-            spec.gainDb = value;
+            get => _paramSets;
         }
-    }
-
-    public byte scansToAverage
-    {
-        get => spec.scansToAverage;
-        set
+            
+        static ObservableCollection<string> _paramSets = new ObservableCollection<string>()
         {
-            spec.scansToAverage = value;
+            "Default",
+            "Faster"
+        };
+
+        public string currentParamSet
+        {
+            get { return _currentParamSet; }
+            set
+            {
+                if (value != _currentParamSet)
+                {
+                    changeParamSet(value);
+                }
+            }
+
         }
-    }
+        string _currentParamSet = "Faster";
 
-    ////////////////////////////////////////////////////////////////////////
-    // misc acquisition parameters
-    ////////////////////////////////////////////////////////////////////////
-
-    // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useHorizontalROI
-    {
-        get => spec.useHorizontalROI;
-        set
+        public bool fastMode
         {
-            spec.useHorizontalROI = value;
+            get => _fastMode;
+            set
+            {
+                if (value != _fastMode)
+                {
+                    if (value)
+                        changeParamSet("Faster");
+                    else
+                        changeParamSet("Default");
+
+                    _fastMode = value;
+                }
+            }
         }
-    }
+        bool _fastMode = true;
 
-    public bool autoDarkEnabled
-    {
-        get => spec.autoDarkEnabled;
-        set
+        public string enteredPassword
         {
-            if (spec.autoDarkEnabled != value)
-                spec.autoDarkEnabled = value;
-            updateLaserProperties();
+            get
+            {
+                return _enteredPassword;
+            }
+            set
+            {
+                _enteredPassword = value;
+                _passwordCorrect = _enteredPassword == UNLOCK_PASSWORD;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(enteredPassword)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(passwordCorrect)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(passwordIncorrect)));
+            }
         }
-    }
+        string _enteredPassword;
 
-    // @todo: let the user live-toggle this and update the on-screen spectrum
-    public bool useRamanIntensityCorrection
-    {
-        get => spec.useRamanIntensityCorrection;
-        set => spec.useRamanIntensityCorrection = value;
-    }
 
-    public bool useBackgroundRemoval
-    {
-        get => spec.useBackgroundRemoval;
-        set
+        const string UNLOCK_PASSWORD = "photon";
+        public bool passwordCorrect
         {
-            spec.useBackgroundRemoval = value;
+            get => _passwordCorrect;
+        }
+        public bool passwordIncorrect
+        {
+            get => !_passwordCorrect;
+        }
+
+        bool _passwordCorrect = false;
+
+
+
+        void changeParamSet(string key)
+        {
+            if (!parameterSets.ContainsKey(key))
+                return;
+
+            if (spec != null && spec.paired)
+            { 
+                spec.holdAutoRamanParameterSet = true;
+                AutoRamanParameters parameters = parameterSets[key];
+                spec.maxCollectionTimeMS = parameters.maxCollectionTimeMS;
+                spec.startIntTimeMS = parameters.startIntTimeMS;
+                spec.startGainDb = parameters.startGainDb;
+                spec.minIntTimeMS = parameters.minIntTimeMS;
+                spec.maxIntTimeMS = parameters.maxIntTimeMS;
+                spec.minGainDb = parameters.minGainDb;
+                spec.maxGainDb = parameters.maxGainDb;
+                spec.targetCounts = parameters.targetCounts;
+                spec.minCounts = parameters.minCounts;
+                spec.maxCounts = parameters.maxCounts;
+                spec.maxFactor = parameters.maxFactor;
+                spec.dropFactor = parameters.dropFactor;
+                spec.saturationCounts = parameters.saturationCounts;
+                spec.holdAutoRamanParameterSet = false;
+                spec.maxAverage = parameters.maxAverage;
+
+                _currentParamSet = key;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(currentParamSet)));
+            }
+            }
+
+        public SettingsViewModel()
+        {
+            laserWatchdogTimeoutSec = 0;
+            laserWarningDelaySec = 0;
+
+            if (spec == null || !spec.paired)
+                spec = API6BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
+                spec = USBSpectrometer.getInstance();
+
+            Spectrometer.NewConnection += handleNewSpectrometer;
+
+            setConfigurationFromFile();
+        }
+
+        void handleNewSpectrometer(object sender, Spectrometer e)
+        {
+            spec = e;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(integrationTimeMS)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(gainDb)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(scansToAverage)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useHorizontalROI)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useRamanIntensityCorrection)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
-        }
-    }
-    private bool _useBackgroundRemoval = true;
-
-    public bool performMatch
-    {
-        get => spec.performMatch;
-        set
-        {
-            spec.performMatch = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
-        }
-    }
-
-    public bool performDeconvolution
-    {
-        get => spec.performDeconvolution;
-        set
-        {
-            spec.performDeconvolution = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWatchdogTimeoutSec)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningDelaySec)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStartLine)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(verticalROIStopLine)));
+
         }
-    }
 
-    public void updateLaserProperties()
-    {
-        logger.debug("SVM.updateLaserProperties: start");
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
-        logger.debug("SVM.updateLaserProperties: done");
-    }
 
-    public bool savePixel 
-    {
-        get => settings.savePixel;
-        set
+        async Task setConfigurationFromFile()
         {
-            settings.savePixel = value;
-            Preferences.Set("savePixel", value);
-            System.Console.WriteLine($"Changed save pixel to the following: {settings.savePixel.ToString()}");
-        }
-    }
+            string configPath = PlatformUtil.getConfigFilePath();
+            if (File.Exists(configPath))
+            {
+                SimpleCSVParser parser = new SimpleCSVParser();
+                Stream s = File.OpenRead(configPath);
+                StreamReader sr = new StreamReader(s);
+                string blob = await sr.ReadToEndAsync();
 
-    public bool saveWavelength
-    {
-        get => settings.saveWavelength;
-        set
+                PersistentSettings json = JsonConvert.DeserializeObject<PersistentSettings>(blob);
+                if (json != null && json.AutoParameters != null)
+                {
+                    foreach (string set in json.AutoParameters.Keys)
+                    {
+                        parameterSets[set] = json.AutoParameters[set];
+                    }
+                }
+
+                settings.matchThreshold = (float)json.MatchThereshold;
+                settings.snrThreshold = json.SNRThreshold;
+
+            }
+            else
+            {
+                await updateConfigFile();
+            }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
+            initialized = true;
+        }
+
+        async Task updateConfigFile()
         {
-            settings.saveWavelength = value;
-            Preferences.Set("saveWavelength", value);
-        }
-    }
+            string configPath = PlatformUtil.getConfigFilePath();
+            JsonThingWriter jtw = new JsonThingWriter();
+            jtw.startBlock("AutoParameters");
 
-    public bool saveWavenumber 
-    {
-        get => settings.saveWavenumber;
-        set
+            foreach (string set in parameterSets.Keys)
+            {
+                jtw.startBlock(set);
+
+                AutoRamanParameters paramSet = parameterSets[set];
+                jtw.writePair("maxCollectionTimeMS", paramSet.maxCollectionTimeMS);
+                jtw.writePair("startIntTimeMS", paramSet.startIntTimeMS);
+                jtw.writePair("startGainDb", paramSet.startGainDb);
+                jtw.writePair("minIntTimeMS", paramSet.minIntTimeMS);
+                jtw.writePair("maxIntTimeMS", paramSet.maxIntTimeMS);
+                jtw.writePair("minGainDb", paramSet.minGainDb);
+                jtw.writePair("maxGainDb", paramSet.maxGainDb);
+                jtw.writePair("targetCounts", paramSet.targetCounts);
+                jtw.writePair("minCounts", paramSet.minCounts);
+                jtw.writePair("maxCounts", paramSet.maxCounts);
+                jtw.writePair("maxFactor", paramSet.maxFactor);
+                jtw.writePair("dropFactor", paramSet.dropFactor);
+                jtw.writePair("saturationCounts", paramSet.saturationCounts);
+                jtw.writePair("maxAverage", paramSet.maxAverage);
+
+
+                jtw.closeBlock();
+            }
+
+            jtw.closeBlock();
+
+            jtw.writePair("MatchThereshold", settings.matchThreshold, null);
+            jtw.writePair("SNRThreshold", settings.snrThreshold);
+
+            await File.WriteAllTextAsync(configPath, jtw.ToString());
+        }
+
+        public void loadSettings()
         {
-            settings.saveWavenumber = value;
-            Preferences.Set("saveWavenumber", value);
-        }
-    }
+            bool savePixelValue = Preferences.Get("savePixel", false);
+            bool saveWavelengthValue = Preferences.Get("saveWavelength", false);
+            bool saveWavenumberValue = Preferences.Get("saveWavenumber", false);
+            bool saveRawValue = Preferences.Get("saveRaw", false);
+            bool saveDarkValue = Preferences.Get("saveDark", false);
+            bool saveReferenceValue = Preferences.Get("saveReference", false);
+            bool authValue = Preferences.Get("authenticated", false);
 
-    public bool saveRaw 
-    {
-        get => settings.saveRaw;
-        set
+            settings.savePixel = savePixelValue;
+            settings.saveWavelength = saveWavelengthValue;
+            settings.saveWavenumber = saveWavenumberValue;
+            settings.saveRaw = saveRawValue;
+            settings.saveDark = saveDarkValue;
+            settings.saveReference = saveReferenceValue;
+            settings.authenticated = authValue;
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(savePixel)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveWavelength)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveWavenumber)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveRaw)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveDark)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(saveReference)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoSave)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
+        }
+
+        public string title
         {
-            settings.saveRaw = value;
-            Preferences.Set("saveRaw", value);
+            get => "Application Settings";
         }
-    }
 
-    public bool saveDark 
-    {
-        get => settings.saveDark;
-        set
+
+        ////////////////////////////////////////////////////////////////////////
+        // Acquisition Parameters
+        ////////////////////////////////////////////////////////////////////////
+
+        public UInt32 integrationTimeMS
         {
-            settings.saveDark = value;
-            Preferences.Set("saveDark", value);
+            get => spec != null ? spec.integrationTimeMS : 0;
+            set
+            {
+                if (spec != null && spec.paired)
+                spec.integrationTimeMS = value;
+            }
         }
-    }
 
-    public bool saveReference 
-    {
-        get => settings.saveReference;
-        set
+        public float gainDb
         {
-            settings.saveReference = value;
-            Preferences.Set("saveReference", value);
+            get => spec != null ? spec.gainDb : 0f;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.gainDb = value;
+            }
         }
-    }
 
-    ////////////////////////////////////////////////////////////////////////
-    // Authentication 
-    ////////////////////////////////////////////////////////////////////////
-
-    public string password
-    {
-        get => Settings.stars;
-        set
+        public byte scansToAverage
         {
-            // We are not doing anything here, because we don't want to
-            // process per-character input (which is what the Entry binding
-            // gives us); instead, wait until they hit return, which will
-            // trigger the View's Complete method.  That method will then
-            // call the authenticate() method below.
+            get => spec != null ? spec.scansToAverage : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.scansToAverage = value;
+            }
         }
-    }
 
-    public bool isAuthenticated
-    {
-        get => settings.authenticated;
-    }
+        ////////////////////////////////////////////////////////////////////////
+        // misc acquisition parameters
+        ////////////////////////////////////////////////////////////////////////
 
-    // the user entered a new password on the view, so authenticate it
-    public void authenticate(string password)
-    {
-        settings.authenticate(password);
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    // Advanced Features
-    ////////////////////////////////////////////////////////////////////////
-
-    public byte laserWatchdogTimeoutSec
-    {
-        get => spec.laserWatchdogSec;
-        set
+        // @todo: let the user live-toggle this and update the on-screen spectrum
+        public bool useHorizontalROI
         {
-            spec.laserWatchdogSec = value;
-            Preferences.Set("laserWatchdog", value);
+            get => spec != null ? spec.useHorizontalROI : true;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.useHorizontalROI = value;
+            }
         }
-    }
 
-    public byte laserWarningDelaySec
-    {
-        get => spec.laserWarningDelaySec;
-        set
+        public bool autoDarkEnabled
         {
-            spec.laserWarningDelaySec = value;
-            Preferences.Set("laserWarningDelaySec", value);
-        }
-    }
+            get => spec != null ? spec.autoDarkEnabled : false;
+            set
+            {
+                if (spec != null && spec.paired)
+                {
+                    if (spec.autoDarkEnabled != value)
+                        spec.autoDarkEnabled = value;
 
-    public ushort verticalROIStartLine
-    {
-        get => spec.verticalROIStartLine;
-        set 
-        { 
-            spec.verticalROIStartLine = value; 
-            Preferences.Set("verticalROIStartLine", value);
-        }
-    }
+                    if (spec.acquisitionMode == AcquisitionMode.STANDARD)
+                        assertSettings();
 
-    public ushort verticalROIStopLine
-    {
-        get => spec.verticalROIStopLine;
-        set 
+                    advancedModeEnabled = advancedModeEnabled;
+                }
+                updateLaserProperties();
+            }
+        }
+
+        public bool autoRamanEnabled
         {
-            spec.verticalROIStopLine = value;
-            Preferences.Set("verticalROIStopLine", value);
+            get => spec != null ? spec.autoRamanEnabled : false;
+            set
+            {
+                if (spec != null && spec.paired)
+                {
+                    if (spec.autoRamanEnabled != value)
+                        spec.autoRamanEnabled = value;
+
+                    if (spec.acquisitionMode == AcquisitionMode.STANDARD)
+                        assertSettings();
+
+                    advancedModeEnabled = advancedModeEnabled;
+                }
+                updateLaserProperties();
+            }
         }
+
+        void assertSettings()
+        {
+            spec.scansToAverage = spec.scansToAverage;
+            spec.integrationTimeMS = spec.integrationTimeMS;
+            spec.gainDb = spec.gainDb;
+        }
+
+        // @todo: let the user live-toggle this and update the on-screen spectrum
+        public bool useRamanIntensityCorrection
+        {
+            get => spec != null ? spec.useRamanIntensityCorrection : false;
+            set => spec.useRamanIntensityCorrection = value;
+        }
+
+        public bool useBackgroundRemoval
+        {
+            get => spec != null ? spec.useBackgroundRemoval : true;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.useBackgroundRemoval = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(useBackgroundRemoval)));
+            }
+        }
+        private bool _useBackgroundRemoval = true;
+
+        public bool performMatch
+        {
+            get => spec != null ? spec.performMatch : true;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.performMatch = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performMatch)));
+            }
+        }
+
+        public bool performDeconvolution
+        {
+            get => spec != null ? spec.performDeconvolution : false;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.performDeconvolution = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(performDeconvolution)));
+            }
+        }
+
+        public decimal matchThreshold
+        {
+            get => (decimal)settings.matchThreshold;
+            set
+            {
+                settings.matchThreshold = (float)value;
+                Preferences.Set("matchThreshold", (float)value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+
+        public int snrThreshold
+        {
+            get => settings.snrThreshold;
+            set
+            {
+                settings.snrThreshold = value;
+                Preferences.Set("snrThreshold", value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+
+        public void updateLaserProperties()
+        {
+            logger.debug("SVM.updateLaserProperties: start");
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoDarkEnabled)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanEnabled)));
+            logger.debug("SVM.updateLaserProperties: done");
+        }
+
+        public bool savePixel
+        {
+            get => settings.savePixel;
+            set
+            {
+                settings.savePixel = value;
+                Preferences.Set("savePixel", value);
+                System.Console.WriteLine($"Changed save pixel to the following: {settings.savePixel.ToString()}");
+            }
+        }
+
+        public bool saveWavelength
+        {
+            get => settings.saveWavelength;
+            set
+            {
+                settings.saveWavelength = value;
+                Preferences.Set("saveWavelength", value);
+            }
+        }
+
+        public bool saveWavenumber
+        {
+            get => settings.saveWavenumber;
+            set
+            {
+                settings.saveWavenumber = value;
+                Preferences.Set("saveWavenumber", value);
+            }
+        }
+
+        public bool saveRaw
+        {
+            get => settings.saveRaw;
+            set
+            {
+                settings.saveRaw = value;
+                Preferences.Set("saveRaw", value);
+            }
+        }
+
+        public bool saveDark
+        {
+            get => settings.saveDark;
+            set
+            {
+                settings.saveDark = value;
+                Preferences.Set("saveDark", value);
+            }
+        }
+
+        public bool saveReference
+        {
+            get => settings.saveReference;
+            set
+            {
+                settings.saveReference = value;
+                Preferences.Set("saveReference", value);
+            }
+        }
+        
+        public bool autoSave
+        {
+            get => settings.autoSave;
+            set
+            {
+                settings.autoSave = value;
+                Preferences.Set("autoSave", value);
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Authentication 
+        ////////////////////////////////////////////////////////////////////////
+
+        public string password
+        {
+            get => Settings.stars;
+            set
+            {
+                // We are not doing anything here, because we don't want to
+                // process per-character input (which is what the Entry binding
+                // gives us); instead, wait until they hit return, which will
+                // trigger the View's Complete method.  That method will then
+                // call the authenticate() method below.
+            }
+        }
+
+        public bool isAuthenticated
+        {
+            get => settings.authenticated;
+        }
+
+        // the user entered a new password on the view, so authenticate it
+        public void authenticate(string password)
+        {
+            settings.authenticate(password);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isAuthenticated)));
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Advanced Features
+        ////////////////////////////////////////////////////////////////////////
+
+        public byte laserWatchdogTimeoutSec
+        {
+            get => spec != null ? spec.laserWatchdogSec : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.laserWatchdogSec = value;
+                Preferences.Set("laserWatchdog", value);
+            }
+        }
+
+        public byte laserWarningDelaySec
+        {
+            get => spec != null ? spec.laserWarningDelaySec : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.laserWarningDelaySec = value;
+                Preferences.Set("laserWarningDelaySec", value);
+            }
+        }
+
+        public ushort verticalROIStartLine
+        {
+            get => spec != null ? spec.verticalROIStartLine : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.verticalROIStartLine = value;
+                Preferences.Set("verticalROIStartLine", value);
+            }
+        }
+
+        public ushort verticalROIStopLine
+        {
+            get => spec != null ? spec.verticalROIStopLine : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.verticalROIStopLine = value;
+                Preferences.Set("verticalROIStopLine", value);
+            }
+        }
+
+        public bool advancedModeEnabled
+        {
+            get => settings.advancedModeEnabled;
+            set
+            {
+                settings.advancedModeEnabled = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(advancedModeEnabled)));
+            }
+        }
+
     }
 }

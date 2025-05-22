@@ -8,6 +8,10 @@
     Shell.FlyoutBehavior="Disabled"
     Title="EnlightenMAUI">
 
+    <Shell.BindingContext>
+        <local:ViewModels.ShellViewModel/>
+    </Shell.BindingContext>
+    
     <TabBar>
         <!-- 
         This example from StackOverflow shows shelltab_0 could be referenced directly:
@@ -15,30 +19,41 @@
         -->
 
         <!-- About -->
-        <ShellContent x:Name="AboutTab" Title="About" Icon="Images/ico_info.png" ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
-
+        <Tab Title="About" Icon="Images/about_icon.png">
+            <ShellContent x:Name="AboutTab"  ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
+        </Tab>
         <!-- Bluetooth -->
-        <ShellContent x:Name="BluetoothTab" Title="Pair" Icon="IMages/ico_bluetooth.png" ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
-
+        <Tab Title="Pair" Icon="IMages/pairing_icon.png">
+            <ShellContent x:Name="BluetoothTab"  ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
+        </Tab>
         <!-- Scope -->
-        <ShellContent x:Name="ScopeTab" Title="Spectra" Icon="Images/ico_spectra.png" ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
+        <Tab Title="Spectra" IsEnabled="{Binding specConnected}" Icon="Images/spectra_icon.png">
+            <ShellContent x:Name="ScopeTab"  ContentTemplate="{DataTemplate local:ScopePage}" Route="ScopePage"/>
+        </Tab>
 
+        <Tab Title="Analysis" Icon="Images/analysis_icon.png" IsEnabled="{Binding specConnected}">
+            <ShellContent x:Name="AnalysisTab" ContentTemplate="{DataTemplate local:AnalysisPage}" Route="AnalysisPage"/>
+        </Tab>
+        <!-- Application Settings -->
+        <Tab Title="Configuration" IsEnabled="{Binding specConnected}" Icon="Images/ico_gear.png">
+            <ShellContent x:Name="SettingsTab" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
+        </Tab>
+        <!-- Hardware -->
+
+        <Tab Title="Hardware" IsEnabled="{Binding specConnected}" Icon="Images/ico_xs.png">
+            <ShellContent x:Name="HardwareTab" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
+        </Tab>
+        <!-- Log -->
+
+        <Tab Title="Log" Icon="Images/ico_page.png">
+            <ShellContent x:Name="LogTab" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
+        </Tab>
+        
         <!-- Clipboard -->
         <!-- 
         <ShellContent x:Name="ClipboardTab" Title="Clipboard" Icon="Images/ico_clipboard.png" ContentTemplate="{DataTemplate local:ClipboardPage}" Route="ClipboardPage"/> 
         -->
 
-        <Tab Title="Settings" Icon="Images/ico_gear.png">
-            
-            <!-- Hardware -->
-            <ShellContent x:Name="HardwareTab" Title="Hardware" Icon="Images/ico_xs.png" ContentTemplate="{DataTemplate local:HardwarePage}" Route="HardwarePage"/>
-
-            <!-- Application Settings -->
-            <ShellContent x:Name="SettingsTab" Title="Configuration" Icon="Images/ico_gear.png" ContentTemplate="{DataTemplate local:SettingsPage}" Route="SettingsPage"/>
-
-            <!-- Log -->
-            <ShellContent x:Name="LogTab" Title="Log" Icon="Images/ico_page.png" ContentTemplate="{DataTemplate local:LogPage}" Route="LogPage"/>
-        </Tab>
     </TabBar>
         
 

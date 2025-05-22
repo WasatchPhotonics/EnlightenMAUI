@@ -81,11 +81,11 @@
             </Grid.ColumnDefinitions>
 
             <!-- Acquisition ProgressBar -->
-            <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="#27c0a1"/>
+            <ProgressBar Grid.Row="0" Grid.Column="0" Progress="{Binding acquisitionProgress}" ProgressColor="{Binding progressBarColor}"/>
             <!-- ProgressColor="#2994d3"/> -->
 
             <!-- Match Result -->
-            <StackLayout Grid.Row="1" HorizontalOptions="FillAndExpand" Spacing="10" Margin="5"  Orientation="Vertical">
+            <StackLayout Grid.Row="1" IsVisible="False" HorizontalOptions="FillAndExpand" Spacing="10" Margin="5"  Orientation="Vertical">
                 <ActivityIndicator IsVisible="{Binding waitingForMatch}" Color="#27c0a1" IsRunning="{Binding waitingForMatch}"/>
                 <StackLayout Orientation="Horizontal" Spacing="5" Margin="5" HorizontalOptions="StartAndExpand">
                     <CheckBox IsChecked="{Binding displayMatch}" IsVisible="{Binding hasMatch}" HorizontalOptions="Start" VerticalOptions="Center"/>
@@ -95,7 +95,7 @@
             </StackLayout>
 
             <!-- Command buttons -->
-            <StackLayout Grid.Row="2" Grid.Column="0" Margin="10, 0, 10, 10">
+            <StackLayout IsVisible="{Binding manualModeEnabled}" Grid.Row="2" Grid.Column="0" Margin="10, 0, 10, 10">
                 <FlexLayout Wrap="Wrap" AlignItems="Stretch"  VerticalOptions="Start" JustifyContent="SpaceBetween">
 
                     <!-- Laser -->
@@ -172,6 +172,117 @@
                 </FlexLayout>
             </StackLayout>
 
+            <!-- Command buttons -->
+            <Grid   HorizontalOptions="CenterAndExpand" 
+                    IsVisible="{Binding manualModeDisabled}" 
+                    Grid.Row="2" 
+                    Grid.Column="0" 
+                    Margin="10, 0, 10, 0">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <Button IsVisible="{Binding laserArmIncomplete}"
+                        Text="{Binding laserWarningText}"
+                        FontSize="14"
+                        Margin="10,0,5,5"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        HorizontalOptions="FillAndExpand"
+                        Command="{Binding laserWarningCmd}"
+                        BackgroundColor="{Binding laserWarningBackgroundColor}"
+                        MinimumWidthRequest="100"
+                        HeightRequest="80"
+                        LineBreakMode="WordWrap"
+                        ImageSource="Images/laser.svg"
+                        ContentLayout="Right, 3"/>
+
+                <StackLayout IsVisible="{Binding laserArmed}"
+                             Grid.Column="0"
+                             Orientation="Horizontal"
+                             HorizontalOptions="End"
+                             Spacing="5">
+
+                    <!-- Add -->
+                    <ImageButton    Margin="2" 
+                Padding="20" 
+                CornerRadius="10"
+                HorizontalOptions="StartAndExpand" 
+                WidthRequest="50"
+                HeightRequest="50"
+                Command="{Binding addCmd}" 
+                IsEnabled="{Binding hasSpectrum}"
+                Source="Images/eye.svg" 
+                BackgroundColor="#515151"/>
+
+                    <!-- Clear -->
+                    <ImageButton    Margin="2" 
+                Padding="20" 
+                CornerRadius="10"
+                HorizontalOptions="StartAndExpand" 
+                WidthRequest="50"
+                HeightRequest="50"
+                Command="{Binding clearCmd}"
+                IsEnabled="{Binding hasTraces}"
+                Source="Images/eraser.svg" 
+                BackgroundColor="#515151"/>
+
+                </StackLayout>
+                
+                <Border IsVisible="{Binding laserArmed}"
+                        Margin="10,0,10,5"
+                        Grid.Column="1"
+                        Stroke="#515151"
+                        HorizontalOptions="Center"
+                        Background="Transparent"
+                        StrokeThickness="2"
+                        WidthRequest="80"
+                        HeightRequest="80"
+                        StrokeShape="Ellipse 80,80">
+                    <Button HeightRequest="70"
+                            Command="{Binding acquireCmd}"
+                            BackgroundColor="{Binding acquireButtonBackgroundColor}"
+                            CornerRadius="35"
+                            WidthRequest="70"/>
+                </Border>
+
+                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
+                <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="0"/>
+                <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="2"/>
+
+                <StackLayout Margin="0,0,10,5"
+                             Grid.Column="2"
+                             Orientation="Horizontal"
+                             HorizontalOptions="Start"
+                             IsVisible="{Binding laserArmed}"
+                             Spacing="5">
+
+                    <StackLayout Orientation="Vertical" Padding="0,20,0,0" VerticalOptions="Start">
+                    <Image Source="Images/wp_enlighten_charging.png" IsVisible="{Binding batteryCharging}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_critical.png" IsVisible="{Binding batteryCritical}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_25.png" IsVisible="{Binding battery25}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_50.png" IsVisible="{Binding battery50}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_75.png" IsVisible="{Binding battery75}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_battery_100.png" IsVisible="{Binding battery100}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                    <Label TextColor="#eee" FontSize="10" HorizontalOptions="Center" Text="{Binding batteryState}"/>
+                    </StackLayout>
+
+                    <Image Source="Images/wp_enlighten_signal_bars1.png" VerticalOptions="Center" IsVisible="{Binding ble1Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_signal_bars2.png" VerticalOptions="Center" IsVisible="{Binding ble2Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+                    <Image Source="Images/wp_enlighten_signal_bars3.png" VerticalOptions="Center" IsVisible="{Binding ble3Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
+
+                </StackLayout>
+
+            </Grid>
+
             <StackLayout Grid.Row="3" Grid.Column="0" Margin="2">
                 <FlexLayout Wrap="Wrap" AlignItems="Center" VerticalOptions="Start" JustifyContent="Center">
 
@@ -190,11 +301,11 @@
         </Grid>
 
         <!-- StatusBar -->
-        <Frame CornerRadius="10" VerticalOptions="End" BackgroundColor="#666" Padding="2">
+        <Frame IsVisible="False" CornerRadius="10" VerticalOptions="End" BackgroundColor="#666" Padding="2">
             <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
                 <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
                     <Label TextColor="#eee" Text="Battery"/>
-                    <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}"/>
+                    <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}" />
                 </StackLayout>
             </Frame>
         </Frame>

@@ -12,6 +12,8 @@ using System.Xml.XPath;
 using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
+using System.Reflection.Metadata;
+
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
 #endif
@@ -174,35 +176,84 @@ namespace EnlightenMAUI.Models
         public enum ErrorTypes { SUCCESS, NULL_STREAM, INVALID_STATE, NO_INTENSITIES };
     }
 
-    internal class Library
+
+    public abstract class Library
     {
 #if USE_DECON
-        Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
+        protected Deconvolution.DeconvolutionLibrary deconvolutionLibrary = new Deconvolution.DeconvolutionLibrary(new List<Deconvolution.Spectrum>());
 #endif
-        Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
-        Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
-        Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
+
+        public delegate void MatchProgressNotification(double perc);
+        public event MatchProgressNotification showMatchProgress;
+        public void raiseMatchProgress(double arg)
+        {
+            showMatchProgress(arg);
+        }
+
+        protected Dictionary<string, Measurement> library = new Dictionary<string, Measurement>();
+        protected Dictionary<string, double[]> originalRaws = new Dictionary<string, double[]>();
+        protected Dictionary<string, double[]> originalDarks = new Dictionary<string, double[]>();
+        protected string unitSN = "";
+        public bool loadSucceeded 
+        { 
+            get; 
+            set; 
+        } = false;
+        public bool isLoading = false;
+
+        public string mostRecentCompound;
+        public double mostRecentScore;
+        public Measurement mostRecentMeasurement;
         public event EventHandler<Library> LoadFinished;
+        public List<string> samples => library.Keys.ToList();
 
+        public Library(string root, Spectrometer spec) { }
+
+        public abstract Task<Tuple<string, double>> findMatch(Measurement spectrum);
+        public abstract Measurement getSample(string name);
+        public abstract void addSampleToLibrary(string name, Measurement sample);
+
+        protected void InvokeLoadFinished()
+        {
+            LoadFinished?.Invoke(this, this);
+        }
+
+
+#if USE_DECON
+        public abstract Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum);
+#endif
+    }
+
+
+    internal class WPLibrary : Library
+    {
         Logger logger = Logger.getInstance();
-        Task libraryLoader;
+        protected Task libraryLoader;
+        protected Task userLoader;
 
-        Wavecal wavecal;
-        int roiStart = 0;
-        int roiEnd = 0;
-
-        public Library(string root, Spectrometer spec)
+        protected Wavecal wavecal;
+        protected int roiStart = 0;
+        protected int roiEnd = 0;
+        public WPLibrary(string root, Spectrometer spec, bool doLoad = true) : base(root, spec) 
         {
             logger.debug($"instantiating Library from {root}");
 
-            wavecal = new Wavecal(spec.pixels);
-            wavecal.coeffs = spec.eeprom.wavecalCoeffs;
-            wavecal.excitationNM = spec.laserExcitationNM;
+            if (spec != null)
+            {
+                wavecal = new Wavecal(spec.pixels);
+                wavecal.coeffs = spec.eeprom.wavecalCoeffs;
+                wavecal.excitationNM = spec.laserExcitationNM;
 
-            roiStart = spec.eeprom.ROIHorizStart;
-            roiEnd = spec.eeprom.ROIHorizEnd;
+                roiStart = spec.eeprom.ROIHorizStart;
+                roiEnd = spec.eeprom.ROIHorizEnd;
 
-            libraryLoader = loadFiles(root);
+                unitSN = spec.eeprom.serialNumber;
+            }
+
+            if (doLoad)
+                libraryLoader = loadFiles(root);
+
+            userLoader = loadFiles("User Library", false);
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -246,9 +297,7 @@ namespace EnlightenMAUI.Models
 
         }
 
-        public List<string> samples => library.Keys.ToList();
-
-        public Measurement getSample(string name)
+        public override Measurement getSample(string name)
         {
             if (library.ContainsKey(name))
                 return library[name];
@@ -256,11 +305,16 @@ namespace EnlightenMAUI.Models
                 return null;
         }
 
-        public void addSampleToLibrary(string name, Measurement sample)
+        public override void addSampleToLibrary(string name, Measurement sample)
         {
-            Measurement adjusted = sample;
+            Measurement adjusted = new Measurement();
+            
             if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
-                adjusted = sample;
+            {
+                adjusted = sample.copy();
+                adjusted.dark = null;
+                adjusted.raw = sample.postProcessed;
+            }
             else
             {
                 double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
@@ -270,12 +324,12 @@ namespace EnlightenMAUI.Models
                 adjusted.raw = newIntensities;
             }
 
-            library[name] = sample;
+            library[name] = adjusted;
         }
 
-        async Task loadFiles(string root)
+        async Task loadFiles(string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
         {
-
+            isLoading = true;
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
             foreach (var cDir in cacheDirs)
@@ -289,10 +343,17 @@ namespace EnlightenMAUI.Models
                         break;
                     }
                 }
+
             }
 
             if (libraryFolder == null)
+            {
+                if (library.Count > 0)
+                    loadSucceeded = true;
+                isLoading = false;
+                InvokeLoadFinished();
                 return;
+            }
 
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");
@@ -324,25 +385,28 @@ namespace EnlightenMAUI.Models
                     }
                 }
             }
-            logger.debug("finished loading library files"); 
-            LoadFinished.Invoke(this, this);
-
+            if (library.Count > 0)
+                loadSucceeded = true;
+            isLoading = false;
+            logger.debug("finished loading library files");
+            InvokeLoadFinished();
             logger.debug("prepping data for decon");
 
-
-#if USE_DECON
-            if (PlatformUtil.transformerLoaded)
+            if (doDecon)
             {
-                double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
-                await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
-            }
-            else
-                await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+#if USE_DECON
+                if (PlatformUtil.transformerLoaded)
+                {
+                    double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
+                }
+                else
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
 #endif
+            }
 
             logger.debug("finished prepping data for decon");
         }
-
         async Task loadCSV(string path)
         {
             string name = path.Split('/').Last().Split('.').First();
@@ -427,7 +491,7 @@ namespace EnlightenMAUI.Models
 
             if (false)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
                 double[]  wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 Measurement updated = new Measurement();
                 updated.wavenumbers = wavenumbers;
@@ -535,7 +599,7 @@ namespace EnlightenMAUI.Models
 
             if (PlatformUtil.transformerLoaded)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
                 double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 Measurement updated = new Measurement();
                 updated.wavenumbers = wavenumbers;
@@ -563,8 +627,7 @@ namespace EnlightenMAUI.Models
 
             logger.info("finish loading library file from {0}", file.AbsolutePath);
         }
-
-        public async Task<Tuple<string,double>> findMatch(Measurement spectrum)
+        public override async Task<Tuple<string,double>> findMatch(Measurement spectrum)
         {
             logger.debug("Library.findMatch: trying to match spectrum");
 
@@ -577,15 +640,18 @@ namespace EnlightenMAUI.Models
 
             foreach (string sample in library.Keys)
             {
+                double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                logger.info($"{sample} score: {score}");
+                scores[sample] = score;
+                /*
                 logger.info($"trying to match {sample}");
                 matchTasks.Add(Task.Run(() =>
                 {
-                    double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
-                    logger.info($"{sample} score: {score}");
-                    scores[sample] = score;
                 }));
+                */
             }
 
+            /*
             logger.info("waiting for matches");
             int i = 0;
             foreach (Task t in matchTasks)
@@ -594,13 +660,14 @@ namespace EnlightenMAUI.Models
                 await t;
                 ++i;
             }
+            */
             logger.info("matches complete");
 
             double maxScore = double.MinValue;
             string finalSample = "";
             foreach (string sample in scores.Keys)
             {
-                //logger.info($"matched {sample} with score {scores[sample]:f4}");
+                logger.info($"matched {sample} with score {scores[sample]:f4}");
 
                 if (scores[sample] > maxScore)
                 {
@@ -611,15 +678,19 @@ namespace EnlightenMAUI.Models
 
             logger.info($"best match {finalSample} with score {maxScore}");
 
+            mostRecentCompound = finalSample;
+            mostRecentScore = maxScore;
+            if (finalSample != "")
+                mostRecentMeasurement = library[finalSample];
+
             if (finalSample != "")
                 return new Tuple<string, double>(finalSample, maxScore);
             else 
                 return null;
         }
 
-
 #if USE_DECON
-        public async Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)
+        public override async Task<DeconvolutionMAUI.Matches> findDeconvolutionMatches(Measurement spectrum)
         {
             List<double> intensities = new List<double>(spectrum.processed);
             List<double> wavenumbers = new List<double>(spectrum.wavenumbers);

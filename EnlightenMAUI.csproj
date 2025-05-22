@@ -49,14 +49,14 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.8.7</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.26</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.8.7</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.26</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	</PropertyGroup>
 
@@ -78,6 +78,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="libdpSDK.so" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\apeture.svg" />
 	  <None Remove="Resources\Images\bulb_dark.svg" />
@@ -94,6 +95,12 @@
 	  <None Remove="Resources\Images\laser.svg" />
 	  <None Remove="Resources\Images\triangle_down_underline.svg" />
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('lib\arm64-v8a\libdpSDK.so')">
+	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSDK.so">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </AndroidNativeLibrary>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -114,6 +121,8 @@
 		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.1" />
 		<PackageReference Include="Microsoft.ML.OnnxTransformer" Version="3.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Numpy" Version="3.11.1.35" />
+		<PackageReference Include="NumSharp" Version="0.30.0" />
 		<PackageReference Include="Plugin.BLE" Version="3.0.0" />
 		<PackageReference Include="Telerik.UI.for.Maui" Version="7.1.0" />
 	</ItemGroup>
@@ -146,6 +155,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Popups\AddToLibraryPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Popups\OverlaysPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

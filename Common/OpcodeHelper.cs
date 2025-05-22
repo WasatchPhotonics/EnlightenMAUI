@@ -72,6 +72,7 @@ namespace EnlightenMAUI.Common
         GET_OPT_INTEGRATION_TIME_RESOLUTION,
         GET_OPT_LASER_CONTROL,
         GET_OPT_LASER_TYPE,
+        GET_SCANS_TO_AVERAGE,
         GET_SELECTED_ADC,
         GET_TEST_PATTERN,
         GET_TRIGGER_DELAY,
@@ -81,6 +82,7 @@ namespace EnlightenMAUI.Common
         SECOND_TIER_COMMAND,
         SET_ACCESSORY_ENABLE,
         SET_AREA_SCAN_ENABLE,
+        SET_ACQUIRE_AUTO_RAMAN,
         SET_CF_SELECT,
         SET_COLLECTION_MODE,
         SET_CONTINUOUS_ACQUISITION,
@@ -116,6 +118,7 @@ namespace EnlightenMAUI.Common
         SET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
         SET_MODEL_CONFIG_ARM,
         SET_MODEL_CONFIG_FX2,
+        SET_SCANS_TO_AVERAGE,
         SET_SELECTED_ADC,
         SET_TEST_PATTERN,
         SET_TRIGGER_DELAY,
@@ -262,6 +265,8 @@ namespace EnlightenMAUI.Common
             cmd[Opcodes.PROCESS_LIBRARY] = 0x29;
             cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM] = 0x2a;
             cmd[Opcodes.GET_BLE_FW_VER_INFO] = 0x2d;
+            cmd[Opcodes.SET_SCANS_TO_AVERAGE] = 0x62;
+            cmd[Opcodes.SET_ACQUIRE_AUTO_RAMAN] = 0xFD;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //

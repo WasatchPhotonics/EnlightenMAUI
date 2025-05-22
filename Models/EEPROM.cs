@@ -23,7 +23,8 @@ public class EEPROM
     /////////////////////////////////////////////////////////////////////////
 
     internal const int MAX_PAGES = 8;
-    internal const int SUBPAGE_COUNT = 4;
+    internal const int SUBPAGE_COUNT = 1;
+    internal const int API6_SUBPAGE_COUNT = 4;
     internal const int PAGE_LENGTH = 64;
 
     const byte FORMAT = 15;
