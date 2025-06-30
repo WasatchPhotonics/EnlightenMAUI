@@ -1129,7 +1129,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
+        //if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
+        if (spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
         else
         {
@@ -1736,7 +1737,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
             else
             {
-                if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
+                if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster" && !(spec is API6BLESpectrometer))
                 {
                     ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
                 }

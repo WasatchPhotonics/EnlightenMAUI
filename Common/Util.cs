@@ -143,23 +143,31 @@ public class Util
     {
         if (smooth)
         {
-            //logger.info("smoothing sample and library");
-            double[] yIn = AirPLS.smooth(sampleM.postProcessed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
-            //double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
-            double[] array = library.processed.Skip((int)sampleM.roiStart).Take(yIn.Length).ToArray();
+            double[] yIn = sampleM.postProcessed;
+
+            if (yIn == null || yIn.Length != library.processed.Length)
+            {
+                double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] newIntensities = Wavecal.mapWavenumbers(sampleM.wavenumbers, sampleM.processed, wavenumbers);
+
+                //logger.info("smoothing sample and library");
+                yIn = sampleM.postProcessed = AirPLS.smooth(newIntensities, airPLSLambda, airPLSMaxIter, 0.001, verbose: false);
+                sampleM.wavenumbers = wavenumbers;
+                //double[] array = AirPLS.smooth(library.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)sampleM.roiStart, (int)sampleM.roiEnd);
+            }
 
             logger.info("matching library array of length {0} to {1} with start val {2} and end val {3}",
-                array.Length,
+                library.processed.Length,
                 yIn.Length,
-                array[0],
-                array[array.Length - 1]);
+                library.processed[0],
+                library.processed[library.processed.Length - 1]);
 
             double score = 0;
 
             try
             {
                 //logger.info("calculating match score");
-                score = MathNet.Numerics.Statistics.Correlation.Pearson(yIn, array);
+                score = MathNet.Numerics.Statistics.Correlation.Pearson(yIn, library.processed);
                 //logger.info("returning match score {0}", score);
             }
             catch (Exception e)

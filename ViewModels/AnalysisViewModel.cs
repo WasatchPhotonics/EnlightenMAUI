@@ -474,7 +474,7 @@ namespace EnlightenMAUI.ViewModels
 
         public void SetData(Measurement sample, Measurement reference)
         {
-            bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
+            bool usingRemovalAxis = spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
             double scaleFactor = 1;
 
