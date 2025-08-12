@@ -43,6 +43,7 @@ public class BluetoothSpectrometer : Spectrometer
     bool optimizationDone = false;
     bool waitingForGeneric = false;
     bool acqSynced = false;
+    bool autoRamanSynced = false;
 
     uint totalPixelsToRead;
     uint totalPixelsRead;
@@ -839,6 +840,11 @@ public class BluetoothSpectrometer : Spectrometer
         else
             logger.error($"Failed to set auto raman params");
 
+        if (ok)
+        {
+            autoRamanSynced = true;
+        }
+
         // kludge
         if (!ok)
         {
@@ -1118,8 +1124,11 @@ public class BluetoothSpectrometer : Spectrometer
         if (! await syncGainDbAsync())
             return false;
 
+        if (!autoRamanSynced && acquisitionMode == AcquisitionMode.AUTO_RAMAN)
+            await syncAutoRamanParameters();
+
         // update battery FIRST
-        logger.debug("Spectrometer.takeOneAveragedAsync: updating battery");
+        //logger.debug("Spectrometer.takeOneAveragedAsync: updating battery");
         //await updateBatteryAsync();
 
         // for progress bar
