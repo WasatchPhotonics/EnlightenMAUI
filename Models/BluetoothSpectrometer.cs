@@ -17,6 +17,7 @@ namespace EnlightenMAUI.Models;
 public class BluetoothSpectrometer : Spectrometer
 { 
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
+    const int SEM_TIMEOUT = 150;
 
     // Singleton
     static BluetoothSpectrometer instance = null;
@@ -108,7 +109,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public async Task<bool> initAsync(Dictionary<string, ICharacteristic> characteristicsByName)
     {
-        logger.debug("Initializing Spectrometer");
+        logger.debug("Initializing BluetoothSpectrometer");
         paired = false;
 
         this.characteristicsByName = characteristicsByName;
@@ -120,14 +121,14 @@ public class BluetoothSpectrometer : Spectrometer
         var pages = await readEEPROMAsync();
         if (pages is null)
         {
-            logger.error("Spectrometer.initAsync: failed to read EEPROM");
+            logger.error("BluetoothSpectrometer.initAsync: failed to read EEPROM");
             return false;
         }
 
-        logger.debug("Spectrometer.initAsync: parsing EEPROM");
+        logger.debug("BluetoothSpectrometer.initAsync: parsing EEPROM");
         if (!eeprom.parse(pages))
         {
-            logger.error("Spectrometer.initAsync: failed to parse EEPROM");
+            logger.error("BluetoothSpectrometer.initAsync: failed to parse EEPROM");
             return false;
         }
 
@@ -135,11 +136,11 @@ public class BluetoothSpectrometer : Spectrometer
         // post-process EEPROM
         ////////////////////////////////////////////////////////////////////
 
-        logger.debug("Spectrometer.initAsync: post-processing EEPROM");
+        logger.debug("BluetoothSpectrometer.initAsync: post-processing EEPROM");
         pixels = eeprom.activePixelsHoriz;
         laserExcitationNM = eeprom.laserExcitationWavelengthNMFloat;
 
-        logger.debug("Spectrometer.initAsync: computing wavecal");
+        logger.debug("BluetoothSpectrometer.initAsync: computing wavecal");
         wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
 
         if (laserExcitationNM > 0)
@@ -151,7 +152,7 @@ public class BluetoothSpectrometer : Spectrometer
         else
             wavenumbers = originalWavenumbers = null;
 
-        logger.debug("Spectrometer.initAsync: generating pixel axis");
+        logger.debug("BluetoothSpectrometer.initAsync: generating pixel axis");
         generatePixelAxis();
 
         // set this early so battery and other BLE calls can progress
@@ -163,7 +164,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         raiseConnectionProgress(1);
         
-        logger.debug("Spectrometer.initAsync: finishing spectrometer initialization");
+        logger.debug("BluetoothSpectrometer.initAsync: finishing spectrometer initialization");
         pixels = eeprom.activePixelsHoriz;
 
         //await updateBatteryAsync(); 
@@ -179,7 +180,9 @@ public class BluetoothSpectrometer : Spectrometer
         await Task.Delay(10);
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
+        await Task.Delay(10);
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
+        await Task.Delay(10);
 
         logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
@@ -205,7 +208,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         //updateRSSI();
 
-        logger.debug("Spectrometer.initAsync: done");
+        logger.debug("BluetoothSpectrometer.initAsync: done");
         return true;
     }
 
@@ -299,13 +302,15 @@ public class BluetoothSpectrometer : Spectrometer
         logger.info($"Spectrometer.syncIntegrationTimeMSAsync({value})");
         logger.hexdump(request, "data: ");
 
-        if (!await sem.WaitAsync(100))
+        logger.debug("Spectrometer.syncIntegrationTimeMSAsync grabbing semaphore");
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
             return false;
         }
         var ok = await writeGenericCharacteristic(request);
         sem.Release();
+        logger.debug("Spectrometer.syncIntegrationTimeMSAsync released semaphore");
         if (ok)
         { 
             _lastIntegrationTimeMS = _nextIntegrationTimeMS;
@@ -324,13 +329,15 @@ public class BluetoothSpectrometer : Spectrometer
 
         logger.hexdump(request, "sync acq int time data: ");
 
-        if (!await sem.WaitAsync(100))
+        logger.debug("sync acq time grabbing semaphore");
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
         }
         waitingForGeneric = true;
         var ok = await writeGenericCharacteristic(request);
         sem.Release();
+        logger.debug("sync acq time released semaphore");
 
         while (waitingForGeneric)
         {
@@ -341,14 +348,16 @@ public class BluetoothSpectrometer : Spectrometer
         lastRequest = Opcodes.GET_SCANS_TO_AVERAGE;
 
         logger.hexdump(request, "sync acq avg data: ");
+        logger.debug("sync acq avg grabbing semaphore");
 
-        if (!await sem.WaitAsync(100))
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
         }
         waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
         sem.Release();
+        logger.debug("sync acq avg released semaphore");
 
         while (waitingForGeneric)
         {
@@ -359,14 +368,16 @@ public class BluetoothSpectrometer : Spectrometer
         lastRequest = Opcodes.GET_DETECTOR_GAIN;
 
         logger.hexdump(request, "sync acq gain data: ");
+        logger.debug("sync acq gain grabbing semaphore");
 
-        if (!await sem.WaitAsync(100))
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
         }
         waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
         sem.Release();
+        logger.debug("sync acq gain released semaphore");
 
         while (waitingForGeneric)
         {
@@ -443,13 +454,15 @@ public class BluetoothSpectrometer : Spectrometer
         logger.info($"Spectrometer.syncGainDbAsync({_nextGainDb})"); 
         logger.hexdump(request, "data: ");
 
-        if (!await sem.WaitAsync(100))
+        logger.debug("Spectrometer.syncGainDbAsync grabbing semaphore");
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
             return false;
         }
         var ok = await writeGenericCharacteristic(request);
         sem.Release();
+        logger.debug("Spectrometer.syncGainDbAsync released semaphore");
         if (ok)
         {
             _lastGainDb = _nextGainDb;
@@ -810,13 +823,15 @@ public class BluetoothSpectrometer : Spectrometer
         Array.Copy(paramPack, 0, request, 1, paramPack.Length);
         logger.hexdump(request, "data: ");
 
-        if (!await sem.WaitAsync(1000))
+        logger.debug("Spectrometer.syncAutoRamanParameters: waiting on semaphore");
+        if (!await sem.WaitAsync(2000))
         {
             logger.error("Spectrometer.syncAutoRamanParameters: couldn't get semaphore");
             return false;
         }
         var ok = await writeGenericCharacteristic(request);
         sem.Release();
+        logger.debug("Spectrometer.syncAutoRamanParameters: releasing semaphore");
         if (ok)
         {
             await pauseAsync("syncAutoRamanParameters");
@@ -1037,7 +1052,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
 
         logger.debug("Spectrometer.updateBatteryAsync: waiting on semaphore");
-        if (!await sem.WaitAsync(50))
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.updateBatteryAsync: couldn't get semaphore");
             return false;
@@ -1058,8 +1073,8 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug("Spectrometer.updateBatteryAsync: sending batteryStatus notification");
         NotifyPropertyChanged("batteryStatus");
 
-        logger.debug("Spectrometer.updateBatteryAsync: done");
         sem.Release();
+        logger.debug("Spectrometer.updateBatteryAsync: done");
         return true;
     }
 
@@ -1250,7 +1265,8 @@ public class BluetoothSpectrometer : Spectrometer
         delta = 0;
 
         // send acquire command
-        if (!await sem.WaitAsync(100))
+        logger.debug("Spectrometer.takeOneAsync: waiting on semaphore");
+        if (!await sem.WaitAsync(SEM_TIMEOUT))
         {
             logger.error("Spectrometer.takeOneAveragedAsync: couldn't get semaphore");
             return null;
@@ -1264,6 +1280,7 @@ public class BluetoothSpectrometer : Spectrometer
             return null;
         }
         sem.Release();
+        logger.debug("Spectrometer.takeOneAsync: released semaphore");
         monitorAutoRamanProgress();
         logger.debug("waiting for spectral data");
         bool ok = await monitorSpectrumAcquire();

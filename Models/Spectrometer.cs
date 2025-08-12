@@ -731,9 +731,10 @@ namespace EnlightenMAUI.Models
             // this time-out may well not be nearly enough, given the potential 
             // need to wait 6 x integration time for sensor to wake up, plus 4sec
             // for read-out
+            logger.error("Spectrometer.processLaserStateNotification: grabbing semaphore");
             if (!await sem.WaitAsync(100))
             {
-                logger.error("Spectrometer.processLaserStateNotification: timed-out");
+                logger.error("Spectrometer.processLaserStateNotification: semaphore grab timed-out");
                 return;
             }
 
@@ -750,6 +751,7 @@ namespace EnlightenMAUI.Models
             //laserDelayMS = newLaserDelayMS;  laserDelayMS
 
             sem.Release();
+            logger.error("Spectrometer.processLaserStateNotification: releasing semaphore");
         }
 
         protected abstract void processGeneric(byte[] data);

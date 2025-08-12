@@ -144,8 +144,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
 
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
-            spec.updateBatteryAsync();
+        updateBattery().Wait();
+
         if (spec != null && spec.paired)
         {
             if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
@@ -205,6 +205,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings.LibraryChanged += Settings_LibraryChanged;
         AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
         AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
+    }
+
+    private async Task updateBattery()
+    {
+        if (spec != null && spec.paired && spec.eeprom.hasBattery)
+            await spec.updateBatteryAsync();
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -370,7 +376,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     private async void Library_LoadFinished(object sender, Library e)
     {
         if (!settings.library.loadSucceeded)
-            notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+            notifyToast?.Invoke("Issue loading library, make sure phone is paired to correct unit");
 
         if (library is DPLibrary)
         {
