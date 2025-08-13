@@ -176,7 +176,7 @@ public class BluetoothSpectrometer : Spectrometer
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
         integrationTimeMS = 400;
-        await Task.Delay(10);
+        await Task.Delay(200);
         gainDb = 8;
         await Task.Delay(10);
 
@@ -537,7 +537,16 @@ public class BluetoothSpectrometer : Spectrometer
                 byte[] dataToSend = { 0xff, 0x21, 0, 0 };
                 Array.Copy(data, 0, dataToSend, 2, data.Length);
 
+                logger.debug("Spectrometer.verticalROIStartLine.set: grabbing semaphore");
+                if (!sem.Wait(SEM_TIMEOUT))
+                {
+                    logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+                }
+
                 _ = writeGenericCharacteristic(dataToSend);
+
+                sem.Release();
+                logger.debug("Spectrometer.verticalROIStartLine.set: released semaphore");
 
                 NotifyPropertyChanged(nameof(verticalROIStartLine));
             }
@@ -562,7 +571,16 @@ public class BluetoothSpectrometer : Spectrometer
                 byte[] dataToSend = { 0xff, 0x23, 0, 0 };
                 Array.Copy(data, 0, dataToSend, 2, data.Length);
 
+                logger.debug("Spectrometer.verticalROIStopLine.set: grabbing semaphore");
+                if (!sem.Wait(SEM_TIMEOUT))
+                {
+                    logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+                }
+
                 _ = writeGenericCharacteristic(dataToSend);
+
+                sem.Release();
+                logger.debug("Spectrometer.verticalROIStopLine.set: released semaphore");
 
                 NotifyPropertyChanged(nameof(verticalROIStopLine));
             }
@@ -888,6 +906,7 @@ public class BluetoothSpectrometer : Spectrometer
         else
             logger.error($"Failed to write generic characteristic {dataToSend}");
 
+        logger.hexdump(dataToSend, "writeGenericCharacteristic: complete");
         return ok;
     }
 
