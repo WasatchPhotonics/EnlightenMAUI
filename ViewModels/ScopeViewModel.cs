@@ -144,8 +144,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
 
-        updateBattery().Wait();
-
+        if (spec != null && spec.paired && spec.eeprom.hasBattery)
+            spec.updateBatteryAsync();
         if (spec != null && spec.paired)
         {
             if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
