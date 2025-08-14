@@ -178,12 +178,12 @@ public class BluetoothSpectrometer : Spectrometer
         integrationTimeMS = 400;
         await Task.Delay(200);
         gainDb = 8;
-        await Task.Delay(10);
+        await Task.Delay(100);
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];
-        await Task.Delay(10);
+        await Task.Delay(100);
         verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
-        await Task.Delay(10);
+        await Task.Delay(100);
 
         logger.info($"initialized {eeprom.serialNumber} {fullModelName}");
         logger.info($"  detector: {eeprom.detectorName}");
@@ -906,7 +906,7 @@ public class BluetoothSpectrometer : Spectrometer
         else
             logger.error($"Failed to write generic characteristic {dataToSend}");
 
-        logger.hexdump(dataToSend, "writeGenericCharacteristic: complete");
+        logger.hexdump(dataToSend, "writeGenericCharacteristic: complete ");
         return ok;
     }
 
