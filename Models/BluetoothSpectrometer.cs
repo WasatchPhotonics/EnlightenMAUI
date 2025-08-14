@@ -217,9 +217,11 @@ public class BluetoothSpectrometer : Spectrometer
     internal override async Task<bool> initializeCollectionParams()
     {
         _nextIntegrationTimeMS = 400;
-        await syncIntegrationTimeMSAsync(extendedTimeout: true);
+        await syncIntegrationTimeMSAsync(extendedTimeout: true); 
+        NotifyPropertyChanged(nameof(integrationTimeMS));
         _nextGainDb = 8;
-        await syncGainDbAsync(extendedTimeout: true);
+        await syncGainDbAsync(extendedTimeout: true); 
+        NotifyPropertyChanged(nameof(gainDb));
 
         _nextVerticalROIStartLine = eeprom.ROIVertRegionStart[0]; ;
         logger.debug($"Spectrometer.verticalROIStartLine -> {eeprom.ROIVertRegionStart[0]}");
