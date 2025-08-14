@@ -144,8 +144,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
 
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
-            spec.updateBatteryAsync();
         if (spec != null && spec.paired)
         {
             if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
@@ -205,12 +203,19 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings.LibraryChanged += Settings_LibraryChanged;
         AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
         AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
+
+        initializeSpectrometer();
     }
 
-    private async Task updateBattery()
+    private async Task initializeSpectrometer()
     {
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
-            await spec.updateBatteryAsync();
+        if (spec != null && spec.paired)
+        {
+            // spectrometer will not try to fire unless collection parameters are confirmed set here
+            bool ok = await spec.initializeCollectionParams();
+            if (ok)
+                spectrometerInitialized = true;
+        }
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -779,9 +784,33 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             _laserArmed = value; 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmed)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(readyToCollect)));
         }
     }
     bool _laserArmed;
+    
+    public bool spectrometerInitialized
+    {
+        get
+        {
+            return _spectrometerInitialized;
+        }
+        set
+        {
+            _spectrometerInitialized = value; 
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrometerInitialized)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(readyToCollect)));
+        }
+    }
+    bool _spectrometerInitialized = false;
+    
+    public bool readyToCollect
+    {
+        get
+        {
+            return spectrometerInitialized && laserArmed;
+        }
+    }
 
     public int laserWarningStep
     { 
