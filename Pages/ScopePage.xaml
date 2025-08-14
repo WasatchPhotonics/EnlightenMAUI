@@ -205,7 +205,7 @@
                         ImageSource="Images/laser.svg"
                         ContentLayout="Right, 3"/>
 
-                <StackLayout IsVisible="{Binding laserArmed}"
+                <StackLayout IsVisible="{Binding readyToCollect}"
                              Grid.Column="0"
                              Orientation="Horizontal"
                              HorizontalOptions="End"
@@ -236,8 +236,8 @@
                 BackgroundColor="#515151"/>
 
                 </StackLayout>
-                
-                <Border IsVisible="{Binding laserArmed}"
+
+                <Border IsVisible="{Binding readyToCollect}"
                         Margin="10,0,10,5"
                         Grid.Column="1"
                         Stroke="#515151"
@@ -262,7 +262,7 @@
                              Grid.Column="2"
                              Orientation="Horizontal"
                              HorizontalOptions="Start"
-                             IsVisible="{Binding laserArmed}"
+                             IsVisible="{Binding readyToCollect}"
                              Spacing="5">
 
                     <StackLayout Orientation="Vertical" Padding="0,20,0,0" VerticalOptions="Start">

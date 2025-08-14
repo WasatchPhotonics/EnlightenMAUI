@@ -389,8 +389,8 @@ namespace EnlightenMAUI.Models
         // I used to call this at the END of an acquisition, and that worked; 
         // until it didn't.  Now I call it BEFORE each acquisition, and that
         // seems to work better?
-        internal abstract Task<bool> updateBatteryAsync();
-
+        internal abstract Task<bool> updateBatteryAsync(bool extendedTimeout = false);
+        internal abstract Task<bool> initializeCollectionParams();
 
         ////////////////////////////////////////////////////////////////////////
         // Auto-Raman Parameters
@@ -684,7 +684,7 @@ namespace EnlightenMAUI.Models
         // 
         // There is no need to disable the laser if returning NULL, as the caller
         // will do so anyway.
-        protected abstract Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket);
+        protected abstract Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket, bool extendedTimeout = false);
 
         public void redoBackgroundProcessing(bool simpleModel)
         {
