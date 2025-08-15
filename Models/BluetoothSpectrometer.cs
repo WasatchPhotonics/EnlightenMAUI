@@ -223,45 +223,52 @@ public class BluetoothSpectrometer : Spectrometer
         await syncGainDbAsync(extendedTimeout: true); 
         NotifyPropertyChanged(nameof(gainDb));
 
-        _nextVerticalROIStartLine = eeprom.ROIVertRegionStart[0]; ;
-        logger.debug($"Spectrometer.verticalROIStartLine -> {eeprom.ROIVertRegionStart[0]}");
 
-        byte[] data = ToBLEData.convert(eeprom.ROIVertRegionStart[0], len: 2);
-        byte[] dataToSend = { 0xff, 0x21, 0, 0 };
-        Array.Copy(data, 0, dataToSend, 2, data.Length);
-
-        logger.debug("Spectrometer.verticalROIStartLine.set: grabbing semaphore");
-        if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
+        if (eeprom.ROIVertRegionStart[0] > 0 && eeprom.ROIVertRegionStart[0] < eeprom.activePixelsVert)
         {
-            logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+            _nextVerticalROIStartLine = eeprom.ROIVertRegionStart[0]; ;
+            logger.debug($"Spectrometer.verticalROIStartLine -> {eeprom.ROIVertRegionStart[0]}");
+
+            byte[] data = ToBLEData.convert(eeprom.ROIVertRegionStart[0], len: 2);
+            byte[] dataToSend = { 0xff, 0x21, 0, 0 };
+            Array.Copy(data, 0, dataToSend, 2, data.Length);
+
+            logger.debug("Spectrometer.verticalROIStartLine.set: grabbing semaphore");
+            if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
+            {
+                logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+            }
+
+            await writeGenericCharacteristic(dataToSend);
+
+            sem.Release();
+            logger.debug("Spectrometer.verticalROIStartLine.set: released semaphore");
+
+            NotifyPropertyChanged(nameof(verticalROIStartLine));
         }
 
-        await writeGenericCharacteristic(dataToSend);
-
-        sem.Release();
-        logger.debug("Spectrometer.verticalROIStartLine.set: released semaphore");
-
-        NotifyPropertyChanged(nameof(verticalROIStartLine));
-
-        _nextVerticalROIStopLine = eeprom.ROIVertRegionEnd[0];
-        logger.debug($"Spectrometer.verticalROIStopLine -> {eeprom.ROIVertRegionEnd[0]}");
-
-        data = ToBLEData.convert(eeprom.ROIVertRegionEnd[0], len: 2);
-        dataToSend = new byte[] { 0xff, 0x23, 0, 0 };
-        Array.Copy(data, 0, dataToSend, 2, data.Length);
-
-        logger.debug("Spectrometer.verticalROIStopLine.set: grabbing semaphore");
-        if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
+        if (eeprom.ROIVertRegionEnd[0] > 0 && eeprom.ROIVertRegionEnd[0] < eeprom.activePixelsVert)
         {
-            logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+            _nextVerticalROIStopLine = eeprom.ROIVertRegionEnd[0];
+            logger.debug($"Spectrometer.verticalROIStopLine -> {eeprom.ROIVertRegionEnd[0]}");
+
+            byte[] data = ToBLEData.convert(eeprom.ROIVertRegionEnd[0], len: 2);
+            byte[] dataToSend = new byte[] { 0xff, 0x23, 0, 0 };
+            Array.Copy(data, 0, dataToSend, 2, data.Length);
+
+            logger.debug("Spectrometer.verticalROIStopLine.set: grabbing semaphore");
+            if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
+            {
+                logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+            }
+
+            await writeGenericCharacteristic(dataToSend);
+
+            sem.Release();
+            logger.debug("Spectrometer.verticalROIStopLine.set: released semaphore");
+
+            NotifyPropertyChanged(nameof(verticalROIStopLine));
         }
-
-        await writeGenericCharacteristic(dataToSend);
-
-        sem.Release();
-        logger.debug("Spectrometer.verticalROIStopLine.set: released semaphore");
-
-        NotifyPropertyChanged(nameof(verticalROIStopLine));
 
         await syncAutoRamanParameters(extendedTimeout: true);
         if (eeprom.hasBattery)
