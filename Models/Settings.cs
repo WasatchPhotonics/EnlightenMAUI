@@ -43,11 +43,22 @@ public class Settings : INotifyPropertyChanged
         get => _matchThreshold;
         set
         {
+            logger.info("setting match thresh to {0:f2}", value);
             _matchThreshold = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
         }
     }
     float _matchThreshold = 0.6f;
+    public int snrThreshold
+    {
+        get => _snrThreshold;
+        set
+        {
+            _snrThreshold = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
+        }
+    }
+    int _snrThreshold = 120;
 
     public Spectrometer spec = BluetoothSpectrometer.getInstance();
 

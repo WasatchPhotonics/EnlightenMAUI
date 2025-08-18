@@ -1,5 +1,6 @@
 ﻿using Accord;
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
 using EnlightenMAUI.ViewModels;
 using Plugin.BLE.Abstractions.Contracts;
 using System;
@@ -389,8 +390,8 @@ namespace EnlightenMAUI.Models
         // I used to call this at the END of an acquisition, and that worked; 
         // until it didn't.  Now I call it BEFORE each acquisition, and that
         // seems to work better?
-        internal abstract Task<bool> updateBatteryAsync();
-
+        internal abstract Task<bool> updateBatteryAsync(bool extendedTimeout = false);
+        internal abstract Task<bool> initializeCollectionParams();
 
         ////////////////////////////////////////////////////////////////////////
         // Auto-Raman Parameters
@@ -684,7 +685,21 @@ namespace EnlightenMAUI.Models
         // 
         // There is no need to disable the laser if returning NULL, as the caller
         // will do so anyway.
-        protected abstract Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket);
+        protected abstract Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket, bool extendedTimeout = false);
+
+        public void redoBackgroundProcessing(bool simpleModel)
+        {
+            try
+            {
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, lastSpectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, simpleModel);
+                measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                measurement.postProcessed = smoothed;
+            }
+            catch (Exception ex)
+            {
+                logger.error("processing redo failed out with issues", ex.Message);
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // BLE Characteristic Notifications (routed via BluetoothViewModel)
@@ -717,9 +732,10 @@ namespace EnlightenMAUI.Models
             // this time-out may well not be nearly enough, given the potential 
             // need to wait 6 x integration time for sensor to wake up, plus 4sec
             // for read-out
+            logger.error("Spectrometer.processLaserStateNotification: grabbing semaphore");
             if (!await sem.WaitAsync(100))
             {
-                logger.error("Spectrometer.processLaserStateNotification: timed-out");
+                logger.error("Spectrometer.processLaserStateNotification: semaphore grab timed-out");
                 return;
             }
 
@@ -736,6 +752,7 @@ namespace EnlightenMAUI.Models
             //laserDelayMS = newLaserDelayMS;  laserDelayMS
 
             sem.Release();
+            logger.error("Spectrometer.processLaserStateNotification: releasing semaphore");
         }
 
         protected abstract void processGeneric(byte[] data);
@@ -780,6 +797,7 @@ namespace EnlightenMAUI.Models
         // 2x2 Binning
         ////////////////////////////////////////////////////////////////////////
 
+        // To-do: add other binning methods
         protected void apply2x2Binning(double[] spectrum)
         {
             if (eeprom.featureMask.bin2x2)

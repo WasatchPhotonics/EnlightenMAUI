@@ -491,7 +491,7 @@ namespace EnlightenMAUI.Models
 
             if (false)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14);
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
                 double[]  wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 Measurement updated = new Measurement();
                 updated.wavenumbers = wavenumbers;
@@ -599,7 +599,7 @@ namespace EnlightenMAUI.Models
 
             if (PlatformUtil.transformerLoaded)
             {
-                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14);
+                double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
                 double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 Measurement updated = new Measurement();
                 updated.wavenumbers = wavenumbers;
@@ -680,7 +680,8 @@ namespace EnlightenMAUI.Models
 
             mostRecentCompound = finalSample;
             mostRecentScore = maxScore;
-            mostRecentMeasurement = library[finalSample];
+            if (finalSample != "")
+                mostRecentMeasurement = library[finalSample];
 
             if (finalSample != "")
                 return new Tuple<string, double>(finalSample, maxScore);

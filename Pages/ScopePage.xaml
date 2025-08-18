@@ -236,7 +236,7 @@
                 BackgroundColor="#515151"/>
 
                 </StackLayout>
-                
+
                 <Border IsVisible="{Binding laserArmed}"
                         Margin="10,0,10,5"
                         Grid.Column="1"
@@ -249,6 +249,7 @@
                         StrokeShape="Ellipse 80,80">
                     <Button HeightRequest="70"
                             Command="{Binding acquireCmd}"
+                            IsEnabled="{Binding readyToCollect}"
                             BackgroundColor="{Binding acquireButtonBackgroundColor}"
                             CornerRadius="35"
                             WidthRequest="70"/>

@@ -138,7 +138,9 @@ namespace EnlightenMAUI.Models
             await updateBatteryAsync();
             raiseConnectionProgress(0.975);
 
-            // for now, ignore EEPROM configuration and hardcode
+            // ignore EEPROM configuration and hardcode int time and gain. Our preferred defaults here
+            // are different than those written to EEPROM and since there is strong data binding between the
+            // UI and the spectro we have to use static values rather than those in EEPROM 
             // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
             // gainDb = eeprom.detectorGain;
             integrationTimeMS = 400;
@@ -168,6 +170,12 @@ namespace EnlightenMAUI.Models
             logger.debug("Spectrometer.initAsync: done");
             return true;
         }
+
+        internal override async Task<bool> initializeCollectionParams()
+        {
+            return true;
+        }
+
         public void connect()
         {
             if (measurement is null)
@@ -483,7 +491,7 @@ namespace EnlightenMAUI.Models
             return pages;
         }
 
-        internal override async Task<bool> updateBatteryAsync()
+        internal override async Task<bool> updateBatteryAsync(bool extendedTimeout = false)
         {
             uint tmp = Unpack.toUint(await getCmd2Async(Opcodes.GET_BATTERY_STATE, 3));
             battery.parse(tmp);
@@ -524,7 +532,7 @@ namespace EnlightenMAUI.Models
                     }
                 }
 
-                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution);
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart);
                 measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
                 stretchedDark = new double[smoothed.Length];
                 measurement.rawDark = dark;
@@ -653,7 +661,7 @@ namespace EnlightenMAUI.Models
 
 
 
-        protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
+        protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket, bool extendedTimeout = false)
         {
             logger.level = LogLevel.DEBUG;
             startTime = DateTime.Now;

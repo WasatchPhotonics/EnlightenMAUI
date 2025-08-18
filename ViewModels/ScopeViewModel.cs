@@ -149,8 +149,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         xAxisNames.Add("Wavelength");
         xAxisNames.Add("Wavenumber");
 
-        if (spec != null && spec.paired && spec.eeprom.hasBattery)
-            spec.updateBatteryAsync();
         if (spec != null && spec.paired)
         {
             if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
@@ -210,6 +208,19 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings.LibraryChanged += Settings_LibraryChanged;
         AnalysisViewModel.getInstance().TriggerRetry += ScopeViewModel_TriggerRetry;
         AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
+
+        initializeSpectrometer();
+    }
+
+    private async Task initializeSpectrometer()
+    {
+        if (spec != null && spec.paired)
+        {
+            // spectrometer will not try to fire unless collection parameters are confirmed set here
+            bool ok = await spec.initializeCollectionParams();
+            if (ok)
+                spectrometerInitialized = true;
+        }
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -375,7 +386,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     private async void Library_LoadFinished(object sender, Library e)
     {
         if (!settings.library.loadSucceeded)
-            notifyToast?.Invoke("Issue loading library, make sure phone is paired");
+            notifyToast?.Invoke("Issue loading library, make sure phone is paired to correct unit");
 
         if (library is DPLibrary)
         {
@@ -512,7 +523,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -737,7 +748,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         runPSCorrection = true;
         polyCorrectionStep = false;
         laserArmed = true;
-        notifyToast?.Invoke("When PS sample ready, press capture button  to perform correction");
+        notifyToast?.Invoke("When PS sample ready, press capture button to perform correction");
         return true;
     }
     
@@ -778,9 +789,33 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             _laserArmed = value; 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmed)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(readyToCollect)));
         }
     }
     bool _laserArmed;
+    
+    public bool spectrometerInitialized
+    {
+        get
+        {
+            return _spectrometerInitialized;
+        }
+        set
+        {
+            _spectrometerInitialized = value; 
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrometerInitialized)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(readyToCollect)));
+        }
+    }
+    bool _spectrometerInitialized = false;
+    
+    public bool readyToCollect
+    {
+        get
+        {
+            return spectrometerInitialized && laserArmed;
+        }
+    }
 
     public int laserWarningStep
     { 
@@ -1093,12 +1128,29 @@ public class ScopeViewModel : INotifyPropertyChanged
             updateChart();
         }
 
+
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
             // info-level logging so we can QC timing w/o verbose logging
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
+
+            double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+            double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+            logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+            if (AnalysisViewModel.getInstance().currentParamSet == "Default")
+            {
+                if (snr < settings.snrThreshold)
+                {
+                    spec.redoBackgroundProcessing(false);
+                    rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+                    snr = spec.measurement.postProcessed.Max() / rmsd;
+                    logger.info("after re-analysis, sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+                }
+            }
 
             updateChart();
 
@@ -1671,6 +1723,20 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         logger.info("calling library match function");
         spec.measurement.libraryUsed = settings.libraryLabel;
+
+        double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+        double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+        logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+        if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
+        {
+            if (snr < settings.snrThreshold)
+            {
+                ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
+                return false;
+            }
+        }
 
         waitingForMatch = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(waitingForMatch)));

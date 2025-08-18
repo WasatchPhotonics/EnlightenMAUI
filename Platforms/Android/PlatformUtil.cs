@@ -22,14 +22,29 @@ namespace EnlightenMAUI.Platforms;
 
 internal class ModelInput
 {
-    [ColumnName("input_1")]
+    [ColumnName("serving_default_input_layer:0")]
     [VectorType(1, 2376, 1)]
     public float[] spectrum { get; set; }
 }
 
 internal class Prediction
 {
-    [ColumnName("conv1d_18")]
+    [ColumnName("StatefulPartitionedCall_1:0")]
+    [VectorType(1, 2008, 1)]
+    public float[] spectrum { get; set; }
+
+}
+
+internal class SimpleModelInput
+{
+    [ColumnName("serving_default_input_1:0")]
+    [VectorType(1, 2376, 1)]
+    public float[] spectrum { get; set; }
+}
+
+internal class SimplePrediction
+{
+    [ColumnName("StatefulPartitionedCall:0")]
     [VectorType(1, 2008, 1)]
     public float[] spectrum { get; set; }
 
@@ -40,13 +55,17 @@ internal class PlatformUtil
     static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
     static PredictionEngine<ModelInput, Prediction> engine;
+    static PredictionEngine<SimpleModelInput, SimplePrediction> simpleEngine;
     static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
     static ITransformer transformer;
     public static bool transformerLoaded = false;
+    public static bool simpleTransformerLoaded = false;
+    public static bool complexTransformerLoaded = false;
     public static int REQUEST_TREE = 85;
 
     static string savePath;
     static string userLibraryPath;
+    static string configurationPath;
     static string autoSavePath;
 
     public static void RequestSelectLogFolder()
@@ -223,6 +242,39 @@ internal class PlatformUtil
             return null;
         }
     }
+    
+    public static List<string> recurseAndFindPaths(Java.IO.File directory, Regex regex, bool isPrime, List<string> findsSoFar)
+    {
+        if (directory.IsDirectory)
+        {
+            Java.IO.File[] paths = directory.ListFiles();
+
+            if (paths != null)
+            {
+                foreach (Java.IO.File path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    recurseAndFindPaths(path, regex, false, findsSoFar);
+                }
+            }
+
+            if (isPrime)
+                return findsSoFar;
+            else
+                return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsolutePath) && regex.IsMatch(directory.AbsolutePath.Split('/').Last()))
+            {
+                findsSoFar.Add(directory.AbsolutePath);
+            }
+
+            return null;
+        }
+    }
 
     public async static Task loadONNXModel(string extension, string correctionPath)
     {
@@ -247,29 +299,68 @@ internal class PlatformUtil
 
             Regex extensionReg = new Regex(@".*\." + extension + @"$");
             cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            List<string> fullPaths = null;
             foreach (var cDir in cacheDirs)
             {
                 logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                fullPath = recurseAndFindPath(cDir, extensionReg);
-                if (fullPath != null)
+                fullPaths = recurseAndFindPaths(cDir, extensionReg, true, new List<string>());
+                if (fullPaths != null && fullPaths.Count > 0)
                     break;
             }
 
-            if (fullPath == null)
+            if (fullPaths == null || fullPaths.Count == 0)
                 return;
 
-            var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
-            logger.debug("building pipeline");
-            var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: fullPath, outputColumnNames: new[] { "conv1d_18" }, inputColumnNames: new[] { "input_1" });
-            logger.debug("building transformer");
-            transformer = pipeline.Fit(data);
-            var transCope = transformer;
-            logger.debug("creating engine");
-            engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
-            var engCop = engine;
+            foreach (string path in fullPaths)
+            {
+                bool loadSucceeded = false;
 
-            logger.debug("onnx model load complete");
-            transformerLoaded = true;
+                try
+                {
+                    var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
+                    logger.debug("building pipeline");
+                    var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
+                    logger.debug("building transformer");
+                    transformer = pipeline.Fit(data);
+                    var transCope = transformer;
+                    logger.debug("creating engine");
+                    engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
+                    var engCop = engine;
+
+                    logger.debug("onnx model load complete");
+                    transformerLoaded = complexTransformerLoaded = loadSucceeded = true;
+                }
+                catch (Exception e2)
+                {
+                    logger.info("onnx load failed with exception {0}", e2.Message);
+                }
+
+                if (!loadSucceeded)
+                {
+
+                    try
+                    {
+                        var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<SimpleModelInput>());
+                        logger.debug("building pipeline");
+                        var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+                        logger.debug("building transformer");
+                        transformer = pipeline.Fit(data);
+                        var transCope = transformer;
+                        logger.debug("creating engine");
+                        simpleEngine = mlContext.Model.CreatePredictionEngine<SimpleModelInput, SimplePrediction>(transformer);
+                        var engCop = engine;
+
+                        logger.debug("onnx model load complete");
+                        transformerLoaded = simpleTransformerLoaded = loadSucceeded = true;
+                    }
+                    catch (Exception e3)
+                    {
+                        logger.info("onnx load failed with exception {0}", e3.Message);
+                    }
+                }
+
+
+            }
         }
         catch (Exception e)
         {
@@ -298,16 +389,27 @@ internal class PlatformUtil
         }
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm)
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
     {
         try
         {
+            //logger.logArray("pre-processed wavenum", wavenumbers);
+            //logger.logArray("pre-processed counts", counts);
+
+            double[] local = new double[counts.Length];
+
             if (correctionFactors != null && correctionFactors.ContainsKey(serial))
             {
                 double[] corrections = correctionFactors[serial];
                 for (int i = 0; i < counts.Length; i++)
-                    counts[i] /= corrections[i];
+                    local[i] = counts[i] / corrections[i];
             }
+            else
+            {
+                Array.Copy(counts, local, counts.Length);
+            }
+
+            //logger.logArray("etalon-corrected counts", counts);
 
             double[] targetWavenum = new double[2376];
             for (int i = 0; i < targetWavenum.Length; i++)
@@ -315,67 +417,96 @@ internal class PlatformUtil
                 targetWavenum[i] = i + 216;
             }
 
-            double[] interpolatedCounts = Wavecal.mapWavenumbers(wavenumbers, counts, targetWavenum);
+            List<double> trimmedWN = new List<double>();
+            List<double> trimmedCounts = new List<double>();
+
+            for (int i = roiStart; i < wavenumbers.Length; i++)
+            {
+                trimmedWN.Add(wavenumbers[i]);
+                trimmedCounts.Add(local[i]);
+            }
+
+            double[] interpolatedCounts = Wavecal.mapWavenumbers(trimmedWN.ToArray(), trimmedCounts.ToArray(), targetWavenum);
+
             double max = interpolatedCounts.Max();
 
-            for (int i = 0; i < interpolatedCounts.Length; i++)
+            if (useSimple)
             {
-                interpolatedCounts[i] = interpolatedCounts[i] / max;
-            }
-
-            ModelInput modelInput = new ModelInput();
-            modelInput.spectrum = new float[2376];
-            for (int i =  0; i < interpolatedCounts.Length; i++) 
-                modelInput.spectrum[i] = (float)interpolatedCounts[i];
-
-            Prediction p = new Prediction();
-
-            /*
-            var res = engine.Predict(modelInput);
-
-            var data = mlContext.Data.LoadFromEnumerable(new List<ModelInput> { modelInput });
-            var pred = transformer.Transform(data);
-            DataViewSchema columns = pred.Schema;
-            var final = pred.GetColumn<float[,]>("StatefulPartitionedCall:0");
-            
-
-            int count = 0;
-            bool isOk = final.TryGetNonEnumeratedCount(out count);
-            */
-            //transformer.Transform()
-
-            logger.debug("making prediction");
-            p = engine.Predict(modelInput);
-            logger.debug("packing prediction");
-
-            int outputSize = p.spectrum.GetLength(0);
-            double[] output = new double[outputSize];
-            for (int i = 0; i < outputSize; ++i)
-            {
-                if (p.spectrum[i] < 0)
-                    output[i] = 0;
-                else
-                    output[i] = p.spectrum[i] * max;
-            }
-
-            /*
-            for (int i = 0; i < output.Length / 200; ++i)
-            {
-                double[] waveSubset = new double[200]; 
-                double[] outSubset = new double[200]; 
-                for (int j = 0; j < 200; j++)
+                for (int i = 0; i < interpolatedCounts.Length; i++)
                 {
-
+                    interpolatedCounts[i] = interpolatedCounts[i] / max;
                 }
 
+                SimpleModelInput modelInput = new SimpleModelInput();
+                modelInput.spectrum = new float[2376];
+                for (int i = 0; i < interpolatedCounts.Length; i++)
+                    modelInput.spectrum[i] = (float)interpolatedCounts[i];
+
+                SimplePrediction p = new SimplePrediction();
+
+                logger.debug("making prediction");
+                p = simpleEngine.Predict(modelInput);
+                logger.debug("packing prediction");
+
+                //logger.logArray("transformed counts", p.spectrum);
+
+                int outputSize = p.spectrum.GetLength(0);
+                double[] output = new double[outputSize];
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = p.spectrum[i] * max;
+                }
+                double min = output.Min();
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = output[i] - min; // * max;
+                }
+
+                //logger.logArray("rebased counts", output);
+
+                output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
+                ////logger.logArray("deconvoluted counts", output);
+
+                logger.debug("returning processed spectrum");
+                return output;
+
             }
-            */
 
-            output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
-            //output = numpyDecon(targetWavenum, output, fwhm);
+            else
+            {
+                ////logger.logArray("interpolated wavenum", targetWavenum);
+                //logger.logArray("interpolated counts", interpolatedCounts);
 
-            logger.debug("returning processed spectrum");
-            return output;
+                ModelInput modelInput = new ModelInput();
+                modelInput.spectrum = new float[2376];
+                for (int i = 0; i < interpolatedCounts.Length; i++)
+                    modelInput.spectrum[i] = (float)interpolatedCounts[i];
+
+                Prediction p = new Prediction();
+
+                logger.debug("making prediction");
+                p = engine.Predict(modelInput);
+                logger.debug("packing prediction");
+
+
+                //logger.logArray("transformed counts", p.spectrum);
+
+                int outputSize = p.spectrum.GetLength(0);
+                double[] output = new double[outputSize];
+                double min = p.spectrum.Min();
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = p.spectrum[i] - min; // * max;
+                }
+
+                //logger.logArray("rebased counts", output);
+
+                output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
+                //logger.logArray("deconvoluted counts", output);
+
+                logger.debug("returning processed spectrum");
+                return output;
+            }
         }
         catch (Exception e)
         {
@@ -915,6 +1046,26 @@ internal class PlatformUtil
 
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {userLibDir}");
         return userLibraryPath = userLibDir;
+    }
+
+    public static string getConfigFilePath()
+    {
+        if (configurationPath != null)
+        {
+            logger.debug($"getConfigFilePath: returning previous configPath {configurationPath}");
+            return configurationPath;
+        }
+
+        var docDir = Android.App.Application.Context.GetExternalFilesDir(null).AbsolutePath;
+
+        if (!writeable(docDir))
+        {
+            logger.error($"getuserLibraryPath: unable to write userLibDir {docDir}");
+            return null;
+        }
+
+        logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
+        return configurationPath = docDir + "/configuration.json";
     }
 
     public static string getAutoSavePath(bool highLevelAutoSave)

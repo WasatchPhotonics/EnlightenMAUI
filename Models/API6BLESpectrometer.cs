@@ -151,7 +151,9 @@ public class API6BLESpectrometer : Spectrometer
 
         //await updateBatteryAsync(); 
 
-        // for now, ignore EEPROM configuration and hardcode
+        // ignore EEPROM configuration and hardcode int time and gain. Our preferred defaults here
+        // are different than those written to EEPROM and since there is strong data binding between the
+        // UI and the spectro we have to use static values rather than those in EEPROM 
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
         integrationTimeMS = 400;
@@ -179,6 +181,10 @@ public class API6BLESpectrometer : Spectrometer
         // whereAmI = WhereAmI.getInstance();
 
         logger.debug("Spectrometer.initAsync: done");
+        return true;
+    }
+    internal override async Task<bool> initializeCollectionParams()
+    {
         return true;
     }
 
@@ -631,7 +637,7 @@ public class API6BLESpectrometer : Spectrometer
     // I used to call this at the END of an acquisition, and that worked; 
     // until it didn't.  Now I call it BEFORE each acquisition, and that
     // seems to work better?
-    internal override async Task<bool> updateBatteryAsync()
+    internal override async Task<bool> updateBatteryAsync(bool extendedTimeout = false)
     {
         logger.debug("Spectrometer.updateBatteryAsync: starting");
 
@@ -806,7 +812,7 @@ public class API6BLESpectrometer : Spectrometer
                 }
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution);
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart);
             measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             stretchedDark = new double[smoothed.Length];
             measurement.dark = stretchedDark;
@@ -844,7 +850,7 @@ public class API6BLESpectrometer : Spectrometer
     // 
     // There is no need to disable the laser if returning NULL, as the caller
     // will do so anyway.
-    protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
+    protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket, bool extendedTimeout = false)
     {
         if (!paired || characteristicsByName is null)
             return null;
