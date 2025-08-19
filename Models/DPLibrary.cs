@@ -14,6 +14,7 @@ using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using static Android.Provider.DocumentsContract;
 using static Java.Util.Jar.Attributes;
 using Android.Renderscripts;
+using System.Runtime.CompilerServices;
 
 namespace EnlightenMAUI.Models
 {
@@ -59,6 +60,9 @@ namespace EnlightenMAUI.Models
             spectrum.xfirst = 200.0F;
             spectrum.xstep = 2.0F;
             spectrum.npoints = 0;
+
+            if (spec == null)
+                unitSN = "WP-01486";
 
             isLoading = true;
             libraryLoader = loadFiles();
@@ -491,49 +495,63 @@ namespace EnlightenMAUI.Models
             return Encoding.UTF8.GetString(_data, 0, len);
         }
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBInit", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBInit")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern void _dpLIBInit(byte[] s);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBLibInfo", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBLibInfo")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBLibInfo(byte[] file, ref int days);
 
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBOpen", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBOpen")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBOpen(byte[] f);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBInfo", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBInfo")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBInfo(int handle, byte[] data, int len);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBClose", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBClose")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern void _dpLIBClose(int handle);
 
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBActiveLibIDs", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBActiveLibIDs")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBActiveLibIDs(int handle, byte[] data, int len);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBActiveLibs", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBActiveLibs")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBActiveLibs(int handle, byte[] data, int len);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBSetFilter", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBSetFilter")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern void _dpLIBSetFilter(int handle, byte[] data);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBResetFilter", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBResetFilter")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern void _dpLIBResetFilter(int handle);
 
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBNumSpectra", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBNumSpectra")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBNumSpectra(int handle);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBMxNPoints", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBMxNPoints")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBMxNPoints(int handle);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBGetSpectrum", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetSpectrum")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern bool _dpLIBGetSpectrum(int handle, int i, byte[] xfirst, byte[] xstep, byte[] npoints, int yalloc, float[] y);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBGetSpectrumData", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetSpectrumData")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBGetSpectrumData(int handle, int i, byte[] data, int len);
 
-        [DllImport(@"libdpSDK.so", EntryPoint = "dpLIBGetLibIDsForSpectrum", CallingConvention = CallingConvention.StdCall)]
+        [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetLibIDsForSpectrum")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern int _dpLIBGetLibIDsForSpectrum(int handle, int i, byte[] data, int len);
 
     }
