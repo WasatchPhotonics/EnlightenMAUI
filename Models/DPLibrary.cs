@@ -26,7 +26,7 @@ namespace EnlightenMAUI.Models
         public float[] y;
     }
 
-    internal class DPLibrary : WPLibrary
+    internal partial class DPLibrary : WPLibrary
     {
         private int _lib = 0;
         private int maxYPoints = 0;
@@ -497,62 +497,63 @@ namespace EnlightenMAUI.Models
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBInit")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern void _dpLIBInit(byte[] s);
+        private static partial void _dpLIBInit(byte[] s);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBLibInfo")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBLibInfo(byte[] file, ref int days);
+        private static partial int _dpLIBLibInfo(byte[] file, ref int days);
 
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBOpen")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBOpen(byte[] f);
+        private static partial int _dpLIBOpen(byte[] f);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBInfo")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBInfo(int handle, byte[] data, int len);
+        private static partial int _dpLIBInfo(int handle, byte[] data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBClose")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern void _dpLIBClose(int handle);
+        private static partial void _dpLIBClose(int handle);
 
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBActiveLibIDs")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBActiveLibIDs(int handle, byte[] data, int len);
+        private static partial int _dpLIBActiveLibIDs(int handle, byte[] data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBActiveLibs")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBActiveLibs(int handle, byte[] data, int len);
+        private static partial int _dpLIBActiveLibs(int handle, byte[] data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBSetFilter")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern void _dpLIBSetFilter(int handle, byte[] data);
+        private static partial void _dpLIBSetFilter(int handle, byte[] data);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBResetFilter")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern void _dpLIBResetFilter(int handle);
+        private static partial void _dpLIBResetFilter(int handle);
 
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBNumSpectra")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBNumSpectra(int handle);
+        private static partial int _dpLIBNumSpectra(int handle);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBMxNPoints")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBMxNPoints(int handle);
+        private static partial int _dpLIBMxNPoints(int handle);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetSpectrum")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern bool _dpLIBGetSpectrum(int handle, int i, byte[] xfirst, byte[] xstep, byte[] npoints, int yalloc, float[] y);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool _dpLIBGetSpectrum(int handle, int i, byte[] xfirst, byte[] xstep, byte[] npoints, int yalloc, float[] y);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetSpectrumData")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBGetSpectrumData(int handle, int i, byte[] data, int len);
+        private static partial int _dpLIBGetSpectrumData(int handle, int i, byte[] data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetLibIDsForSpectrum")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static extern int _dpLIBGetLibIDsForSpectrum(int handle, int i, byte[] data, int len);
+        private static partial int _dpLIBGetLibIDsForSpectrum(int handle, int i, byte[] data, int len);
 
     }
 }

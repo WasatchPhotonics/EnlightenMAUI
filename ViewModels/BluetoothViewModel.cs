@@ -360,6 +360,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     private async Task<bool> doScanAsync()
     {
         DPLibrary library = new DPLibrary("database", null);
+
         if (useBluetooth)
             return await doBluetoothScanAsync();
         else
