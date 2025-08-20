@@ -382,6 +382,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         if (!settings.library.loadSucceeded)
             notifyToast?.Invoke("Issue loading library, make sure phone is paired to correct unit");
+        else
+            AnalysisViewModel.getInstance().libraryReady = true;
 
         if (library is DPLibrary)
         {

@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 using static Android.Widget.GridLayout;
+using Xamarin.Google.Crypto.Tink.Proto;
 
 namespace EnlightenMAUI.Models;
 
@@ -75,7 +76,8 @@ public class Settings : INotifyPropertyChanged
     Logger logger = Logger.getInstance();
     public Library library { get; set;}
     DPLibrary dpLibrary = null;
-    WPLibrary wpLibrary = null;
+    //WPLibrary wpLibrary = null;
+    Dictionary<string, WPLibrary> wpLibraries = new Dictionary<string, WPLibrary>();
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -132,37 +134,14 @@ public class Settings : INotifyPropertyChanged
         bool libraryChanged = false;
         bool initialLoad = false;
 
-        if (type == "Wasatch")
-        {
-            if (library == null || (library is DPLibrary))
-            {
-                libraryChanged = true;
-
-                if (library != null && library is DPLibrary)
-                    dpLibrary = (DPLibrary)library;
-
-                if (wpLibrary != null)
-                    library = wpLibrary;
-                else
-                {
-                    initialLoad = true;
-                    await Task.Run(() =>
-                    {
-                        //library = new DPLibrary("database", spec);
-                        library = new WPLibrary("library/Wasatch", spec);
-                        library.LoadFinished += Library_LoadFinished;
-                    });
-                }
-            }
-        }
-        else if (type == "3rd Party")
+        if (type == "3rd Party")
         {
             if (library == null || !(library is DPLibrary))
             {
                 libraryChanged = true;
 
                 if (library != null && !(library is DPLibrary))
-                    wpLibrary = (WPLibrary)library;
+                    wpLibraries[((WPLibrary)library).tag] = (WPLibrary)library;
 
                 if (dpLibrary != null)
                     library = dpLibrary;
@@ -172,6 +151,34 @@ public class Settings : INotifyPropertyChanged
                     await Task.Run(() =>
                     {
                         library = new DPLibrary("database", spec);
+                        library.LoadFinished += Library_LoadFinished;
+                    });
+                }
+            }
+        }
+        else
+        {
+            if (library == null || (library is DPLibrary) || (library as WPLibrary).tag != type)
+            {
+                libraryChanged = true;
+
+                if (library != null)
+                {
+                    if (library is DPLibrary)
+                        dpLibrary = (DPLibrary)library;
+                    else if (library is WPLibrary)
+                        wpLibraries[(library as WPLibrary).tag] = (WPLibrary)library;
+                }
+                
+                if (wpLibraries.ContainsKey(type))
+                    library = wpLibraries[type];
+                else
+                {
+                    initialLoad = true;
+                    await Task.Run(() =>
+                    {
+                        //library = new DPLibrary("database", spec);
+                        library = new WPLibrary("library/" + type, spec);
                         library.LoadFinished += Library_LoadFinished;
                     });
                 }
@@ -190,7 +197,6 @@ public class Settings : INotifyPropertyChanged
     {
         LibraryChanged.Invoke(this, this);
     }
-
     public string libraryLabel = "Wasatch";
 
     public bool autoRetry
