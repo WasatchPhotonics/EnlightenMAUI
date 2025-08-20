@@ -163,7 +163,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() =>
             {
                 //library = new DPLibrary("database", spec);
-                library = new WPLibrary("library", spec); 
+                library = new WPLibrary("library/Wasatch", spec); 
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
                 (library as WPLibrary).showMatchProgress += showMatchProgress;
@@ -183,7 +183,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     library = new DPLibrary("database", spec);
-                    //library = new WPLibrary("library", spec);
+                    //library = new WPLibrary("library/Wasatch", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -318,7 +318,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new WPLibrary("library", spec);
+                library = new WPLibrary("library/Wasatch", spec);
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
             });
@@ -391,7 +391,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     //library = new DPLibrary("database", spec);
-                    library = new WPLibrary("library", spec); 
+                    library = new WPLibrary("library/Wasatch", spec); 
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });

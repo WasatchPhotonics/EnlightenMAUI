@@ -149,7 +149,7 @@ public class Settings : INotifyPropertyChanged
                     await Task.Run(() =>
                     {
                         //library = new DPLibrary("database", spec);
-                        library = new WPLibrary("library", spec);
+                        library = new WPLibrary("library/Wasatch", spec);
                         library.LoadFinished += Library_LoadFinished;
                     });
                 }
