@@ -168,6 +168,12 @@ namespace EnlightenMAUI.Models
             logger.debug("Spectrometer.initAsync: done");
             return true;
         }
+
+        internal override async Task<bool> initializeCollectionParams()
+        {
+            return true;
+        }
+
         public void connect()
         {
             if (measurement is null)
@@ -440,7 +446,7 @@ namespace EnlightenMAUI.Models
             return pages;
         }
 
-        internal override async Task<bool> updateBatteryAsync()
+        internal override async Task<bool> updateBatteryAsync(bool extendedTimeout = false)
         {
             uint tmp = Unpack.toUint(await getCmd2Async(Opcodes.GET_BATTERY_STATE, 3));
             battery.parse(tmp);
@@ -548,7 +554,7 @@ namespace EnlightenMAUI.Models
         }
 
 
-        protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
+        protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket, bool extendedTimeout = false)
         {
             startTime = DateTime.Now;
             if (acquisitionMode == AcquisitionMode.STANDARD)

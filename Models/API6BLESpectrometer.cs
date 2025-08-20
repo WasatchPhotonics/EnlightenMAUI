@@ -183,6 +183,10 @@ public class API6BLESpectrometer : Spectrometer
         logger.debug("Spectrometer.initAsync: done");
         return true;
     }
+    internal override async Task<bool> initializeCollectionParams()
+    {
+        return true;
+    }
 
     protected override async Task<List<byte[]>> readEEPROMAsync()
     {
@@ -633,7 +637,7 @@ public class API6BLESpectrometer : Spectrometer
     // I used to call this at the END of an acquisition, and that worked; 
     // until it didn't.  Now I call it BEFORE each acquisition, and that
     // seems to work better?
-    internal override async Task<bool> updateBatteryAsync()
+    internal override async Task<bool> updateBatteryAsync(bool extendedTimeout = false)
     {
         logger.debug("Spectrometer.updateBatteryAsync: starting");
 
@@ -846,7 +850,7 @@ public class API6BLESpectrometer : Spectrometer
     // 
     // There is no need to disable the laser if returning NULL, as the caller
     // will do so anyway.
-    protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket)
+    protected override async Task<double[]> takeOneAsync(bool disableLaserAfterFirstPacket, bool extendedTimeout = false)
     {
         if (!paired || characteristicsByName is null)
             return null;
