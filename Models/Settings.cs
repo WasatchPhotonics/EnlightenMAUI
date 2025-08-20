@@ -5,7 +5,6 @@ using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 using static Android.Widget.GridLayout;
-using Xamarin.Google.Crypto.Tink.Proto;
 
 namespace EnlightenMAUI.Models;
 

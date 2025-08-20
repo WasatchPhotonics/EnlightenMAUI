@@ -16,7 +16,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static Android.Widget.GridLayout;
-using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 
 namespace EnlightenMAUI.ViewModels
 {
