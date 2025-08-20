@@ -1454,8 +1454,13 @@ public class ScopeViewModel : INotifyPropertyChanged
 
                     if (m != null)
                     {
+                        double libScale = m.processed.Max();
+                        double measScale = spec.measurement.processed.Max();
+
+                        double scaleFactor = measScale / libScale;
+
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = scaleFactor * m.processed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(omd.name))
                             DataOverlays[omd.name] = newOverlay;
                         else
