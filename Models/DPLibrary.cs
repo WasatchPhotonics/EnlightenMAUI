@@ -195,24 +195,7 @@ namespace EnlightenMAUI.Models
             }
             catch (Exception e)
             {
-                int safetyCount = 0;
-                logger.error("DPLibrary init failed out with issue: {0}", e.Message);
-                if (e.InnerException != null)
-                {
-                    Exception deeper = e.InnerException;
-                    while (deeper != null)
-                    {
-                        logger.error("DPLibrary init failed out with inner exception: {0}", deeper.Message);
-                        if (deeper.InnerException != null)
-                            deeper = deeper.InnerException;
-                        else
-                            deeper = null;
-                        ++safetyCount;
-
-                        if (safetyCount > 100)
-                            break;
-                    }
-                }
+                logger.error("DPLibrary init failed out with issue: {0}", e.ToString());
 
                 isLoading = false;
                 InvokeLoadFinished();
