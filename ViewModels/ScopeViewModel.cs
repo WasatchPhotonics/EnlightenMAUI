@@ -163,7 +163,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() =>
             {
                 //library = new DPLibrary("database", spec);
-                library = new WPLibrary("library", spec); 
+                library = new WPLibrary("library/Wasatch", spec); 
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
                 (library as WPLibrary).showMatchProgress += showMatchProgress;
@@ -183,7 +183,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     library = new DPLibrary("database", spec);
-                    //library = new WPLibrary("library", spec);
+                    //library = new WPLibrary("library/Wasatch", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -297,6 +297,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         (library as WPLibrary).showMatchProgress -= showMatchProgress;
         library = settings.library;
         (library as WPLibrary).showMatchProgress += showMatchProgress;
+        if (library is WPLibrary)
+        {
+            fullLibraryOverlayStatus.Clear();
+            overlaysViewModel.selections.Clear();
+
+            foreach (string sample in library.samples)
+            {
+                if (!fullLibraryOverlayStatus.ContainsKey(sample))
+                {
+                    fullLibraryOverlayStatus.Add(sample, false);
+                    overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
+                }
+            }
+        }
+
         AnalysisViewModel.getInstance().library = library;
     }
 
@@ -318,7 +333,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new WPLibrary("library", spec);
+                library = new WPLibrary("library/Wasatch", spec);
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
             });
@@ -382,6 +397,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         if (!settings.library.loadSucceeded)
             notifyToast?.Invoke("Issue loading library, make sure phone is paired to correct unit");
+        else
+            AnalysisViewModel.getInstance().libraryReady = true;
 
         if (library is DPLibrary)
         {
@@ -391,7 +408,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     //library = new DPLibrary("database", spec);
-                    library = new WPLibrary("library", spec); 
+                    library = new WPLibrary("library/Wasatch", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -401,13 +418,18 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
         }
 
-
-        foreach (string sample in library.samples)
+        else
         {
-            if (!fullLibraryOverlayStatus.ContainsKey(sample))
+            fullLibraryOverlayStatus.Clear();
+            overlaysViewModel.selections.Clear();
+
+            foreach (string sample in library.samples)
             {
-                fullLibraryOverlayStatus.Add(sample, false);
-                overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
+                if (!fullLibraryOverlayStatus.ContainsKey(sample))
+                {
+                    fullLibraryOverlayStatus.Add(sample, false);
+                    overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
+                }
             }
         }
     }
@@ -1454,8 +1476,13 @@ public class ScopeViewModel : INotifyPropertyChanged
 
                     if (m != null)
                     {
+                        double libScale = m.processed.Max();
+                        double measScale = spec.measurement.processed.Max();
+
+                        double scaleFactor = measScale / libScale;
+
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = scaleFactor * m.processed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(omd.name))
                             DataOverlays[omd.name] = newOverlay;
                         else
