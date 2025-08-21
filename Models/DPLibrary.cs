@@ -28,7 +28,7 @@ namespace EnlightenMAUI.Models
 
     internal partial class DPLibrary : WPLibrary
     {
-        private int _lib = 0;
+        private nint _lib = 0;
         private int maxYPoints = 0;
         const int matchThreadCount = 8;
         private byte[] _data = new byte[250000];
@@ -60,9 +60,6 @@ namespace EnlightenMAUI.Models
             spectrum.xfirst = 200.0F;
             spectrum.xstep = 2.0F;
             spectrum.npoints = 0;
-
-            if (spec == null)
-                unitSN = "WP-01486";
 
             isLoading = true;
             libraryLoader = loadFiles();
@@ -107,7 +104,15 @@ namespace EnlightenMAUI.Models
 
                 if (_lib == 0)
                 {
-                    _lib = _dpLIBOpen(Encoding.UTF8.GetBytes(finalFullPath + '\0'));
+                    var buffer2 = Encoding.UTF8.GetBytes(finalFullPath + '\0');
+
+                    unsafe
+                    {
+                        fixed (byte* ptr = buffer2)
+                        {
+                            _lib = _dpLIBOpen(ptr);
+                        }
+                    }
                 }
 
                 loaded = _lib != 0;
@@ -119,86 +124,61 @@ namespace EnlightenMAUI.Models
                     maxYPoints = _dpLIBMxNPoints(_lib);
                     spectrum.y = new float[maxYPoints];
 
-                    int len = _dpLIBInfo(_lib, _data, _data.Length);
-                    logger.info("dplibrary contains {0} items", len);
-                    if (len > 0)
+                    unsafe
                     {
-                        Dictionary<string, string> libraryDat = _todict(len);
-                        foreach (string key in libraryDat.Keys)
+                        string libIDs = "";
+                        fixed (byte* ptr = _data)
                         {
-                            logger.info("dplibrary info: {0} : {1}", key, libraryDat[key]);
-                        }
-                    }
-
-                    len = _dpLIBActiveLibIDs(_lib, _data, _data.Length);
-                    if (len > 0)
-                    {
-                        string libraryID = _tostring(len);
-                        logger.info("active lib id: {0}", libraryID);
-                    }
-
-                    len = _dpLIBActiveLibs(_lib, _data, _data.Length);
-                    string libIDs = "";
-                    if (len > 0)
-                    {
-                        Dictionary<string, string> libs = _todict(len);
-                        foreach (string key in libs.Keys)
-                        {
-                            logger.info("dplibrary item: {0} : {1}", key, libs[key]);
-                            libraryIDs.Add(libs[key], key);
-                            activeLibraries.Add(libs[key], defaultSublibs.Contains(libs[key]));
-
-                            if (defaultSublibs.Contains(libs[key]))
+                            int len = _dpLIBInfo(_lib, ptr, _data.Length);
+                            logger.info("dplibrary contains {0} items", len);
+                            if (len > 0)
                             {
-                                libIDs += key;
-                                libIDs += ";";
-                            }
-                        }
-                    }
-                    libIDs = libIDs.TrimEnd(';');
-
-                    _dpLIBSetFilter(_lib, Encoding.UTF8.GetBytes(libIDs + '\0'));
-
-                    
-                    int numSpec = _dpLIBNumSpectra(_lib);
-                    logger.info("library contains {0} items", numSpec);
-
-                    /*
-                    for (int i = 0; i < numSpec; i++)
-                    {
-                        len = _dpLIBGetSpectrumData(_lib, i, _data, _data.Length);
-                        Dictionary<string, string> info = _todict(len);
-                        logger.info("item {0}", i);
-                        foreach (KeyValuePair<string, string> kvp in info)
-                            logger.info("{0} = {1}", kvp.Key, kvp.Value);
-
-                        if (getSpectrum(i)) // get the spectrum
-                        {
-                            Measurement m = new Measurement();
-                            m.wavenumbers = new double[spectrum.npoints];
-                            m.raw = new double[spectrum.npoints];
-                            m.excitationNM = Double.Parse(info["RamanExci"]);
-
-                            for (int j = 0; j < spectrum.npoints; j++)
-                            {
-                                m.wavenumbers[j] = spectrum.xfirst + spectrum.xstep * j;
-                                m.raw[j] = spectrum.y[j];
+                                Dictionary<string, string> libraryDat = _todict(len);
+                                foreach (string key in libraryDat.Keys)
+                                {
+                                    logger.info("dplibrary info: {0} : {1}", key, libraryDat[key]);
+                                }
                             }
 
-                            m.postProcess();
+                            len = _dpLIBActiveLibIDs(_lib, ptr, _data.Length);
+                            if (len > 0)
+                            {
+                                string libraryID = _tostring(len);
+                                logger.info("active lib id: {0}", libraryID);
+                            }
 
-                            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
-                            double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
+                            len = _dpLIBActiveLibs(_lib, ptr, _data.Length);
+                            if (len > 0)
+                            {
+                                Dictionary<string, string> libs = _todict(len);
+                                foreach (string key in libs.Keys)
+                                {
+                                    logger.info("dplibrary item: {0} : {1}", key, libs[key]);
+                                    libraryIDs.Add(libs[key], key);
+                                    activeLibraries.Add(libs[key], defaultSublibs.Contains(libs[key]));
 
-                            Measurement updated = new Measurement();
-                            updated.wavenumbers = wavenumbers;
-                            updated.raw = newIntensities;
-
-                            if (!library.ContainsKey(info["Name"].ToLower()))
-                            library.Add(info["Name"].ToLower(), updated);
+                                    if (defaultSublibs.Contains(libs[key]))
+                                    {
+                                        libIDs += key;
+                                        libIDs += ";";
+                                    }
+                                }
+                            }
                         }
+
+                        libIDs = libIDs.TrimEnd(';');
+
+                        var buffer3 = Encoding.UTF8.GetBytes(libIDs + '\0');
+
+                        fixed (byte* ptr = buffer3)
+                        {
+                            _dpLIBSetFilter(_lib, ptr);
+                        }
+
+                        int numSpec = _dpLIBNumSpectra(_lib);
+                        logger.info("library contains {0} items", numSpec);
+                        
                     }
-                    */
 
                     tag = "3rd Party";
                     logger.info("library loaded successfully");
@@ -253,7 +233,16 @@ namespace EnlightenMAUI.Models
             }
 
             libIDs = libIDs.TrimEnd(';');
-            _dpLIBSetFilter(_lib, Encoding.UTF8.GetBytes(libIDs + '\0'));
+
+            var buffer3 = Encoding.UTF8.GetBytes(libIDs + '\0');
+
+            unsafe
+            {
+                fixed (byte* ptr = buffer3)
+                {
+                    _dpLIBSetFilter(_lib, ptr);
+                }
+            }
         }
 
         public async Task<bool> isLoaded()
@@ -502,59 +491,57 @@ namespace EnlightenMAUI.Models
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBLibInfo")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBLibInfo(byte[] file, ref int days);
-
+        private static unsafe partial int _dpLIBLibInfo(byte* utf8Path, ref int days);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBOpen")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBOpen(byte[] f);
+        private static unsafe partial nint _dpLIBOpen(byte* utf8Path);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBInfo")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBInfo(int handle, byte[] data, int len);
+        private static unsafe partial int _dpLIBInfo(nint handle, byte* data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBClose")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial void _dpLIBClose(int handle);
-
+        private static partial void _dpLIBClose(nint handle);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBActiveLibIDs")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBActiveLibIDs(int handle, byte[] data, int len);
+        private static unsafe partial int _dpLIBActiveLibIDs(nint handle, byte* data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBActiveLibs")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBActiveLibs(int handle, byte[] data, int len);
+        private static unsafe partial int _dpLIBActiveLibs(nint handle, byte* data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBSetFilter")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial void _dpLIBSetFilter(int handle, byte[] data);
+        private static unsafe partial void _dpLIBSetFilter(nint handle, byte* data);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBResetFilter")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial void _dpLIBResetFilter(int handle);
+        private static partial void _dpLIBResetFilter(nint handle);
 
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBNumSpectra")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBNumSpectra(int handle);
+        private static partial int _dpLIBNumSpectra(nint handle);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBMxNPoints")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBMxNPoints(int handle);
+        private static partial int _dpLIBMxNPoints(nint handle);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetSpectrum")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool _dpLIBGetSpectrum(int handle, int i, byte[] xfirst, byte[] xstep, byte[] npoints, int yalloc, float[] y);
+        private static partial bool _dpLIBGetSpectrum(nint handle, int i, byte[] xfirst, byte[] xstep, byte[] npoints, int yalloc, float[] y);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetSpectrumData")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBGetSpectrumData(int handle, int i, byte[] data, int len);
+        private static partial int _dpLIBGetSpectrumData(nint handle, int i, byte[] data, int len);
 
         [LibraryImport(@"Stj.ProtectionSdk", EntryPoint = "dpLIBGetLibIDsForSpectrum")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static partial int _dpLIBGetLibIDsForSpectrum(int handle, int i, byte[] data, int len);
+        private static partial int _dpLIBGetLibIDsForSpectrum(nint handle, int i, byte[] data, int len);
 
     }
 }
