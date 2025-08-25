@@ -124,6 +124,7 @@ public class Measurement : INotifyPropertyChanged
 
     const string UPLOAD_URL = "https://wasatchphotonics.com/save-spectra.php";
 
+    public int specCount = -2; 
 
     ////////////////////////////////////////////////////////////////////////
     // Complex properties
@@ -468,6 +469,7 @@ public class Measurement : INotifyPropertyChanged
         else
             dark = spec.dark;
 
+        ++specCount;
         postProcess();
 
         rawDark = spec.dark;
@@ -480,9 +482,10 @@ public class Measurement : INotifyPropertyChanged
         measurementID = string.Format("{0}-{1}",
             timestamp.ToString("yyyyMMdd-HHmmss-ffffff"),
             serialNumber);
-        filename = string.Format("{0}-{1}.csv",
+        filename = string.Format("{0}-{1}-{2}.csv",
             timestamp.ToString("yyyyMMdd-HHmmss"),
-            serialNumber);
+            serialNumber,
+            specCount.ToString("0000"));
         // location = WhereAmI.getInstance().location;
     }
 

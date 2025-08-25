@@ -63,6 +63,7 @@
                     </telerik:RadCartesianChart.ChartBehaviors>
                 </telerik:RadCartesianChart>
 
+
                 <StackLayout HorizontalOptions="Center" Orientation="Horizontal" Margin="10,2,10,2">
 
                     <Border BackgroundColor="#4363d8" Stroke="Transparent" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
@@ -74,10 +75,11 @@
 
                 </StackLayout>
 
+                <Label Text="{Binding spectrumLabel}" HorizontalOptions="Center" VerticalOptions="End" FontSize="10" TextColor="#888"/>
 
                 <Label HorizontalOptions="Center" IsVisible="{Binding noMatchYet}" Text="{Binding matchString}" FontSize="24" />
 
-                <VerticalStackLayout IsVisible="{Binding matchFound}" Margin="10,10,10,0" HorizontalOptions="Center">
+                <VerticalStackLayout IsVisible="{Binding matchFound}" Margin="10,5,10,0" HorizontalOptions="Center">
 
                     <HorizontalStackLayout HorizontalOptions="FillAndExpand">
                         <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
@@ -114,6 +116,14 @@
                         Text="Add To Library"
                         Command="{Binding saveCmd}"
                         BackgroundColor="#515151"/>
+                    <!--
+                    <Grid Margin="5" HorizontalOptions="Center" VerticalOptions="Center" HeightRequest="50">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                    </Grid>
+                    -->
 
 
                 </StackLayout>
