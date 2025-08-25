@@ -50,23 +50,33 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.41</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.42</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.41</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.42</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android35.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
 	  <AndroidPackageFormat>apk</AndroidPackageFormat>
-	  <ApplicationDisplayVersion>0.9.41</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.42</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
+	  <AndroidUseAapt2>True</AndroidUseAapt2>
+	  <AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
+	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android35.0|AnyCPU'">
+	  <AndroidUseAapt2>True</AndroidUseAapt2>
+	  <AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
+	  <AndroidPackageFormat>apk</AndroidPackageFormat>
+	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -146,6 +156,9 @@
 	<ItemGroup>
 	  <Reference Include="DeconvolutionMAUI">
 	    <HintPath>..\DeconvolutionMAUI\DeconvolutionMAUI\bin\Debug\net8.0-android\DeconvolutionMAUI.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Stj.ProtectionSdkNet">
+	    <HintPath>..\..\..\Users\Trent Stohrer\Downloads\ProtectionSdk-v2.0.184\dotnet\net9.0\Stj.ProtectionSdkNet.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
 
