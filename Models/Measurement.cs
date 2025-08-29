@@ -46,6 +46,7 @@ public class spectrumJSON
     public double[] dark;
     public double[] reference;
     public double[] absorbance;
+    public double[] transmission;
     public string[] declaredMatch;
     public double? declaredScore;
     public string technique;
@@ -184,6 +185,16 @@ public class Measurement : INotifyPropertyChanged
 
     }
     double[] reference_;
+
+    public double[] transmission
+    {
+        get { return transmission_; }
+        private set
+        {
+            transmission_ = value;
+        }
+    }
+    double[] transmission_;
 
     public double[] absorbance
     {
@@ -347,6 +358,13 @@ public class Measurement : INotifyPropertyChanged
             temp.dark = local;
         }
 
+        if (transmission != null)
+        {
+            local = new double[transmission.Length];
+            transmission.CopyTo(local, 0);
+            temp.transmission = local;
+        }
+        
         if (absorbance != null)
         {
             local = new double[absorbance.Length];
@@ -469,6 +487,9 @@ public class Measurement : INotifyPropertyChanged
         else
             dark = spec.dark;
 
+        if (spec.reference != null)
+            reference = spec.reference;
+
         postProcess();
 
         rawDark = spec.dark;
@@ -522,14 +543,15 @@ public class Measurement : INotifyPropertyChanged
 
         processed = new double[pixels];
         postProcessed = new double[pixels];
+        transmission = new double[pixels];
         absorbance = new double[pixels];
         if (dark != null && reference != null)
             for (int i = 0; i < pixels; i++)
             {
-                processed[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
+                transmission[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
 
-                if (processed[i] >= 0)
-                    absorbance[i] = -1.0 * Math.Log10(processed[i] / 100);
+                if (transmission[i] > 0)
+                    absorbance[i] = -1.0 * Math.Log10(transmission[i] / 100);
                 else
                     absorbance[i] = MAX_AU;
             }

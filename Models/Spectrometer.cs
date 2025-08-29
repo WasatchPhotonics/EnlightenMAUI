@@ -47,6 +47,8 @@ namespace EnlightenMAUI.Models
         public double[] lastRaw;
         public double[] lastSpectrum;
         public double[] dark;
+        public double[] reference;
+        public double[] referenceDark;
         public double[] stretchedDark;
 
         public Measurement measurement;
@@ -651,7 +653,7 @@ namespace EnlightenMAUI.Models
         }
 
         ////////////////////////////////////////////////////////////////////////
-        // dark
+        // dark and reference
         ////////////////////////////////////////////////////////////////////////
 
         public void toggleDark()
@@ -670,6 +672,41 @@ namespace EnlightenMAUI.Models
             }
             logger.debug("Spectrometer.toggleDark: dark {0} null", dark == null ? "is" : "IS NOT");
             logger.debug("Spectrometer.toggleDark: done");
+        }
+        
+        public void toggleReference()
+        {
+            logger.debug("Spectrometer.toggleReference: start");
+            if (reference is null)
+            {
+                logger.debug("Spectrometer.toggleReference: storing lastSpectrum as dark");
+                reference = lastSpectrum;
+                dark = null;
+            }
+            else
+            {
+                logger.debug("Spectrometer.toggleReference: clearing reference");
+                reference = null;
+            }
+            logger.debug("Spectrometer.toggleReference: reference {0} null", reference == null ? "is" : "IS NOT");
+            logger.debug("Spectrometer.toggleReference: done");
+        }
+
+        public void toggleReferenceDark()
+        {
+            logger.debug("Spectrometer.toggleReferenceDark: start");
+            if (referenceDark is null)
+            {
+                logger.debug("Spectrometer.toggleReferenceDark: storing lastSpectrum as dark");
+                dark = referenceDark = lastSpectrum;
+            }
+            else
+            {
+                logger.debug("Spectrometer.toggleReferenceDark: clearing ref dark");
+                referenceDark = null;
+            }
+            logger.debug("Spectrometer.toggleReferenceDark: referenceDark {0} null", referenceDark == null ? "is" : "IS NOT");
+            logger.debug("Spectrometer.toggleReferenceDark: done");
         }
 
         ////////////////////////////////////////////////////////////////////////

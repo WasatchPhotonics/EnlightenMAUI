@@ -297,61 +297,72 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <StackLayout Orientation="Horizontal" Grid.Row="0" VerticalOptions="Start" >
-                    <!-- Acquire -->
-                    <Label Margin="5" Text="Reference" VerticalOptions="Center" FontSize="14"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/> 
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                    <ImageButton    
+                    <!-- Acquire -->
+                <Label Grid.Row="0" Grid.Column="0" Margin="5" Text="Reference" VerticalOptions="Center" FontSize="14"/>
+
+                <ImageButton   
+                    Grid.Row="0" Grid.Column="1"
                     Margin="5" 
                     Padding="20" 
                     CornerRadius="10"
-                    HorizontalOptions="StartAndExpand" 
+                    HorizontalOptions="Start" 
                     WidthRequest="50"
                     HeightRequest="50"
-                    Command="{Binding acquireCmd}"
-                    Source="Images/apeture.svg"
-                    BackgroundColor="{Binding acquireButtonBackgroundColor}" />
+                    Command="{Binding referenceDarkCmd}"
+                    Source="Images/bulb_dark.svg"
+                    BackgroundColor="{Binding referenceDarkButtonBackgroundColor}" />
 
-                    <!-- Dark -->
-                    <ImageButton    Margin="5" 
-                                Padding="20" 
-                                CornerRadius="10"
-                                HorizontalOptions="StartAndExpand" 
-                                WidthRequest="50"
-                                HeightRequest="50"
-                                Command="{Binding darkCmd}"
-                                Source="Images/bulb_dark.svg"
-                                BackgroundColor="{Binding darkButtonBackgroundColor}" />
-                </StackLayout>
-
-                <StackLayout Orientation="Horizontal" Grid.Row="1" VerticalOptions="Start">
-
-                    <Label Margin="5" Text="Sample" VerticalOptions="Center" FontSize="14"/>
-                    
-                    <!-- Acquire -->
-                    <ImageButton    
-                    Margin="2" 
+                <!-- Dark -->
+                <ImageButton    
+                    Grid.Row="0" Grid.Column="2"
+                    Margin="5" 
                     Padding="20" 
                     CornerRadius="10"
-                    HorizontalOptions="StartAndExpand" 
+                    HorizontalOptions="Start" 
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    Command="{Binding referenceCmd}"
+                    Source="Images/bulb_light.svg"
+                    BackgroundColor="{Binding referenceButtonBackgroundColor}" />
+
+                <Label Grid.Row="1" Grid.Column="0" Margin="5" Text="Sample" VerticalOptions="Center" FontSize="14"/>
+                    
+                <!-- Acquire -->
+                <ImageButton   
+                    Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
+                    VerticalOptions="Center"
+                    Margin="5" 
+                    Padding="20" 
+                    CornerRadius="10"
+                    HorizontalOptions="Start" 
                     WidthRequest="50"
                     HeightRequest="50"
                     Command="{Binding acquireCmd}"
                     Source="Images/apeture.svg"
                     BackgroundColor="{Binding acquireButtonBackgroundColor}" />
 
-                    <!-- Dark -->
-                    <ImageButton    Margin="2" 
-                                Padding="20" 
-                                CornerRadius="10"
-                                HorizontalOptions="StartAndExpand" 
-                                WidthRequest="50"
-                                HeightRequest="50"
-                                Command="{Binding darkCmd}"
-                                Source="Images/bulb_dark.svg"
-                                BackgroundColor="{Binding darkButtonBackgroundColor}" />
-                </StackLayout>
-                
+                <!-- Dark -->
+                <ImageButton    
+                    Grid.Row="1" Grid.Column="1"
+                    Margin="5" 
+                    Padding="20" 
+                    CornerRadius="10"
+                    HorizontalOptions="Start" 
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    Command="{Binding darkCmd}"
+                    Source="Images/bulb_dark.svg"
+                    BackgroundColor="{Binding darkButtonBackgroundColor}" />
+
             </Grid>
 
 

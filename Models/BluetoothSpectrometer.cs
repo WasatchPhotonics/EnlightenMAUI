@@ -1299,6 +1299,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else
         {
+            /*
             if (dark != null)
             {
                 logger.info("Performing background removal");
@@ -1307,6 +1308,7 @@ public class BluetoothSpectrometer : Spectrometer
                     spectrum[i] -= dark[i];
                 }
             }
+            */
 
             measurement.wavenumbers = wavenumbers;
             measurement.postProcessed = spectrum;

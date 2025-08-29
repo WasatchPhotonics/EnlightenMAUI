@@ -131,6 +131,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); });
         darkCmd = new Command(() => { _ = doDark(); });
+        referenceCmd = new Command(() => { _ = doReference(); });
+        referenceDarkCmd = new Command(() => { _ = doReferenceDark(); });
 
         saveCmd = new Command(() => { _ = doSave(); });
         uploadCmd = new Command(() => { _ = doUpload(); });
@@ -342,6 +344,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); });
         darkCmd = new Command(() => { _ = doDark(); });
+        referenceCmd = new Command(() => { _ = doReference(); });
+        referenceDarkCmd = new Command(() => { _ = doReferenceDark(); });
 
         saveCmd = new Command(() => { _ = doSave(); });
         uploadCmd = new Command(() => { _ = doUpload(); });
@@ -611,6 +615,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     ////////////////////////////////////////////////////////////////////////
 
     public Command darkCmd { get; private set; }
+    public Command referenceCmd { get; private set; }
+    public Command referenceDarkCmd { get; private set; }
 
     public string darkButtonForegroundColor
     {
@@ -620,6 +626,26 @@ public class ScopeViewModel : INotifyPropertyChanged
     public string darkButtonBackgroundColor
     {
         get => spec.dark != null ? "#ba0a0a" : "#515151";
+    }
+    
+    public string referenceButtonForegroundColor
+    {
+        get => spec.reference != null ? "#eee" : "#ccc";
+    }
+
+    public string referenceButtonBackgroundColor
+    {
+        get => spec.reference != null ? "#ba0a0a" : "#515151";
+    }
+    
+    public string referenceDarkButtonForegroundColor
+    {
+        get => spec.referenceDark != null ? "#eee" : "#ccc";
+    }
+
+    public string referenceDarkButtonBackgroundColor
+    {
+        get => spec.referenceDark != null ? "#ba0a0a" : "#515151";
     }
 
     public string progressBarColor
@@ -632,10 +658,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         }
     }
 
-    private void updateDarkButton()
+    private void updateDarkRefButtons()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(darkButtonForegroundColor)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(darkButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(referenceButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(referenceButtonForegroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(referenceDarkButtonBackgroundColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(referenceDarkButtonForegroundColor)));
     }
 
     bool doDark()
@@ -643,9 +673,31 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("SVM.doDark: start");
         spec.toggleDark();
         spec.measurement.reload(spec);
-        updateDarkButton();
+        updateDarkRefButtons();
         updateChart();
         logger.debug("SVM.doDark: done");
+        return true;
+    }
+
+    bool doReference()
+    {
+        logger.debug("SVM.doReference: start");
+        spec.toggleReference();
+        spec.measurement.reload(spec);
+        updateDarkRefButtons();
+        updateChart();
+        logger.debug("SVM.doReference: done");
+        return true;
+    }
+
+    bool doReferenceDark()
+    {
+        logger.debug("SVM.doReferenceDark: start");
+        spec.toggleReferenceDark();
+        spec.measurement.reload(spec);
+        updateDarkRefButtons();
+        updateChart();
+        logger.debug("SVM.doReferenceDark: done");
         return true;
     }
 
@@ -1344,6 +1396,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         double[] intensities = spec.measurement.postProcessed;
 
         bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
+
+        if (spec.measurement.reference != null && spec.measurement.dark != null)
+        {
+            pixels = (uint)spec.measurement.transmission.Length;
+            intensities = spec.measurement.transmission;
+        }
 
         try
         {
