@@ -482,21 +482,44 @@ namespace EnlightenMAUI.ViewModels
 
             if (sample == null &&  reference == null)
             {
-                xAxisMinimum = spec.wavenumbers.Minimum();
-                xAxisMaximum = spec.wavenumbers.Maximum();
-
-                if (spec != null)
+                if (spec.wavenumbers != null)
                 {
-                    for (int i = 0; i < spec.wavenumbers.Length; i++)
+                    xAxisMinimum = spec.wavenumbers.Minimum();
+                    xAxisMaximum = spec.wavenumbers.Maximum();
+
+                    if (spec != null)
                     {
-                        chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
+                        for (int i = 0; i < spec.wavenumbers.Length; i++)
+                        {
+                            chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 1024; i++)
+                        {
+                            chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
+                        }
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < 1024; i++)
+                    xAxisMinimum = spec.wavelengths.Minimum();
+                    xAxisMaximum = spec.wavelengths.Maximum();
+
+                    if (spec != null)
                     {
-                        chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
+                        for (int i = 0; i < spec.wavelengths.Length; i++)
+                        {
+                            chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 1024; i++)
+                        {
+                            chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
+                        }
                     }
                 }
 

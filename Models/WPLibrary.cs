@@ -13,6 +13,8 @@ using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using System.Reflection.Metadata;
+using Android.Net.Wifi.Aware;
+
 
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
@@ -249,6 +251,9 @@ namespace EnlightenMAUI.Models
 
                 unitSN = spec.eeprom.serialNumber;
             }
+
+            if (spec.laserExcitationNM == 0)
+                return;
 
             if (doLoad)
                 libraryLoader = loadFiles(root);

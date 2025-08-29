@@ -102,6 +102,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
+        if (spec.laserExcitationNM == 0)
+            xAxisName = "Wavelength";
+
         Task loader = PlatformUtil.loadONNXModel("onnx", "etalon_correction.json");
         loader.Wait();
         //Thread.Sleep(100);
@@ -146,7 +149,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
+            if ((spec is USBSpectrometer || spec is BluetoothSpectrometer) && spec.wavenumbers != null)
                 spec.autoRamanEnabled = true;
             else
             {
@@ -414,6 +417,9 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     private async Task findUserFiles()
     {
+        if (spec.laserExcitationNM == 0)
+            return;
+
         var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
         Java.IO.File libraryFolder = null;
         foreach (var cDir in cacheDirs)
@@ -870,13 +876,19 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool manualModeEnabled
     {
-        get => spec.acquisitionMode == AcquisitionMode.STANDARD;
+        get => !isVIS && spec.acquisitionMode == AcquisitionMode.STANDARD;
     }
 
     public bool manualModeDisabled
     {
-        get => spec.acquisitionMode != AcquisitionMode.STANDARD;
+        get => !isVIS && spec.acquisitionMode != AcquisitionMode.STANDARD;
     }
+
+    public bool isVIS
+    {
+        get => spec.laserExcitationNM == 0;
+    }
+
 
     // Provided so any changes to Settings.authenticated will immediately
     // take effect on our View.
@@ -1131,19 +1143,22 @@ public class ScopeViewModel : INotifyPropertyChanged
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
 
-            double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
-            double snr = spec.measurement.postProcessed.Max() / rmsd;
-
-            logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
-
-            if (AnalysisViewModel.getInstance().currentParamSet == "Default")
+            if (spec.measurement.wavenumbers != null)
             {
-                if (snr < settings.snrThreshold)
+                double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+                double snr = spec.measurement.postProcessed.Max() / rmsd;
+
+                logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+
+                if (AnalysisViewModel.getInstance().currentParamSet == "Default")
                 {
-                    spec.redoBackgroundProcessing(false);
-                    rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
-                    snr = spec.measurement.postProcessed.Max() / rmsd;
-                    logger.info("after re-analysis, sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+                    if (snr < settings.snrThreshold)
+                    {
+                        spec.redoBackgroundProcessing(false);
+                        rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
+                        snr = spec.measurement.postProcessed.Max() / rmsd;
+                        logger.info("after re-analysis, sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
+                    }
                 }
             }
 

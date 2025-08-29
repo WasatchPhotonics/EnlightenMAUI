@@ -476,7 +476,7 @@ namespace EnlightenMAUI.Models
             measurement.reset();
             measurement.reload(this);
 
-            if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
+            if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled) && wavenumbers != null)
             {
                 if (dark != null)
                 {
@@ -496,6 +496,15 @@ namespace EnlightenMAUI.Models
             }
             else
             {
+                if (dark != null)
+                {
+                    logger.info("Performing background removal");
+                    for (int i = 0; i < spectrum.Length; ++i)
+                    {
+                        spectrum[i] -= dark[i];
+                    }
+                }
+
                 measurement.wavenumbers = wavenumbers;
                 measurement.postProcessed = spectrum;
             }

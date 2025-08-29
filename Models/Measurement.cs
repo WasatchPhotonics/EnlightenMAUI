@@ -172,6 +172,7 @@ public class Measurement : INotifyPropertyChanged
     }
     double[] rawDark_;
 
+    // reference spectra should be dark-subtracted
     public double[] reference
     {
         get { return reference_; }
@@ -509,6 +510,8 @@ public class Measurement : INotifyPropertyChanged
 
     public double max => processed is null ? 0 : processed.Max();
 
+    const double MAX_AU = 6.0;
+
     public void postProcess()
     {
         if (raw_ == null)
@@ -523,16 +526,12 @@ public class Measurement : INotifyPropertyChanged
         if (dark != null && reference != null)
             for (int i = 0; i < pixels; i++)
             {
-                if (reference[i] == dark[i])
-                {
-                    processed[i] = 0;
-                    absorbance[i] = double.NegativeInfinity;
-                }
-                else
-                {
-                    processed[i] = 100 * ((raw_[i] - dark[i]) / (reference[i] - dark[i]));
+                processed[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
+
+                if (processed[i] >= 0)
                     absorbance[i] = -1.0 * Math.Log10(processed[i] / 100);
-                }
+                else
+                    absorbance[i] = MAX_AU;
             }
         else if (dark != null)
         {
