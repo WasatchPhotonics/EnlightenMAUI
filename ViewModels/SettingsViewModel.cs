@@ -50,51 +50,6 @@ namespace EnlightenMAUI.ViewModels
         Logger logger = Logger.getInstance();
         bool initialized = false;
 
-        Dictionary<string, AutoRamanParameters> parameterSets = new Dictionary<string, AutoRamanParameters>()
-    {
-        {
-            "Default" ,
-            new AutoRamanParameters()
-            {
-                maxCollectionTimeMS = 10000,
-                startIntTimeMS = 100,
-                startGainDb = 0,
-                minIntTimeMS = 10,
-                maxIntTimeMS = 2000,
-                minGainDb = 0,
-                maxGainDb = 30,
-                targetCounts = 45000,
-                minCounts = 40000,
-                maxCounts = 50000,
-                maxFactor = 5,
-                dropFactor = 0.5f,
-                saturationCounts = 65000,
-                maxAverage = 100
-            }
-        },
-        {
-            "Faster" ,
-            new AutoRamanParameters()
-            {
-                maxCollectionTimeMS = 2000,
-                startIntTimeMS = 200,
-                startGainDb = 8,
-                minIntTimeMS = 10,
-                maxIntTimeMS = 1000,
-                minGainDb = 0,
-                maxGainDb = 30,
-                targetCounts = 40000,
-                minCounts = 30000,
-                maxCounts = 50000,
-                maxFactor = 10,
-                dropFactor = 0.5f,
-                saturationCounts = 65000,
-                maxAverage = 1
-            }
-        }
-
-    };
-
         public ObservableCollection<string> paramSets
         {
             get => _paramSets;
@@ -172,13 +127,13 @@ namespace EnlightenMAUI.ViewModels
 
         void changeParamSet(string key)
         {
-            if (!parameterSets.ContainsKey(key))
+            if (!settings.parameterSets.ContainsKey(key))
                 return;
 
             if (spec != null && spec.paired)
             { 
                 spec.holdAutoRamanParameterSet = true;
-                AutoRamanParameters parameters = parameterSets[key];
+                AutoRamanParameters parameters = settings.parameterSets[key];
                 spec.maxCollectionTimeMS = parameters.maxCollectionTimeMS;
                 spec.startIntTimeMS = parameters.startIntTimeMS;
                 spec.startGainDb = parameters.startGainDb;
@@ -238,73 +193,13 @@ namespace EnlightenMAUI.ViewModels
 
         async Task setConfigurationFromFile()
         {
-            string configPath = PlatformUtil.getConfigFilePath();
-            if (File.Exists(configPath))
-            {
-                SimpleCSVParser parser = new SimpleCSVParser();
-                Stream s = File.OpenRead(configPath);
-                StreamReader sr = new StreamReader(s);
-                string blob = await sr.ReadToEndAsync();
-
-                PersistentSettings json = JsonConvert.DeserializeObject<PersistentSettings>(blob);
-                if (json != null && json.AutoParameters != null)
-                {
-                    foreach (string set in json.AutoParameters.Keys)
-                    {
-                        parameterSets[set] = json.AutoParameters[set];
-                    }
-                }
-
-                settings.matchThreshold = (float)json.MatchThereshold;
-                settings.snrThreshold = json.SNRThreshold;
-
-            }
-            else
-            {
-                await updateConfigFile();
-            }
-
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
+            await settings.setConfigurationFromFile();
             initialized = true;
         }
 
         async Task updateConfigFile()
         {
-            string configPath = PlatformUtil.getConfigFilePath();
-            JsonThingWriter jtw = new JsonThingWriter();
-            jtw.startBlock("AutoParameters");
-
-            foreach (string set in parameterSets.Keys)
-            {
-                jtw.startBlock(set);
-
-                AutoRamanParameters paramSet = parameterSets[set];
-                jtw.writePair("maxCollectionTimeMS", paramSet.maxCollectionTimeMS);
-                jtw.writePair("startIntTimeMS", paramSet.startIntTimeMS);
-                jtw.writePair("startGainDb", paramSet.startGainDb);
-                jtw.writePair("minIntTimeMS", paramSet.minIntTimeMS);
-                jtw.writePair("maxIntTimeMS", paramSet.maxIntTimeMS);
-                jtw.writePair("minGainDb", paramSet.minGainDb);
-                jtw.writePair("maxGainDb", paramSet.maxGainDb);
-                jtw.writePair("targetCounts", paramSet.targetCounts);
-                jtw.writePair("minCounts", paramSet.minCounts);
-                jtw.writePair("maxCounts", paramSet.maxCounts);
-                jtw.writePair("maxFactor", paramSet.maxFactor);
-                jtw.writePair("dropFactor", paramSet.dropFactor);
-                jtw.writePair("saturationCounts", paramSet.saturationCounts);
-                jtw.writePair("maxAverage", paramSet.maxAverage);
-
-
-                jtw.closeBlock();
-            }
-
-            jtw.closeBlock();
-
-            jtw.writePair("MatchThereshold", settings.matchThreshold, null);
-            jtw.writePair("SNRThreshold", settings.snrThreshold);
-
-            await File.WriteAllTextAsync(configPath, jtw.ToString());
+            await settings.updateConfigFile();
         }
 
         public void loadSettings()
