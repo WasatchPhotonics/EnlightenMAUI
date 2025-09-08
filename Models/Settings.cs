@@ -149,6 +149,8 @@ public class Settings : INotifyPropertyChanged
             spec = API6BLESpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
+
+        setConfigurationFromFile();
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -311,6 +313,17 @@ public class Settings : INotifyPropertyChanged
             matchThreshold = (float)json.MatchThereshold;
             snrThreshold = json.SNRThreshold;
 
+            string temp = json.lastSpecDate;
+            if (temp != null && json.specCount.HasValue)
+            {
+                DateTime time;
+                bool ok = DateTime.TryParseExact(temp, "yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out time);
+                if (ok && time.ToShortDateString() == DateTime.Now.ToShortDateString())
+                {
+                    specCount = json.specCount.Value;
+                }
+            }
+
         }
         else
         {
@@ -319,7 +332,10 @@ public class Settings : INotifyPropertyChanged
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
+        initialized = true;
     }
+
+    public bool initialized = false;
 
     internal async Task updateConfigFile()
     {
@@ -355,6 +371,8 @@ public class Settings : INotifyPropertyChanged
 
         jtw.writePair("MatchThereshold", matchThreshold, null);
         jtw.writePair("SNRThreshold", snrThreshold);
+        jtw.writePair("specCount", specCount);
+        jtw.writePair("lastSpecDate", lastTime.ToString("yyyyMMddHHmmss"));
 
         await File.WriteAllTextAsync(configPath, jtw.ToString());
     }
@@ -399,6 +417,9 @@ public class Settings : INotifyPropertyChanged
         }
     }
     bool _advancedModeEnabled = true;
+
+    public int specCount = -1;
+    public DateTime lastTime = DateTime.MinValue;
 
     // The user entered a new password on the SettingsView, and hit
     // return, so the View asked the ViewModel to authenticate it.  The

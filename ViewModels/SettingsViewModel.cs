@@ -19,6 +19,8 @@ namespace EnlightenMAUI.ViewModels
         public Dictionary<string, AutoRamanParameters> AutoParameters;
         public double  MatchThereshold;
         public int SNRThreshold;
+        public string lastSpecDate;
+        public int? specCount;
     }
 
     public class AutoRamanParameters
@@ -166,8 +168,19 @@ namespace EnlightenMAUI.ViewModels
                 spec = USBSpectrometer.getInstance();
 
             Spectrometer.NewConnection += handleNewSpectrometer;
+            settings.ConfigLoaded += Settings_ConfigLoaded;
 
-            setConfigurationFromFile();
+            if (settings.initialized)
+                initialized = true;
+
+            //setConfigurationFromFile();
+        }
+
+        private void Settings_ConfigLoaded(object sender, Settings e)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
+            initialized = true;
         }
 
         void handleNewSpectrometer(object sender, Spectrometer e)
@@ -193,7 +206,7 @@ namespace EnlightenMAUI.ViewModels
 
         async Task setConfigurationFromFile()
         {
-            await settings.setConfigurationFromFile();
+            //await settings.setConfigurationFromFile();
             initialized = true;
         }
 

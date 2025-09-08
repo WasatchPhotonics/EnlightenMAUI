@@ -23,6 +23,7 @@ using System.Text;
 using Xamarin.Google.Crypto.Tink.Signature;
 using DeconvolutionMAUI;
 using System.Security.AccessControl;
+using Accord.Math;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -110,7 +111,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings = Settings.getInstance();
         string savePath = settings.getSavePath();
 
+        if (settings.initialized)
+        {
+            if (settings.specCount > 0)
+                spec.measurement.specCount = settings.specCount;
+        }
+
         settings.PropertyChanged += handleSettingsChange;
+        settings.ConfigLoaded += Settings_ConfigLoaded;
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress;
         spec.measurement.PropertyChanged += handleSpectrometerChange;
@@ -205,6 +213,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
 
         initializeSpectrometer();
+    }
+
+    private void Settings_ConfigLoaded(object sender, Settings e)
+    {
+        if (settings.specCount > 0) 
+        spec.measurement.specCount = settings.specCount;
     }
 
     private async Task initializeSpectrometer()
@@ -1149,6 +1163,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
+            settings.specCount = spec.measurement.specCount;
+            settings.lastTime = DateTime.Now;
+            await settings.updateConfigFile();
+
             // info-level logging so we can QC timing w/o verbose logging
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
