@@ -789,6 +789,9 @@ public class API6BLESpectrometer : Spectrometer
         // Post-Processing
         ////////////////////////////////////////////////////////////////////////
 
+        if (eeprom.featureMask.invertXAxis)
+            Array.Reverse(spectrum);
+
         // Bin2x2
         apply2x2Binning(spectrum);
 

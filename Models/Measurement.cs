@@ -487,9 +487,20 @@ public class Measurement : INotifyPropertyChanged
         else
             dark = spec.dark;
 
-        if (spec.reference != null)
-            reference = spec.reference;
+        if (spec.reference != null && spec.referenceDark != null)
+        {
+            reference = new double[spec.reference.Length];
+            for (int i = 0; i < reference.Length; i++)
+            {
+                reference[i] = spec.reference[i];
+                logger.debug("setting reference  to {0} bright", spec.reference[i]);
+            }
 
+        }
+        else
+        {
+            reference = null;
+        }
         postProcess();
 
         rawDark = spec.dark;
@@ -548,7 +559,14 @@ public class Measurement : INotifyPropertyChanged
         if (dark != null && reference != null)
             for (int i = 0; i < pixels; i++)
             {
-                transmission[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
+                if (reference[i] == 0)
+                    transmission[i] = 100;
+                else
+                    transmission[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
+
+                if (transmission[i] < -1000) 
+                    logger.debug("anomalous transmission detected {0} raw {1} dark {2} reference", raw_[i], dark[i], reference[i]);
+
 
                 if (transmission[i] > 0)
                     absorbance[i] = -1.0 * Math.Log10(transmission[i] / 100);

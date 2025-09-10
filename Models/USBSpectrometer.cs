@@ -463,6 +463,8 @@ namespace EnlightenMAUI.Models
 
             double[] spectrum = new double[pixels];
             spectrum = await takeOneAsync(false);
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spectrum);
 
             // Bin2x2
             apply2x2Binning(spectrum);

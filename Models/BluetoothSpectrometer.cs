@@ -1397,6 +1397,9 @@ public class BluetoothSpectrometer : Spectrometer
             return null;
         }
 
+        if (eeprom.featureMask.invertXAxis)
+            Array.Reverse(spectrum);
+
         await syncAcqParams();
 
         // apply 2x2 binning

@@ -1401,6 +1401,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             pixels = (uint)spec.measurement.transmission.Length;
             intensities = spec.measurement.transmission;
+            usingRemovalAxis = false;
         }
 
         try
@@ -1437,6 +1438,9 @@ public class ScopeViewModel : INotifyPropertyChanged
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
                     continue;
+
+                if (spec.measurement.reference != null && spec.measurement.dark != null)
+                    logger.debug("adding point {0} {1}", xAxis[i], intensities[i]);
 
                 updateChartData.Add(new ChartDataPoint() { intensity = intensities[i], xValue = xAxis[i] });
                 if (pxLo < 0)

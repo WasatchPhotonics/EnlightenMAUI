@@ -681,7 +681,6 @@ namespace EnlightenMAUI.Models
             {
                 logger.debug("Spectrometer.toggleReference: storing lastSpectrum as dark");
                 reference = lastSpectrum;
-                dark = null;
             }
             else
             {
@@ -698,7 +697,7 @@ namespace EnlightenMAUI.Models
             if (referenceDark is null)
             {
                 logger.debug("Spectrometer.toggleReferenceDark: storing lastSpectrum as dark");
-                dark = referenceDark = lastSpectrum;
+                referenceDark = lastSpectrum;
             }
             else
             {
