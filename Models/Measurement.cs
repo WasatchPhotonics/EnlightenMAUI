@@ -559,14 +559,13 @@ public class Measurement : INotifyPropertyChanged
         if (dark != null && reference != null)
             for (int i = 0; i < pixels; i++)
             {
-                if (reference[i] == 0)
-                    transmission[i] = 100;
+                if (reference[i] <= 0 || (raw_[i] - dark[i]) <= 0)
+                    transmission[i] = 0;
                 else
                     transmission[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
 
-                if (transmission[i] < -1000) 
-                    logger.debug("anomalous transmission detected {0} raw {1} dark {2} reference", raw_[i], dark[i], reference[i]);
-
+                if (Math.Abs(transmission[i]) > 200) 
+                    logger.debug("anomalous transmission detected pixel {0} raw {1} dark {2} reference {3}", i, raw_[i], dark[i], reference[i]);
 
                 if (transmission[i] > 0)
                     absorbance[i] = -1.0 * Math.Log10(transmission[i] / 100);
