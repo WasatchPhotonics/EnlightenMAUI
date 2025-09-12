@@ -1773,6 +1773,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             if (snr < settings.snrThreshold)
             {
+                if (settings.autoSave)
+                    await spec.measurement.saveAsync(autoSave: true);
                 ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
                 return false;
             }

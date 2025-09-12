@@ -75,7 +75,7 @@
 
                 </StackLayout>
 
-                <Label Text="{Binding spectrumLabel}" HorizontalOptions="Center" VerticalOptions="End" FontSize="12" TextColor="#bbb"/>
+                <Label Text="{Binding spectrumLabel}" HorizontalOptions="Center" VerticalOptions="End" FontSize="12" TextColor="#ddd"/>
 
                 <Label HorizontalOptions="Center" IsVisible="{Binding noMatchYet}" Text="{Binding matchString}" FontSize="24" />
 
@@ -136,7 +136,7 @@
 
             <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" >
 
-                <Grid HorizontalOptions="Center" Margin="5,0,5,5" VerticalOptions="Start">
+                <Grid HorizontalOptions="Center" VerticalOptions="Start">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>

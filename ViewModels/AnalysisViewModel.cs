@@ -536,7 +536,7 @@ namespace EnlightenMAUI.ViewModels
         {
             bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
             if (sample != null)
-            spectrumLabel = $"Sample {sample.specCount}";
+            spectrumLabel = $"Spectrum {sample.specCount}";
 
             double scaleFactor = 1;
 
@@ -763,7 +763,7 @@ namespace EnlightenMAUI.ViewModels
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumLabel)));
             }
         }
-        string _spectrumLabel = "Sample 0";
+        string _spectrumLabel = "Spectrum 0";
 
         ////////////////////////////////////////////////////////////////////////
         // X-Axis
