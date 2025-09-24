@@ -232,7 +232,7 @@ namespace EnlightenMAUI.Models
             {
                 _scansToAverage = value;
                 logger.debug($"Spectrometer.scansToAvg: next = {value}");
-                sendCmd2(Opcodes.SET_SCANS_TO_AVERAGE, (ushort)(_scansToAverage = value));
+                //sendCmd2(Opcodes.SET_SCANS_TO_AVERAGE, (ushort)(_scansToAverage = value));
                 NotifyPropertyChanged(nameof(scansToAverage));
             }
         }
@@ -583,13 +583,52 @@ namespace EnlightenMAUI.Models
 
             int okI = 0;
             byte[] spectrumBuff = null;
+            double[] spec = new double[pixels];
 
             if (acquisitionMode == AcquisitionMode.STANDARD)
             {
-                logger.debug("sending SW trigger");
-                await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM,0, buf: buf); 
-                spectrumBuff = new byte[pixels * 2];
-                transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+                List<double[]> rawSpectra = new List<double[]>();
+
+                while (rawSpectra.Count < scansToAverage)
+                {
+                    logger.debug("sending SW trigger");
+                    bool ok = await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM, 0, buf: buf);
+
+                    if (ok)
+                    {
+                        spectrumBuff = new byte[pixels * 2];
+                        //acqDone = false;
+                        //monitor = monitorAcqProgress();
+
+                        transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, (int)(integrationTimeMS * 8 + 500));
+                        await transfer;
+                        //await Task.WhenAll([transfer, monitor]);
+
+                        double[] raw = new double[pixels];
+                        uint[] subspectrum = new uint[pixels];
+                        for (int j = 0; j < pixels; j++)
+                            subspectrum[j] = (uint)(spectrumBuff[j * 2] | (spectrumBuff[j * 2 + 1] << 8));  // LSB-MSB
+
+                        for (int j = 0; j < pixels; j++)
+                            raw[j] = subspectrum[j];
+
+                        rawSpectra.Add(raw);
+                    }
+                }
+
+                raiseAcquisitionProgress(0.95);
+
+                for (int i = 0; i < pixels; ++i)
+                {
+                    double total = 0;
+                    foreach (double[] raw in rawSpectra)
+                    {
+                        total += raw[i];
+                    }
+
+                    spec[i] = total / rawSpectra.Count;
+                }
+
             }
             else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
             {
@@ -602,10 +641,17 @@ namespace EnlightenMAUI.Models
                     spectrumBuff = new byte[pixels * 2];
                     transfer = udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, (int)pixels * 2, autoTimeout);
                 }
-            }
 
-            await Task.WhenAll([transfer, monitor]);
-            raiseAcquisitionProgress(0.95);
+                await Task.WhenAll([transfer, monitor]);
+                raiseAcquisitionProgress(0.95);
+
+                uint[] subspectrum = new uint[pixels];
+                for (int i = 0; i < pixels; i++)
+                    subspectrum[i] = (uint)(spectrumBuff[i * 2] | (spectrumBuff[i * 2 + 1] << 8));  // LSB-MSB
+
+                for (int i = 0; i < pixels; i++)
+                    spec[i] = subspectrum[i];
+            }
 
             if (okI >= 0)
             {
@@ -615,15 +661,6 @@ namespace EnlightenMAUI.Models
             {
                 logger.info("failed to read from USB with code {0}", okI);
             }
-
-            uint[] subspectrum = new uint[pixels];
-            for (int i = 0; i < pixels; i++)
-                subspectrum[i] = (uint)(spectrumBuff[i * 2] | (spectrumBuff[i * 2 + 1] << 8));  // LSB-MSB
-
-            double[] spec = new double[pixels];
-
-            for (int i = 0; i < pixels; i++)
-                spec[i] = subspectrum[i];
 
             raiseAcquisitionProgress(1);
 

@@ -1399,8 +1399,10 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec.measurement.reference != null && spec.measurement.dark != null)
         {
-            pixels = (uint)spec.measurement.transmission.Length;
-            intensities = spec.measurement.transmission;
+            //pixels = (uint)spec.measurement.transmission.Length;
+            //intensities = spec.measurement.transmission;
+            pixels = (uint)spec.measurement.absorbance.Length;
+            intensities = spec.measurement.absorbance;
             usingRemovalAxis = false;
         }
 
