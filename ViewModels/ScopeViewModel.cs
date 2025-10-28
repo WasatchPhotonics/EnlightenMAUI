@@ -142,6 +142,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         confirmPSCmd = new Command(() => { _ = confirmPS(); });
         denyPSCmd = new Command(() => { _ = denyPS(); });
 
+        advanceInstructionsCmd = new Command(() => { _ = advanceInstructions(); });
+        collectAndAdvanceCmd = new Command(() => { _ = collectAndAdvance(); });
+
         //matchCmd   = new Command(() => { _ = doMatchAsync  (); });
 
         xAxisNames = new ObservableCollection<string>();
@@ -354,6 +357,9 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         confirmPSCmd = new Command(() => { _ = confirmPS(); });
         denyPSCmd = new Command(() => { _ = denyPS(); });
+
+        advanceInstructionsCmd = new Command(() => { _ = advanceInstructions(); });
+        collectAndAdvanceCmd = new Command(() => { _ = collectAndAdvance(); });
 
         if (spec != null && spec.paired)
         {
@@ -938,9 +944,96 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool isVIS
     {
-        get => spec.laserExcitationNM == 0;
+        get => spec.laserExcitationNM == 0; //true;
     }
 
+    public bool isNotGivingInstructions
+    {
+        get => !_isGivingInstructions;
+    }
+    public bool isGivingInstructions
+    {
+        get => _isGivingInstructions;
+        set
+        {
+            _isGivingInstructions = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isGivingInstructions)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isNotGivingInstructions)));
+        }
+    }
+    bool _isGivingInstructions = true;
+
+    public Command advanceInstructionsCmd {  get; private set; }
+    public Command collectAndAdvanceCmd {  get; private set; }
+
+    string[] visInstructionSet = new string[]
+    {
+        "Empty sample holder",
+        "Press to take dark",
+        "Load sample holder with reference",
+        "Press to take reference",
+        "Empty sample holder",
+        "Press to take dark",
+        "Load sample holder with sample",
+        "Press to take 1-minute sample data",
+    };
+
+    int visIndex = 0;
+
+    public string visInstructions
+    {
+        get => _visInstructions;
+        set
+        {
+            _visInstructions = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(visInstructions)));
+        }
+    }
+    string _visInstructions = "Empty sample holder";
+
+    bool advanceInstructions()
+    {
+        visIndex++;
+        visInstructions = visInstructionSet[visIndex];
+        isGivingInstructions = false;
+        return true;
+    }
+
+    async Task<bool> collectAndAdvance()
+    {
+
+
+
+
+        visIndex++;
+        if (visIndex >= visInstructionSet.Length)
+            visIndex = 0;
+        visInstructions = visInstructionSet[visIndex];
+        isGivingInstructions = true;
+        return true;
+    }
+
+    /*
+    public Command confirmPSCmd { get; private set; }
+    public Command denyPSCmd { get; private set; }
+
+    bool confirmPS()
+    {
+        runPSCorrection = true;
+        polyCorrectionStep = false;
+        laserArmed = true;
+        notifyToast?.Invoke("When PS sample ready, press capture button to perform correction");
+        return true;
+    }
+
+    bool denyPS()
+    {
+        runPSCorrection = false;
+        polyCorrectionStep = false;
+        laserArmed = true;
+        return true;
+    }
+    */
 
     // Provided so any changes to Settings.authenticated will immediately
     // take effect on our View.

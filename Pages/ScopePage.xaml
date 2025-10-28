@@ -292,76 +292,44 @@
                     Grid.Column="0" 
                     Margin="10, 0, 10, 0">
 
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/> 
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                    <!-- Acquire -->
-                <Label Grid.Row="0" Grid.Column="0" Margin="5" Text="Reference" VerticalOptions="Center" FontSize="14"/>
-
-                <ImageButton   
-                    Grid.Row="0" Grid.Column="1"
-                    Margin="5" 
-                    Padding="20" 
-                    CornerRadius="10"
-                    HorizontalOptions="Start" 
-                    WidthRequest="50"
-                    HeightRequest="50"
-                    Command="{Binding referenceDarkCmd}"
-                    Source="Images/bulb_dark.svg"
-                    BackgroundColor="{Binding referenceDarkButtonBackgroundColor}" />
-
-                <!-- Dark -->
-                <ImageButton    
-                    Grid.Row="0" Grid.Column="2"
-                    Margin="5" 
-                    Padding="20" 
-                    CornerRadius="10"
-                    HorizontalOptions="Start" 
-                    WidthRequest="50"
-                    HeightRequest="50"
-                    Command="{Binding referenceCmd}"
-                    Source="Images/bulb_light.svg"
-                    BackgroundColor="{Binding referenceButtonBackgroundColor}" />
-
-                <Label Grid.Row="1" Grid.Column="0" Margin="5" Text="Sample" VerticalOptions="Center" FontSize="14"/>
+                <Grid IsVisible="{Binding isGivingInstructions}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     
-                <!-- Acquire -->
-                <ImageButton   
-                    Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
-                    VerticalOptions="Center"
-                    Margin="5" 
-                    Padding="20" 
-                    CornerRadius="10"
-                    HorizontalOptions="Start" 
-                    WidthRequest="50"
-                    HeightRequest="50"
-                    Command="{Binding acquireCmd}"
-                    Source="Images/apeture.svg"
-                    BackgroundColor="{Binding acquireButtonBackgroundColor}" />
+                    <Label Text="{Binding visInstructions}" HorizontalOptions="End" FontSize="16" Grid.Column="0" Margin="5"/>
+                    <Button Grid.Column="1" 
+                            Text="Next" 
+                            WidthRequest="100" 
+                            Command="{Binding advanceInstructionsCmd}"/>
+                </Grid>
 
-                <!-- Dark -->
-                <ImageButton    
-                    Grid.Row="1" Grid.Column="1"
-                    Margin="5" 
-                    Padding="20" 
-                    CornerRadius="10"
-                    HorizontalOptions="Start" 
-                    WidthRequest="50"
-                    HeightRequest="50"
-                    Command="{Binding darkCmd}"
-                    Source="Images/bulb_dark.svg"
-                    BackgroundColor="{Binding darkButtonBackgroundColor}" />
+                <Grid IsVisible="{Binding isNotGivingInstructions}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Label Text="{Binding visInstructions}" HorizontalOptions="End" FontSize="16" Grid.Column="0" Margin="5"/>
+                    <Border IsVisible="True"
+                        Margin="10,0,10,5"
+                        Grid.Column="1"
+                        Stroke="#515151"
+                        HorizontalOptions="Center"
+                        Background="Transparent"
+                        StrokeThickness="2"
+                        WidthRequest="80"
+                        HeightRequest="80"
+                        StrokeShape="Ellipse 80,80">
+                        <Button HeightRequest="70"
+                            Command="{Binding collectAndAdvanceCmd}"
+                            BackgroundColor="{Binding acquireButtonBackgroundColor}"
+                            CornerRadius="35"
+                            WidthRequest="70"/>
+                    </Border>
+                </Grid>
+
 
             </Grid>
 
