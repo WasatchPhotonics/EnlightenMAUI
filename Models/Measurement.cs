@@ -476,10 +476,11 @@ public class Measurement : INotifyPropertyChanged
         else
         {
             logger.debug("Measurement.reload: re-using lastSpectrum");
-            raw = spec.lastSpectrum;
+            raw = spec.lastRaw;
         }
 
-        processed = (double[])raw.Clone(); // MZ: needed?
+        processed = new double[raw.Length];
+        Array.Copy(raw, processed, raw.Length); // MZ: needed? TS: not only is this needed: it needs to be a deep copy...thus the change
         timestamp = DateTime.Now;
 
         if (spec.stretchedDark != null)
@@ -493,7 +494,7 @@ public class Measurement : INotifyPropertyChanged
             for (int i = 0; i < reference.Length; i++)
             {
                 reference[i] = spec.reference[i];
-                logger.debug("setting reference  to {0} bright", spec.reference[i]);
+                //logger.debug("setting reference  to {0} bright", spec.reference[i]);
             }
 
         }
@@ -556,6 +557,7 @@ public class Measurement : INotifyPropertyChanged
         postProcessed = new double[pixels];
         transmission = new double[pixels];
         absorbance = new double[pixels];
+        double lastValid = 1;
         if (dark != null && reference != null)
             for (int i = 0; i < pixels; i++)
             {
@@ -564,13 +566,15 @@ public class Measurement : INotifyPropertyChanged
                 else
                     transmission[i] = 100 * ((raw_[i] - dark[i]) / (reference[i]));
 
-                if (Math.Abs(transmission[i]) > 200) 
-                    logger.debug("anomalous transmission detected pixel {0} raw {1} dark {2} reference {3}", i, raw_[i], dark[i], reference[i]);
+                //if (Math.Abs(transmission[i]) > 200) 
+                //logger.debug("anomalous transmission detected pixel {0} raw {1} dark {2} reference {3}", i, raw_[i], dark[i], reference[i]);
 
                 if (transmission[i] > 0)
-                    absorbance[i] = -1.0 * Math.Log10(transmission[i] / 100);
+                {
+                    lastValid = absorbance[i] = -1.0 * Math.Log10(transmission[i] / 100);
+                }
                 else
-                    absorbance[i] = MAX_AU;
+                    absorbance[i] = lastValid;
             }
         else if (dark != null)
         {
@@ -753,17 +757,21 @@ public class Measurement : INotifyPropertyChanged
 
             if (settings.savePixel) headers.Add("Pixel");
             if (settings.saveWavelength) headers.Add("Wavelength");
-            if (settings.saveWavenumber) headers.Add("Wavenumber");
+            if (settings.saveWavenumber && wavenumbers != null) headers.Add("Wavenumber");
             headers.Add("Spectrum");
             if (settings.saveRaw) headers.Add("Raw");
             if (settings.saveDark) headers.Add("Dark");
             if (settings.saveReference) headers.Add("Reference");
-            if (rawWavenumbers[0] != wavenumbers[0])
+
+            if (wavenumbers != null)
             {
-                headers.Add("");
-                if (settings.savePixel) headers.Add("Processed Data Point");
-                if (settings.saveWavenumber) headers.Add("Processed Wavenumber");
-                headers.Add("Processed Spectrum");
+                if (rawWavenumbers[0] != wavenumbers[0])
+                {
+                    headers.Add("");
+                    if (settings.savePixel) headers.Add("Processed Data Point");
+                    if (settings.saveWavenumber) headers.Add("Processed Wavenumber");
+                    headers.Add("Processed Spectrum");
+                }
             }
             // reference-based techniques should output higher precision
             string fmt = reference is null ? "f2" : "f5";
@@ -777,18 +785,22 @@ public class Measurement : INotifyPropertyChanged
                 if (settings.savePixel && i < processed.Length) values.Add(i.ToString());
                 else if (settings.savePixel) values.Add("");
                 if (settings.saveWavelength) values.Add(render(wavelengths, i));
-                if (settings.saveWavenumber) values.Add(render(rawWavenumbers, i));
+                if (wavenumbers != null && settings.saveWavenumber) values.Add(render(rawWavenumbers, i));
                 values.Add(render(processed, i, fmt));
                 if (settings.saveRaw) values.Add(render(raw, i));
                 if (settings.saveDark) values.Add(render(rawDark, i));
                 if (settings.saveReference) values.Add(render(reference, i));
-                if (rawWavenumbers[0] != wavenumbers[0])
+
+                if (wavenumbers != null)
                 {
-                    values.Add(render(null, i));
-                    if (settings.savePixel && i < postProcessed.Length) values.Add(i.ToString());
-                    else if (settings.savePixel) values.Add("");
-                    if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
-                    values.Add(render(postProcessed, i));
+                    if (rawWavenumbers[0] != wavenumbers[0])
+                    {
+                        values.Add(render(null, i));
+                        if (settings.savePixel && i < postProcessed.Length) values.Add(i.ToString());
+                        else if (settings.savePixel) values.Add("");
+                        if (settings.saveWavenumber) values.Add(render(wavenumbers, i));
+                        values.Add(render(postProcessed, i));
+                    }
                 }
 
                 sw.WriteLine(string.Join(", ", values));

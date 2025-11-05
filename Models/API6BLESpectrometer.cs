@@ -798,7 +798,8 @@ public class API6BLESpectrometer : Spectrometer
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
 
-        lastRaw = spectrum;
+        lastRaw = new double[spectrum.Length];
+        Array.Copy(spectrum, lastRaw, spectrum.Length);
         lastSpectrum = spectrum;
 
         measurement.reset();

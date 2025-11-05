@@ -994,31 +994,84 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     bool advanceInstructions()
     {
+        logger.info("Entered advance with index at {0}", visIndex);
         visIndex++;
         visInstructions = visInstructionSet[visIndex];
         isGivingInstructions = false;
+        logger.info("Exiting advance with index at {0}", visIndex);
         return true;
+    }
+
+    void logData(Measurement m)
+    {
+        logger.info("Measurement data {0} start", m.measurementID);
+        if (m.dark != null)
+            logger.info("Measurement dark: [ {0} ]", String.Join('\t', m.dark));
+        else
+            logger.info("Mesurement dark is null");
+        if (m.raw != null)
+            logger.info("Measurement raw: [ {0} ]", String.Join('\t', m.raw));
+        else
+            logger.info("Mesurement raw is null");
+        if (m.reference != null)
+            logger.info("Measurement reference: [ {0} ]", String.Join('\t', m.reference));
+        else
+            logger.info("Mesurement reference is null");
+        if (m.processed != null)
+            logger.info("Measurement processed: [ {0} ]", String.Join('\t', m.processed));
+        else
+            logger.info("Mesurement processed is null");
+        if (m.transmission != null)
+            logger.info("Measurement transmission: [ {0} ]", String.Join('\t', m.transmission));
+        else
+            logger.info("Mesurement transmission is null");
+        if (m.absorbance != null)
+            logger.info("Measurement absorbance: [ {0} ]", String.Join('\t', m.absorbance));
+        else
+            logger.info("Mesurement absorbance is null");
+        logger.info("Measurement data {0} end", m.measurementID);
     }
 
     async Task<bool> collectAndAdvance()
     {
+        logger.info("Entered collect and advance with index at {0}", visIndex);
+
         if (visIndex < 7)
         {
             if (visIndex == 5)
+            {
+                logger.info("about to toggle dark");
                 spec.toggleDark();
+                logger.info("dark toggled");
+            }
 
+            logger.info("about to acquire");
             bool ok = await doAcquireAsync();
+            logger.info("acquire complete");
 
             if (visIndex == 1)
             {
+                logger.info("about to toggle dark");
                 spec.toggleDark();
+                spec.toggleReferenceDark();
+                logger.info("dark toggled");
+
             }
             else if (visIndex == 3)
             {
+                logger.info("about to toggle reference");
                 spec.toggleReference();
+                logger.info("reference toggled");
             }
             else if (visIndex == 5)
+            {
+                logger.info("about to toggle dark");
                 spec.toggleDark();
+                logger.info("dark toggled");
+            }
+
+            logger.info("Logging data after step {0}", visIndex);
+            logData(spec.measurement);
         }
         else
         {
@@ -1030,6 +1083,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             visIndex = 0;
         visInstructions = visInstructionSet[visIndex];
         isGivingInstructions = true;
+        logger.info("Exiting collect and advance with index at {0}", visIndex);
         return true;
     }
 
@@ -1037,11 +1091,15 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
         List<Measurement> measurements = new List<Measurement>();
+        int index = 0;
         while (stopwatch.ElapsedMilliseconds < 60000)
         {
             bool ok = await doAcquireAsync();
+            logger.info("Logging Ellman spectrum number {0}", index);
+            logData(spec.measurement);
             measurements.Add(spec.measurement.copy());
             await Task.Delay(33);
+            ++index;
         }
     }
 
@@ -1325,8 +1383,6 @@ public class ScopeViewModel : INotifyPropertyChanged
                 double rmsd = NumericalMethods.rmsdEstimate(spec.measurement.wavenumbers, spec.measurement.postProcessed);
                 double snr = spec.measurement.postProcessed.Max() / rmsd;
 
-                logger.info("sample rmsd estimate {0}, signal {1}, snr {2}", rmsd, spec.measurement.postProcessed, snr);
-
                 if (AnalysisViewModel.getInstance().currentParamSet == "Default")
                 {
                     if (snr < settings.snrThreshold)
@@ -1524,8 +1580,10 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec.measurement.reference != null && spec.measurement.dark != null)
         {
-            pixels = (uint)spec.measurement.transmission.Length;
-            intensities = spec.measurement.transmission;
+            //pixels = (uint)spec.measurement.transmission.Length;
+            //intensities = spec.measurement.transmission;
+            pixels = (uint)spec.measurement.absorbance.Length;
+            intensities = spec.measurement.absorbance;
             usingRemovalAxis = false;
         }
 
@@ -1564,8 +1622,8 @@ public class ScopeViewModel : INotifyPropertyChanged
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
                     continue;
 
-                if (spec.measurement.reference != null && spec.measurement.dark != null)
-                    logger.debug("adding point {0} {1}", xAxis[i], intensities[i]);
+                //if (spec.measurement.reference != null && spec.measurement.dark != null)
+                    //logger.debug("adding point {0} {1}", xAxis[i], intensities[i]);
 
                 updateChartData.Add(new ChartDataPoint() { intensity = intensities[i], xValue = xAxis[i] });
                 if (pxLo < 0)
