@@ -23,6 +23,7 @@ using System.Text;
 using Xamarin.Google.Crypto.Tink.Signature;
 using DeconvolutionMAUI;
 using System.Security.AccessControl;
+using System.Diagnostics;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -1001,9 +1002,28 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     async Task<bool> collectAndAdvance()
     {
+        if (visIndex < 7)
+        {
+            if (visIndex == 5)
+                spec.toggleDark();
 
+            bool ok = await doAcquireAsync();
 
-
+            if (visIndex == 1)
+            {
+                spec.toggleDark();
+            }
+            else if (visIndex == 3)
+            {
+                spec.toggleReference();
+            }
+            else if (visIndex == 5)
+                spec.toggleDark();
+        }
+        else
+        {
+            await EllmanCollection();
+        }
 
         visIndex++;
         if (visIndex >= visInstructionSet.Length)
@@ -1011,6 +1031,18 @@ public class ScopeViewModel : INotifyPropertyChanged
         visInstructions = visInstructionSet[visIndex];
         isGivingInstructions = true;
         return true;
+    }
+
+    async Task EllmanCollection()
+    {
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        List<Measurement> measurements = new List<Measurement>();
+        while (stopwatch.ElapsedMilliseconds < 60000)
+        {
+            bool ok = await doAcquireAsync();
+            measurements.Add(spec.measurement.copy());
+            await Task.Delay(33);
+        }
     }
 
     /*
