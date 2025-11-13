@@ -16,6 +16,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static Android.Widget.GridLayout;
+using Telerik.Maui.Controls;
+using Bumptech.Glide.Util;
+using System.Runtime.Serialization;
 
 namespace EnlightenMAUI.ViewModels
 {
@@ -49,6 +52,8 @@ namespace EnlightenMAUI.ViewModels
 
         public AnalysisViewModel()
         {
+            //scatterData.Add(new ChartDataPoint() { intensity = 0, xValue = 0 });
+
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = API6BLESpectrometer.getInstance();
@@ -63,7 +68,10 @@ namespace EnlightenMAUI.ViewModels
             precisionCmd = new Command(() => { _ = triggerPrecision(); });
 
             if (instance != null)
+            {
                 updateFromInstance();
+                //addAndWait();
+            }
             else
                 SetData(null, null);
 
@@ -83,10 +91,14 @@ namespace EnlightenMAUI.ViewModels
             Spectrometer.NewConnection += handleNewSpectrometer;
             getInstance().PropertyChanged += AnalysisViewModel_PropertyChanged;
             getInstance().SpectraChanged += AnalysisViewModel_SpectraChanged;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isVIS)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isNotVIS)));
         }
 
         public AnalysisViewModel(bool isInstance = false)
         {
+            //scatterData.Add(new ChartDataPoint() { intensity = 0, xValue = 0 });
+
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = API6BLESpectrometer.getInstance();
@@ -131,6 +143,20 @@ namespace EnlightenMAUI.ViewModels
         private void AnalysisViewModel_SpectraChanged(object sender, AnalysisViewModel e)
         {
             updateFromInstance();
+        }
+
+
+        async Task addAndWait()
+        {
+            await Task.Delay(2000);
+
+            int index = 0;
+            while (true)
+            {
+                scatterData.Add(new ChartDataPoint() { xValue = index, intensity = index});
+                index++;
+                await Task.Delay(200);
+            }
         }
 
 
@@ -332,6 +358,8 @@ namespace EnlightenMAUI.ViewModels
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchFound)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(noMatchYet)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isNotVIS)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isVIS)));
 
             TriggerRetry = null;
             foreach (var listener in instance.TriggerRetry.GetInvocationList())
@@ -351,6 +379,12 @@ namespace EnlightenMAUI.ViewModels
             referenceData.Clear();
             foreach (ChartDataPoint point in instance.referenceData)
                 referenceData.Add(point);
+            scatterData.Clear();
+            foreach (ChartDataPoint point in instance.scatterData)
+                scatterData.Add(point);
+
+            if (scatterData.Count > 10)
+                fitScatterLine();
         }
 
         async Task<bool> doSave()
@@ -408,6 +442,7 @@ namespace EnlightenMAUI.ViewModels
         }
 
         public ObservableCollection<ChartDataPoint> chartData { get; set; } = new ObservableCollection<ChartDataPoint>();
+        public ObservableCollection<ChartDataPoint> scatterData { get; set; } = new ObservableCollection<ChartDataPoint>();
         public ObservableCollection<ChartDataPoint> referenceData { get; set; } = new ObservableCollection<ChartDataPoint>();
 
         void handleNewSpectrometer(object sender, Spectrometer e)
@@ -470,6 +505,8 @@ namespace EnlightenMAUI.ViewModels
             }
 
             logger.debug("AVM.ctor: done");
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isVIS)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(isNotVIS)));
         }
 
         public void SetData(Measurement sample, Measurement reference)
@@ -712,6 +749,38 @@ namespace EnlightenMAUI.ViewModels
             SpectraChanged?.Invoke(this, this);
         }
 
+        public void AddScatter(double x, double y)
+        {
+            logger.info("adding scatter point");
+            scatterData.Add(new ChartDataPoint() { intensity = y, xValue = x });
+            logger.info("triggering scatter add");
+            SpectraChanged?.Invoke(this, this);
+            logger.info("triggered scatter add");
+            //logger.info("updating instance");
+            //updateFromInstance();
+            //logger.info("updated instance");
+        }
+
+        const double MS_TO_MIN = 60000;
+
+        public void fitScatterLine()
+        {
+            Common.LinearRegression lr = new Common.LinearRegression();
+            List<double> xs = new List<double>();
+            List<double> ys = new List<double>();
+            foreach (ChartDataPoint point in scatterData)
+            {
+                xs.Add(point.xValue);
+                ys.Add(point.intensity);
+            }
+
+            double[] line = lr.computeLinearRegression(1, xs.ToArray(), ys.ToArray());
+            double slope = line[1];
+            double score = slope * MS_TO_MIN * settings.ellmanSlopeCorrection;
+            EllmanScoreString = score.ToString("F1");
+        }
+
+
         ////////////////////////////////////////////////////////////////////////
         // X-Axis
         ////////////////////////////////////////////////////////////////////////
@@ -808,6 +877,27 @@ namespace EnlightenMAUI.ViewModels
         public bool subLibrariesAvailable
         {
             get => settings.library is DPLibrary;
+        }
+
+        public string EllmanScoreString
+        {
+            get => _EllmanScoreString;
+            set
+            {
+                _EllmanScoreString = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EllmanScoreString)));
+            }
+        }
+        string _EllmanScoreString = "";
+
+        public bool isVIS
+        {
+            get => true;//spec.laserExcitationNM == 0; //true;
+        }
+
+        public bool isNotVIS
+        {
+            get => false; //spec.laserExcitationNM != 0; //true;
         }
 
         bool doAdd()

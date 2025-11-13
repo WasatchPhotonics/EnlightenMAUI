@@ -80,6 +80,31 @@ namespace EnlightenMAUI.Common
 
     public class NumericalMethods
     {
+        static public WMatrix getIdentityMatrix(int rows, int cols)
+        {
+            WMatrix retval = new WMatrix(rows, cols);
+            for (int i = 0; i < rows; i++)
+                for (int j = 0; j < cols; j++)
+                    retval.setElement(i, j, i == j ? 1 : 0);
+            return retval;
+        }
+
+        static public double average(double[] data)
+        {
+            return data.Sum() / data.Length;
+        }
+
+        static public double evaluatePolynomial(double x, double[] coefficients)
+        {
+            if (null == coefficients)
+                throw new Exception("missing coefficients");
+
+            double y = 0;
+            for (int i = 0; i < coefficients.Length; i++)
+                y += coefficients[i] * Math.Pow(x, i);
+            return y;
+        }
+
         static public double rmsdEstimate(double[] pixels, double[] counts)
         {
             double[] derivs = derivative(pixels, counts, 1);

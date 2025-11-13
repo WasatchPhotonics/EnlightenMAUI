@@ -945,7 +945,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool isVIS
     {
-        get => spec.laserExcitationNM == 0; //true;
+        get => true; //spec.laserExcitationNM == 0; //true;
     }
 
     public bool isNotGivingInstructions
@@ -1070,8 +1070,8 @@ public class ScopeViewModel : INotifyPropertyChanged
                 logger.info("dark toggled");
             }
 
-            logger.info("Logging data after step {0}", visIndex);
-            logData(spec.measurement);
+            //logger.info("Logging data after step {0}", visIndex);
+            //logData(spec.measurement);
         }
         else
         {
@@ -1092,14 +1092,34 @@ public class ScopeViewModel : INotifyPropertyChanged
         Stopwatch stopwatch = Stopwatch.StartNew();
         List<Measurement> measurements = new List<Measurement>();
         int index = 0;
+
+        double msGap = 0.05 / 60000f;
+        double noise = 0.05 / 60000f / 40f;
+        Random random = new Random(Guid.NewGuid().GetHashCode());
+        random.Next(20);
+
+        await Shell.Current.GoToAsync("//AnalysisPage");
         while (stopwatch.ElapsedMilliseconds < 60000)
         {
+            logger.info("Ellman spectrum collection {0}", index);
             bool ok = await doAcquireAsync();
-            logger.info("Logging Ellman spectrum number {0}", index);
-            logData(spec.measurement);
+            //logger.info("Logging Ellman spectrum number {0}", index);
+            //logData(spec.measurement);
+            logger.info("Copying spectrum number {0}", index);
             measurements.Add(spec.measurement.copy());
+            logger.info("Spectrum number {0} copied and saved", index);
+            logger.info("adding scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, index);
+            int step = random.Next(20);
+            bool neg = System.Convert.ToBoolean(random.Next(1));
+            double noiseChange = step * noise;
+            if (neg)
+                noiseChange *= -1;
+
+            AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
+            logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, index);
             await Task.Delay(33);
             ++index;
+            logger.info("Looping Ellman collection");
         }
     }
 

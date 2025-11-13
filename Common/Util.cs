@@ -21,6 +21,7 @@ using MathNet.Numerics.LinearAlgebra.Storage;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using SkiaSharp;
+using Accord.Math.Decompositions;
 
 namespace EnlightenMAUI.Common;
 
@@ -568,5 +569,493 @@ public class SparseLU : ISolver<double>
     public MathNet.Numerics.LinearAlgebra.Matrix<double> Solve(MathNet.Numerics.LinearAlgebra.Matrix<double> input)
     {
         throw new NotImplementedException();
+    }
+}
+
+
+public class LUDecomposition
+{
+    private double[][] decomposition = null;
+    private int m = 0;
+    private int n = 0;
+    private int[] pivotVector = null;
+    private int pivotSign = 1;
+
+    public bool MatrixSingular
+    {
+        get
+        {
+            for (int j = 0; j < this.n; j++)
+                if (0.0d == this.decomposition[j][j])
+                    return true;
+            return false;
+        }
+    }
+
+    public double Determinant
+    {
+        get
+        {
+            if (m != n)
+                return 0.0;
+            double determinant = pivotSign;
+            for (int i = 0; i < this.m; i++)
+                determinant *= decomposition[i][i];
+            return determinant;
+        }
+    }
+
+    public WMatrix L
+    {
+        get
+        {
+            WMatrix Lmatrix = new WMatrix(this.m, this.n);
+            double[][] L = Lmatrix.Array;
+            for (int i = 0; i < this.m; i++)
+                for (int j = 0; j < this.n; j++)
+                    if (i > j)
+                        L[i][j] = this.decomposition[i][j];
+                    else if (i == j)
+                        L[i][j] = 1;
+                    else
+                        L[i][j] = 0;
+            return Lmatrix;
+        }
+    }
+
+    public WMatrix U
+    {
+        get
+        {
+            WMatrix Umatrix = new WMatrix(n, n);
+            double[][] U = Umatrix.Array;
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                    if (i <= j)
+                        U[i][j] = decomposition[i][j];
+                    else
+                        U[i][j] = 0;
+            return Umatrix;
+        }
+    }
+
+    virtual public int[] Pivot
+    {
+        get
+        {
+            int[] retval = new int[m];
+            for (int i = 0; i < retval.Length; i++)
+                retval[i] = pivotVector[i];
+            return retval;
+        }
+    }
+
+    public LUDecomposition(WMatrix matrix)
+    {
+        decomposition = matrix.Duplicate.Array;
+        m = matrix.RowCount;
+        n = matrix.ColumnCount;
+
+        pivotVector = new int[m];
+        for (int i = 0; i < pivotVector.Length; i++)
+            pivotVector[i] = i;
+
+        for (int j = 0; j < n; j++)
+        {
+            for (int i = 0; i < m; i++)
+            {
+                int minimum = Math.Min(i, j);
+                double product = 0.0d;
+                for (int k = 0; k < minimum; k++)
+                    product += decomposition[i][k] * decomposition[k][j];
+                this.decomposition[i][j] -= product;
+            }
+
+            int pivot = j;
+            for (int i = j + 1; i < m; i++)
+                if (Math.Abs(decomposition[i][j]) > Math.Abs(decomposition[pivot][j]))
+                    pivot = i;
+
+            if (pivot != j)
+            {
+                for (int k = 0; k < n; k++)
+                {
+                    double temp = decomposition[pivot][k];
+                    decomposition[pivot][k] = decomposition[j][k];
+                    decomposition[j][k] = temp;
+                }
+
+                int tempPivot = pivotVector[pivot];
+                pivotVector[pivot] = pivotVector[j];
+                pivotVector[j] = tempPivot;
+                pivotSign = -pivotSign;
+            }
+
+            if (j < m && decomposition[j][j] != 0)
+                for (int i = j + 1; i < m; i++)
+                    decomposition[i][j] /= decomposition[j][j];
+        }
+    }
+
+    public double[] solve(double[] b)
+    {
+        int m = pivotVector.Length;
+        double[] bp = new double[m];
+
+        for (int row = 0; row < m; row++)
+            bp[row] = b[pivotVector[row]];
+
+        for (int col = 0; col < m; col++)
+        {
+            double bpCol = bp[col];
+            for (int i = col + 1; i < m; i++)
+                bp[i] -= bpCol * decomposition[i][col];
+        }
+
+        for (int col = m - 1; col >= 0; col--)
+        {
+            bp[col] /= decomposition[col][col];
+            double bpCol = bp[col];
+            for (int i = 0; i < col; i++)
+                bp[i] -= bpCol * decomposition[i][col];
+        }
+
+        return bp;
+    }
+
+    public WMatrix solveForMatrix(WMatrix B)
+    {
+        if (B.RowCount != this.m)
+            return new WMatrix(1, 1);
+        if (true == this.MatrixSingular)
+            return new WMatrix(1, 1);
+
+        int nx = B.ColumnCount;
+        WMatrix Xmatrix = B.getSubMatrixByRows(Pivot, 0, nx - 1);
+        double[][] X = Xmatrix.Array;
+
+        for (int k = 0; k < this.n; k++)
+        {
+            for (int i = k + 1; i < this.n; i++)
+            {
+                for (int j = 0; j < nx; j++)
+                {
+                    X[i][j] -= X[k][j] * this.decomposition[i][k];
+                }
+            }
+        }
+
+        for (int k = this.n - 1; k >= 0; k--)
+        {
+            for (int j = 0; j < nx; j++)
+                X[k][j] /= this.decomposition[k][k];
+            for (int i = 0; i < k; i++)
+                for (int j = 0; j < nx; j++)
+                    X[i][j] -= X[k][j] * this.decomposition[i][k];
+        }
+        return Xmatrix;
+    }
+}
+
+public class WMatrix
+{
+    double[][] matrix = null;
+    int m = 0;
+    int n = 0;
+
+    public WMatrix Duplicate
+    {
+        get
+        {
+            WMatrix retval = new WMatrix(this.m, this.n);
+            double[][] values = retval.Array;
+            for (int i = 0; i < this.m; i++)
+                for (int j = 0; j < this.n; j++)
+                    values[i][j] = this.matrix[i][j];
+            return retval;
+        }
+
+    }
+
+    public double[][] Array { get { return matrix; } }
+
+    public int RowCount { get { return m; } }
+    public int ColumnCount { get { return n; } }
+
+    public double[] RowPackedCopy
+    {
+        get
+        {
+            double[] vals = new double[m * n];
+            for (int i = 0; i < m; i++)
+                for (int j = 0; j < n; j++)
+                    vals[i * n + j] = matrix[i][j];
+            return vals;
+        }
+
+    }
+
+    public double[] ColumnPackedCopy
+    {
+        get
+        {
+            double[] vals = new double[m * n];
+            for (int i = 0; i < m; i++)
+                for (int j = 0; j < n; j++)
+                    vals[i + j * m] = matrix[i][j];
+            return vals;
+        }
+
+    }
+
+    public double Determinant { get { return LUDecomposition.Determinant; } }
+
+    public WMatrix Inverse
+    {
+        get
+        {
+            WMatrix identity = NumericalMethods.getIdentityMatrix(this.m, this.n);
+            LUDecomposition lud = LUDecomposition;
+            if (!lud.MatrixSingular)
+                return lud.solveForMatrix(identity);
+            else
+                throw new Exception("Non-invertable matrix");
+        }
+    }
+    public LUDecomposition LUDecomposition { get { return new LUDecomposition(this); } }
+
+    public WMatrix Transpose
+    {
+        get
+        {
+            WMatrix retval = new WMatrix(this.n, this.m);
+            double[][] values = retval.Array;
+            for (int i = 0; i < this.m; i++)
+                for (int j = 0; j < this.n; j++)
+                    values[j][i] = this.matrix[i][j];
+            return retval;
+        }
+    }
+
+    public WMatrix(int rows, int cols)
+    {
+        if (rows < 1 || cols < 1)
+            throw new Exception("matrix dimensions must be positive");
+
+        matrix = new double[rows][];
+        for (int i = 0; i < rows; i++)
+            matrix[i] = new double[cols];
+        m = rows;
+        n = cols;
+    }
+
+    public WMatrix(double[][] values)
+    {
+        m = values.Length;
+        n = values[0].Length;
+        matrix = new double[m][];
+        for (int i = 0; i < m; i++)
+            matrix[i] = new double[n];
+        for (int i = 0; i < m; i++)
+            if (values[i].Length != n)
+                throw new ArgumentException("Seed value rows must all be the same length");
+            else
+                for (int j = 0; j < this.n; j++)
+                    this.matrix[i][j] = values[i][j];
+    }
+
+    public double getElement(int i, int j)
+    {
+        return matrix[i][j];
+    }
+
+    public override bool Equals(Object o)
+    {
+        if (null == o || !(o is WMatrix))
+            return false;
+        WMatrix rhs = (WMatrix)o;
+        if (m != rhs.m || n != rhs.n)
+            return false;
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++)
+                if (this.matrix[i][j] != rhs.matrix[i][j])
+                    return false;
+        return true;
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = 13;
+        hash = 17 * hash + matrix.GetHashCode();
+        hash = 19 * hash + m;
+        hash = 23 * hash + n;
+        return hash;
+    }
+
+    public WMatrix getSubMatrix(int startRow, int endRow, int startCol, int endCol)
+    {
+        WMatrix retval = new WMatrix(endRow - startRow + 1, endCol - startCol + 1);
+        double[][] values = retval.Array;
+        for (int i = startRow; i <= endRow; i++)
+            for (int j = startCol; j <= endCol; j++)
+                values[i - startRow][j - startCol] = matrix[i][j];
+        return retval;
+    }
+
+    public WMatrix getSubMatrixByRows(int[] rows, int startCol, int endCol)
+    {
+        WMatrix retval = new WMatrix(rows.Length, endCol - startCol + 1);
+        double[][] values = retval.Array;
+        for (int i = 0; i < rows.Length; i++)
+            for (int j = startCol; j <= endCol; j++)
+                values[i][j - startCol] = this.matrix[rows[i]][j];
+        return retval;
+    }
+
+    public void setElement(int i, int j, double d) { matrix[i][j] = d; }
+
+    public WMatrix plusMatrix(WMatrix rhs)
+    {
+        if (!doDimensionsMatch(rhs))
+            throw new Exception("unequal dimensions");
+        WMatrix retval = new WMatrix(m, n);
+        double[][] values = retval.Array;
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++)
+                values[i][j] = matrix[i][j] + rhs.matrix[i][j];
+        return retval;
+    }
+
+    public WMatrix minusMatrix(WMatrix rhs)
+    {
+        if (!doDimensionsMatch(rhs))
+            throw new Exception("unequal dimensions");
+        WMatrix retval = new WMatrix(m, n);
+        double[][] values = retval.Array;
+        for (int i = 0; i < this.m; i++)
+            for (int j = 0; j < this.n; j++)
+                values[i][j] = this.matrix[i][j] - rhs.matrix[i][j];
+        return retval;
+    }
+
+    public WMatrix timesScalar(double scalar)
+    {
+        WMatrix retval = new WMatrix(this.m, this.n);
+        double[][] values = retval.Array;
+        for (int i = 0; i < this.m; i++)
+            for (int j = 0; j < this.n; j++)
+                values[i][j] = this.matrix[i][j] * scalar;
+        return retval;
+    }
+
+    public WMatrix timesMatrix(WMatrix rhs)
+    {
+        if (n != rhs.m)
+            throw new Exception("matrix dimensions disagree");
+
+        WMatrix retval = new WMatrix(m, rhs.n);
+        double[][] values = retval.Array;
+        for (int j = 0; j < rhs.n; j++)
+            for (int i = 0; i < this.m; i++)
+            {
+                double product = 0;
+                for (int k = 0; k < n; k++)
+                    product += matrix[i][k] * rhs.matrix[k][j];
+                values[i][j] = product;
+            }
+        return retval;
+    }
+
+    bool doDimensionsMatch(WMatrix rhs) { return m == rhs.m && n == rhs.n; }
+}
+
+public class LinearRegression
+{
+    public LinearRegression()
+    {
+    }
+
+    public double[] computeLinearRegression(int maxOrder, double[] knownX, double[] knownY)
+    {
+        double[][] xVals = new double[knownX.Length][];
+        for (int i = 0; i < knownX.Length; i++)
+            xVals[i] = new double[maxOrder + 1];
+        for (int i = 0; i < xVals.Length; i++)
+            for (int j = 0; j < maxOrder + 1; j++)
+                xVals[i][j] = Math.Pow(knownX[i], j);
+        // Wrap the result into a WMatrix
+        WMatrix X = new WMatrix(xVals);
+        return computeLinearRegression(X, knownY);
+    }
+
+    public double[] computeLinearRegression(Int32[] orders, double[] knownX, double[] knownY)
+    {
+        Array.Sort(orders);
+        for (int i = 1; i < orders.Length; i++)
+            if (orders[i] == orders[i - 1])
+                throw new ArgumentException("duplicate order");
+        double[][] xVals = new double[knownX.Length][];
+        for (int i2 = 0; i2 < knownX.Length; i2++)
+            xVals[i2] = new double[orders.Length];
+        for (int i = 0; i < xVals.Length; i++)
+            for (int j = 0; j < orders.Length; j++)
+                xVals[i][j] = Math.Pow(knownX[i], orders[j]);
+        WMatrix X = new WMatrix(xVals);
+        double[] packedCoeffs = computeLinearRegression(X, knownY);
+        int maxOrder = orders[orders.Length - 1];
+        double[] coeffs = new double[maxOrder + 1];
+        for (int i = 0; i < packedCoeffs.Length; i++)
+            coeffs[orders[i]] = packedCoeffs[i];
+        return coeffs;
+    }
+
+    public double[] computeLinearRegression(WMatrix X, double[] knownY)
+    {
+        double[][] yVals = new double[knownY.Length][];
+        for (int i = 0; i < yVals.Length; i++)
+            yVals[i] = new double[] { knownY[i] };
+        WMatrix Y = new WMatrix(yVals);
+        WMatrix coeffs = computeLinearRegression(X, Y);
+        double[][] cArray = coeffs.Array;
+        double[] vec = new double[cArray.Length];
+        for (int i = 0; i < vec.Length; i++)
+            vec[i] = cArray[i][0];
+        return vec;
+    }
+
+    public WMatrix computeLinearRegression(WMatrix X, WMatrix Y)
+    {
+        WMatrix Xt = X.Transpose;
+        WMatrix XtX = Xt.timesMatrix(X);
+        WMatrix XtXInv = XtX.Inverse;
+        WMatrix XtXInvXt = XtXInv.timesMatrix(Xt);
+        return XtXInvXt.timesMatrix(Y);
+    }
+
+    public double[] computeResiduals(double[] x, double[] y, double[] coefficients)
+    {
+        double[] retval = new double[y.Length];
+        for (int i = 0; i < retval.Length; i++)
+        {
+            double predicted = NumericalMethods.evaluatePolynomial(x[i], coefficients);
+            retval[i] = y[i] - predicted;
+        }
+        return retval;
+    }
+
+    public double computeRSquared(double[] x, double[] y, double[] coefficients)
+    {
+        double[] e = computeResiduals(x, y, coefficients);
+        double yMean = NumericalMethods.average(y);
+
+        double sumSquaredResiduals = 0;
+        double sumSquaredDelta_y = 0;
+        for (int i = 0; i < y.Length; i++)
+        {
+            sumSquaredResiduals += e[i] * e[i];
+            sumSquaredDelta_y += (y[i] - yMean) * (y[i] - yMean);
+        }
+        double temp = sumSquaredResiduals / sumSquaredDelta_y;
+        return 1.0d - temp;
     }
 }
