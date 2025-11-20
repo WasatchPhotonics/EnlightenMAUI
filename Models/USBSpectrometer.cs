@@ -139,10 +139,11 @@ namespace EnlightenMAUI.Models
             // ignore EEPROM configuration and hardcode int time and gain. Our preferred defaults here
             // are different than those written to EEPROM and since there is strong data binding between the
             // UI and the spectro we have to use static values rather than those in EEPROM 
-            // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
+            // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 20);
             // gainDb = eeprom.detectorGain;
-            integrationTimeMS = 400;
+            integrationTimeMS = 21;
             gainDb = 8;
+            scansToAverage = 10;
 
             verticalROIStartLine = eeprom.ROIVertRegionStart[0];
             verticalROIStopLine = eeprom.ROIVertRegionEnd[0];
@@ -463,14 +464,18 @@ namespace EnlightenMAUI.Models
 
             double[] spectrum = new double[pixels];
             spectrum = await takeOneAsync(false);
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spectrum);
 
             // Bin2x2
             apply2x2Binning(spectrum);
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spectrum);
+
+            logger.info("Measurement after bin2x2 correction: [ {0} ]", String.Join(',', spectrum));
 
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
+
+            logger.info("Measurement after processing: [ {0} ]", String.Join(',', spectrum));
 
             lastRaw = new double[spectrum.Length];
             Array.Copy(spectrum, lastRaw, spectrum.Length);
@@ -478,6 +483,8 @@ namespace EnlightenMAUI.Models
 
             measurement.reset();
             measurement.reload(this);
+
+            logger.info("Measurement after reload: [ {0} ]", String.Join(',', spectrum));
 
             if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled) && wavenumbers != null)
             {
@@ -510,6 +517,7 @@ namespace EnlightenMAUI.Models
 
                 measurement.wavenumbers = wavenumbers;
                 measurement.postProcessed = spectrum;
+                logger.info("Measurement post-processed set to: [ {0} ]", String.Join(',', measurement.postProcessed));
             }
 
             ////////////////////////////////////////////////////////////////////////
@@ -540,8 +548,8 @@ namespace EnlightenMAUI.Models
 
         public async Task<bool> monitorAcqProgress()
         {
-            logger.debug("monitor auto starting at {0}", startTime.ToString("hh:mm:ss.fff"));
-            logger.debug("initial end estimate at {0}", endTime.ToString("hh:mm:ss.fff"));
+            //logger.debug("monitor auto starting at {0}", startTime.ToString("hh:mm:ss.fff"));
+            //logger.debug("initial end estimate at {0}", endTime.ToString("hh:mm:ss.fff"));
 
             while (true)
             {
@@ -549,13 +557,13 @@ namespace EnlightenMAUI.Models
                 double estimatedMilliseconds = (endTime - startTime).TotalMilliseconds;
                 double progress = (now - startTime).TotalMilliseconds / estimatedMilliseconds;
 
-                logger.debug("estimated progress currently at {0:f3}", progress);
+                //logger.debug("estimated progress currently at {0:f3}", progress);
                 if (progress > 0) 
                     raiseAcquisitionProgress(0.95 * progress);
 
                 if (progress >= 1 || acqDone)
                 {
-                    logger.debug("exiting acq monitor loop");
+                    //logger.debug("exiting acq monitor loop");
                     break;
                 }
 
@@ -610,7 +618,7 @@ namespace EnlightenMAUI.Models
 
             if (okI >= 0)
             {
-                logger.info("successfully read {0} bytes: [ {1} ]", okI, String.Join(' ', spectrumBuff));
+                logger.info("successfully read {0} bytes: [ {1} ]", spectrumBuff.Length, String.Join(',', spectrumBuff));
             }
             else
             {
@@ -625,6 +633,8 @@ namespace EnlightenMAUI.Models
 
             for (int i = 0; i < pixels; i++)
                 spec[i] = subspectrum[i];
+
+            logger.info("successfully read spectrum: [ {0} ]", String.Join(',', spec));
 
             raiseAcquisitionProgress(1);
 
@@ -774,7 +784,7 @@ namespace EnlightenMAUI.Models
 
             if (opcode == Opcodes.ACQUIRE_SPECTRUM)
             {
-                logger.info("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
+                logger.info("sendCmd: acquire spectrum request returned {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
                     opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, okI, expectedSuccessResult);
             }
 

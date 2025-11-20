@@ -1049,6 +1049,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             bool ok = await doAcquireAsync();
             logger.info("acquire complete");
 
+            
             if (visIndex == 1)
             {
                 logger.info("about to toggle dark");
@@ -1069,6 +1070,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 spec.toggleDark();
                 logger.info("dark toggled");
             }
+            
 
             //logger.info("Logging data after step {0}", visIndex);
             //logData(spec.measurement);
@@ -1078,14 +1080,18 @@ public class ScopeViewModel : INotifyPropertyChanged
             await EllmanCollection();
         }
 
+        
         visIndex++;
         if (visIndex >= visInstructionSet.Length)
             visIndex = 0;
         visInstructions = visInstructionSet[visIndex];
         isGivingInstructions = true;
+        
         logger.info("Exiting collect and advance with index at {0}", visIndex);
         return true;
     }
+
+    const double ASSESSMENT_WL = 412;
 
     async Task EllmanCollection()
     {
@@ -1097,6 +1103,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         double noise = 0.05 / 60000f / 40f;
         Random random = new Random(Guid.NewGuid().GetHashCode());
         random.Next(20);
+
+
+        //spec.getPixelFromWavelength(ASSESSMENT_WL);
 
         await Shell.Current.GoToAsync("//AnalysisPage");
         while (stopwatch.ElapsedMilliseconds < 60000)
@@ -1115,8 +1124,12 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (neg)
                 noiseChange *= -1;
 
-            AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
-            logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, index);
+            double intensity = spec.getAbsorbanceAtWavelength(ASSESSMENT_WL);
+
+            //AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
+            //logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
+            AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, intensity);
+            logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, intensity);
             await Task.Delay(33);
             ++index;
             logger.info("Looping Ellman collection");
@@ -1595,6 +1608,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         // use last Measurement from the Spectrometer
         uint pixels = (uint)spec.measurement.postProcessed.Length;
         double[] intensities = spec.measurement.postProcessed;
+        logger.info("Refreshing chart data to: [ {0} ]", String.Join(',', intensities));
 
         bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 

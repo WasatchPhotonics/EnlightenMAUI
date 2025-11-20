@@ -39,7 +39,7 @@ public class Settings : INotifyPropertyChanged
     public bool autoSave { get; set;} = true;
     public bool saveReference { get; set;} = true;
 
-    public float ellmanSlopeCorrection => 600;
+    public float ellmanSlopeCorrection => 56520f;
 
     public float matchThreshold
     {

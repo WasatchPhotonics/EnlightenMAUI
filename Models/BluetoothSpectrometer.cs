@@ -216,7 +216,7 @@ public class BluetoothSpectrometer : Spectrometer
      */
     internal override async Task<bool> initializeCollectionParams()
     {
-        _nextIntegrationTimeMS = 400;
+        _nextIntegrationTimeMS = 20;
         await syncIntegrationTimeMSAsync(extendedTimeout: true); 
         NotifyPropertyChanged(nameof(integrationTimeMS));
         _nextGainDb = 8;

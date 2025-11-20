@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Android.Provider.ContactsContract.CommonDataKinds;
 using static Android.Telephony.CarrierConfigManager;
+using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.Models
 {
@@ -836,8 +837,46 @@ namespace EnlightenMAUI.Models
         protected void apply2x2Binning(double[] spectrum)
         {
             if (eeprom.featureMask.bin2x2)
-                for (int i = 0; i < spectrum.Length - 1; i++)
-                    spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+            {
+                var smoothed = new double[spectrum.Length];
+                if (eeprom.horizontalBinningMethod == HORIZONTAL_BINNING_METHOD.BIN_2X2)
+                {
+                    logger.info("Applying bin2x2 correction");
+                    for (int i = 0; i < spectrum.Length - 1; i++)
+                        smoothed[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+                    smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
+                    spectrum = smoothed;
+                }
+                else if (eeprom.horizontalBinningMethod == HORIZONTAL_BINNING_METHOD.BIN_4X2_AVG)
+                {
+                    logger.info("Applying averaged bin4x2 correction");
+                    for (int i = 0; i < spectrum.Length - 1; i += 2)
+                    {
+                        smoothed[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+                    }
+                    for (int i = 1; i < spectrum.Length - 1; i += 2)
+                    {
+                        if (i < spectrum.Length - 2)
+                        {
+                            smoothed[i] = (smoothed[i - 1] + smoothed[i + 1]) / 2.0;
+                        }
+                    }
+                    for (int i = spectrum.Length - 3; i < spectrum.Length; ++i)
+                    {
+                        if (smoothed[i] == 0)
+                            smoothed[i] = spectrum[i];
+                    }
+
+                    smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
+                    spectrum = smoothed;
+                }
+                else
+                {
+                    logger.info("no bin correction applied");
+                }
+                logger.info("bin correction complete (if applied): [ {0} ]", String.Join(',', spectrum));
+                //spectrum = smoothed;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -905,6 +944,30 @@ namespace EnlightenMAUI.Models
                 return wavenumbers.Length - 1;
             else
                 return pixel;
+        }
+        public int getPixelFromWavelength(double nm)
+        {
+            if (wavelengths == null)
+                return -1;
+            int pixel = Array.BinarySearch(wavelengths, nm);
+            if (pixel < 0)
+                return ~pixel;
+            else if (pixel >= wavelengths.Length)
+                return wavelengths.Length - 1;
+            else
+                return pixel;
+        }
+
+        public double getAbsorbanceAtWavelength(double nm)
+        {
+            int pixel = getPixelFromWavelength((double)nm);
+            logger.info("pixel for intensity {0}", pixel);
+            logger.info("absorbance at {0}nm = {1}", nm, measurement.absorbance[pixel]);
+
+
+            // OPTIONALLY ADD 
+
+            return measurement.absorbance[pixel];
         }
 
         public bool FindAndApplyRamanShiftCorrection(Measurement spectrum, string compoundName)

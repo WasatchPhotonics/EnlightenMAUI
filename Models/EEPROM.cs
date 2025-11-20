@@ -2,6 +2,8 @@
 
 namespace EnlightenMAUI.Models;
 
+public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
+
 // simplified from WasatchNET
 public class EEPROM
 {
@@ -109,6 +111,8 @@ public class EEPROM
     public float laserExcitationWavelengthNMFloat { get; set; }
     public float[] laserPowerCoeffs { get; set; }
     public float avgResolution { get; set; }
+
+    public HORIZONTAL_BINNING_METHOD horizontalBinningMethod { get; set; }
 
     /////////////////////////////////////////////////////////////////////////
     // Page 4
@@ -319,6 +323,22 @@ public class EEPROM
                 laserWarmupSec = pages[2][18];
             else
                 laserWarmupSec = 20;
+
+            if (format >= 16)
+            {
+                //powerWatchdogTimer = ParseData.toUInt16(pages[3], 55);
+                //detectorTimeout = ParseData.toUInt16(pages[3], 57);
+                horizontalBinningMethod = (HORIZONTAL_BINNING_METHOD)ParseData.toUInt8(pages[3], 59);
+            }
+            else
+            {
+                //powerWatchdogTimer = 0;
+                //detectorTimeout = 0;
+                horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
+            }
+
+
+
         }
         catch (Exception ex)
         {

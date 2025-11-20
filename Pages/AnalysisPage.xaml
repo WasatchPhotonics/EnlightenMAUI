@@ -45,6 +45,8 @@
                                                LabelFitMode="MultiLine"
                                                RangeExtendDirection="Positive"
                                                LineColor="Transparent"
+                                                   Minimum="-5"
+                                                   Maximum="5"
                                                LabelTextColor="Transparent"/>
                         </telerik:RadCartesianChart.VerticalAxis>
 
@@ -225,8 +227,8 @@
                     </telerik:RadCartesianChart.ChartBehaviors>
                 </telerik:RadCartesianChart>
 
-                <StackLayout Orientation="Horizontal">
-                    <Label FontSize="20" TextColor="#eee" Text="Activity ()"/>
+                <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
+                    <Label FontSize="20" TextColor="#eee" Text="Activity"/>
                     <Label FontSize="20" TextColor="#eee" Text="{Binding EllmanScoreString}"/>
                 </StackLayout>
                 

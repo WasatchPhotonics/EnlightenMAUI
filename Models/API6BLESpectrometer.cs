@@ -156,7 +156,7 @@ public class API6BLESpectrometer : Spectrometer
         // UI and the spectro we have to use static values rather than those in EEPROM 
         // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 400);
         // gainDb = eeprom.detectorGain;
-        integrationTimeMS = 400;
+        integrationTimeMS = 20;
         gainDb = 8;
 
         verticalROIStartLine = eeprom.ROIVertRegionStart[0];

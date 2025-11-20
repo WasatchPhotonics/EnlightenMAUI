@@ -762,6 +762,7 @@ namespace EnlightenMAUI.ViewModels
         }
 
         const double MS_TO_MIN = 60000;
+        const double SEC_TO_MIN = 60;
 
         public void fitScatterLine()
         {
@@ -776,8 +777,12 @@ namespace EnlightenMAUI.ViewModels
 
             double[] line = lr.computeLinearRegression(1, xs.ToArray(), ys.ToArray());
             double slope = line[1];
-            double score = slope * MS_TO_MIN * settings.ellmanSlopeCorrection;
-            EllmanScoreString = score.ToString("F1");
+            double score = slope * SEC_TO_MIN * settings.ellmanSlopeCorrection;
+
+            logger.info("Scatter fit to c0: {0:g}, c1: {1:g}", line[0], line[1]);
+            logger.info("Activity score {0:g}", score);
+
+            EllmanScoreString = score.ToString("F2");
         }
 
 
