@@ -113,6 +113,7 @@ namespace EnlightenMAUI.Common
         SET_LASER_RAMPING_MODE, // not implemented
         SET_LASER_TEC_MODE,
         SET_LASER_TEC_SETPOINT,
+        SET_LASER_WARNING_DELAY,
         SET_LASER_WATCHDOG_SEC,
         SET_LINE_PERIOD,
         SET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
@@ -230,6 +231,7 @@ namespace EnlightenMAUI.Common
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH] = 0xdb;
             cmd[Opcodes.SET_LASER_TEC_SETPOINT] = 0xe7;
             cmd[Opcodes.SET_LASER_TEC_MODE] = 0x84;
+            cmd[Opcodes.SET_LASER_WARNING_DELAY] = 0x8a;
             cmd[Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME] = 0xdd;
             cmd[Opcodes.SET_MODEL_CONFIG_FX2] = 0xa2; // legacy, used for FX2
             cmd[Opcodes.SET_SELECTED_ADC] = 0xed;

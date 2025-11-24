@@ -228,8 +228,8 @@
                 </telerik:RadCartesianChart>
 
                 <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
-                    <Label FontSize="20" TextColor="#eee" Text="Activity"/>
-                    <Label FontSize="20" TextColor="#eee" Text="{Binding EllmanScoreString}"/>
+                    <Label Margin="3" FontSize="20" TextColor="#eee" Text="Activity Score "/>
+                    <Label Margin="3" FontSize="20" TextColor="#eee" Text="{Binding EllmanScoreString}"/>
                 </StackLayout>
                 
             </StackLayout>

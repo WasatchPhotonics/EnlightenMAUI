@@ -834,7 +834,7 @@ namespace EnlightenMAUI.Models
         ////////////////////////////////////////////////////////////////////////
 
         // To-do: add other binning methods
-        protected void apply2x2Binning(double[] spectrum)
+        protected double[] apply2x2Binning(double[] spectrum)
         {
             if (eeprom.featureMask.bin2x2)
             {
@@ -845,7 +845,7 @@ namespace EnlightenMAUI.Models
                     for (int i = 0; i < spectrum.Length - 1; i++)
                         smoothed[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
                     smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
-                    spectrum = smoothed;
+                    return smoothed;
                 }
                 else if (eeprom.horizontalBinningMethod == HORIZONTAL_BINNING_METHOD.BIN_4X2_AVG)
                 {
@@ -868,15 +868,16 @@ namespace EnlightenMAUI.Models
                     }
 
                     smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
-                    spectrum = smoothed;
+                    return smoothed;    
                 }
                 else
                 {
                     logger.info("no bin correction applied");
                 }
-                logger.info("bin correction complete (if applied): [ {0} ]", String.Join(',', spectrum));
-                //spectrum = smoothed;
+                //logger.info("bin correction complete (if applied): [ {0} ]", String.Join(',', spectrum));
+                return spectrum;
             }
+            return spectrum;
         }
 
         ////////////////////////////////////////////////////////////////////////

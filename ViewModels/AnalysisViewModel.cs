@@ -782,7 +782,7 @@ namespace EnlightenMAUI.ViewModels
             logger.info("Scatter fit to c0: {0:g}, c1: {1:g}", line[0], line[1]);
             logger.info("Activity score {0:g}", score);
 
-            EllmanScoreString = score.ToString("F2");
+            EllmanScoreString = score.ToString("F1");
         }
 
 

@@ -28,14 +28,18 @@
                                     BackgroundColor="#000"
                                     Margin="0">
 
+
+            <!-- Minimum="{Binding xAxisMinimum}"
+                                           Maximum="{Binding xAxisMaximum}" /> -->
+            
             <!-- axes -->
             <telerik:RadCartesianChart.HorizontalAxis>
                 <telerik:NumericalAxis ShowLabels="True"
                                            LabelFitMode="MultiLine"
                                            LabelTextColor="#999"
                                            LabelFormat="{Binding xAxisLabelFormat}"
-                                           Minimum="{Binding xAxisMinimum}"
-                                           Maximum="{Binding xAxisMaximum}" />
+                                           Minimum="400"
+                                           Maximum="500" />
             </telerik:RadCartesianChart.HorizontalAxis>
             <telerik:RadCartesianChart.VerticalAxis>
                 <telerik:NumericalAxis ShowLabels="True"

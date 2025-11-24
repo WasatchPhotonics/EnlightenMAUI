@@ -363,7 +363,7 @@ namespace EnlightenMAUI.Models
             set
             {
                 //ushort temp = swapBytes(value);
-                //sendCmd2(Opcodes.SET_LASER_WATCHDOG_SEC, (ushort)temp);
+                sendCmd(Opcodes.SET_LASER_WARNING_DELAY, (ushort)value);
                 _laserWarningDelaySec = value;
             }
         }
@@ -464,13 +464,15 @@ namespace EnlightenMAUI.Models
 
             double[] spectrum = new double[pixels];
             spectrum = await takeOneAsync(false);
+            logger.info("Measurement: [ {0} ]", String.Join(',', spectrum));
 
             // Bin2x2
-            apply2x2Binning(spectrum);
+            spectrum = apply2x2Binning(spectrum);
+            logger.info("Measurement after bin2x2 correction: [ {0} ]", String.Join(',', spectrum));
             if (eeprom.featureMask.invertXAxis)
                 Array.Reverse(spectrum);
 
-            logger.info("Measurement after bin2x2 correction: [ {0} ]", String.Join(',', spectrum));
+            logger.info("Measurement after reversal: [ {0} ]", String.Join(',', spectrum));
 
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
