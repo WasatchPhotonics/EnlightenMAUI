@@ -969,12 +969,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     string[] visInstructionSet = new string[]
     {
-        "Empty sample holder",
-        "Press to take dark",
         "Load sample holder with reference",
         "Press to take reference",
-        "Empty sample holder",
-        "Press to take dark",
         "Load sample holder with sample",
         "Press to take 1-minute sample data",
     };
@@ -990,7 +986,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(visInstructions)));
         }
     }
-    string _visInstructions = "Empty sample holder";
+    string _visInstructions = "Load sample holder with reference";
 
     bool advanceInstructions()
     {
@@ -1036,8 +1032,30 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         logger.info("Entered collect and advance with index at {0}", visIndex);
 
-        if (visIndex < 7)
+        if (visIndex < 3)
         {
+            spec.laserEnabled = false;
+            await Task.Delay(500);
+
+            logger.info("about to acquire dark");
+            bool ok = await doAcquireAsync();
+            logger.info("dark acquisition complete");
+            logData(spec.measurement);
+
+            spec.toggleDark();
+            spec.toggleReferenceDark();
+
+            spec.laserEnabled = true;
+            await Task.Delay(500);
+
+            ok = await doAcquireAsync();
+
+            logger.info("about to toggle reference");
+            spec.toggleReference();
+            logger.info("reference toggled");
+
+            logData(spec.measurement);
+            /*
             if (visIndex == 5)
             {
                 logger.info("about to toggle dark");
@@ -1070,10 +1088,10 @@ public class ScopeViewModel : INotifyPropertyChanged
                 spec.toggleDark();
                 logger.info("dark toggled");
             }
-            
+            */
 
             //logger.info("Logging data after step {0}", visIndex);
-            //logData(spec.measurement);
+            logData(spec.measurement);
         }
         else
         {
@@ -1104,16 +1122,32 @@ public class ScopeViewModel : INotifyPropertyChanged
         Random random = new Random(Guid.NewGuid().GetHashCode());
         random.Next(20);
 
-
         //spec.getPixelFromWavelength(ASSESSMENT_WL);
+
+        logger.info("about to toggle dark");
+        spec.toggleDark();
+        logger.info("dark toggled");
+
+        spec.laserEnabled = false;
+        await Task.Delay(500);
+
+        logger.info("about to acquire dark");
+        bool ok = await doAcquireAsync();
+        logger.info("dark acquisition complete");
+        logData(spec.measurement);
+
+        spec.toggleDark();
+
+        spec.laserEnabled = true;
+        await Task.Delay(500);
 
         await Shell.Current.GoToAsync("//AnalysisPage");
         while (stopwatch.ElapsedMilliseconds < 60000)
         {
             logger.info("Ellman spectrum collection {0}", index);
-            bool ok = await doAcquireAsync();
+            ok = await doAcquireAsync();
             //logger.info("Logging Ellman spectrum number {0}", index);
-            //logData(spec.measurement);
+            logData(spec.measurement);
             logger.info("Copying spectrum number {0}", index);
             measurements.Add(spec.measurement.copy());
             logger.info("Spectrum number {0} copied and saved", index);
@@ -1608,7 +1642,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         // use last Measurement from the Spectrometer
         uint pixels = (uint)spec.measurement.postProcessed.Length;
         double[] intensities = spec.measurement.postProcessed;
-        logger.info("Refreshing chart data to: [ {0} ]", String.Join(',', intensities));
+        //logger.info("Refreshing chart data to: [ {0} ]", String.Join(',', intensities));
 
         bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 

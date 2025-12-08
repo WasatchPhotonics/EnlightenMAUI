@@ -464,20 +464,20 @@ namespace EnlightenMAUI.Models
 
             double[] spectrum = new double[pixels];
             spectrum = await takeOneAsync(false);
-            logger.info("Measurement: [ {0} ]", String.Join(',', spectrum));
+            //logger.info("Measurement: [ {0} ]", String.Join(',', spectrum));
 
             // Bin2x2
             spectrum = apply2x2Binning(spectrum);
-            logger.info("Measurement after bin2x2 correction: [ {0} ]", String.Join(',', spectrum));
+            //logger.info("Measurement after bin2x2 correction: [ {0} ]", String.Join(',', spectrum));
             if (eeprom.featureMask.invertXAxis)
                 Array.Reverse(spectrum);
 
-            logger.info("Measurement after reversal: [ {0} ]", String.Join(',', spectrum));
+            //logger.info("Measurement after reversal: [ {0} ]", String.Join(',', spectrum));
 
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
 
-            logger.info("Measurement after processing: [ {0} ]", String.Join(',', spectrum));
+            //logger.info("Measurement after processing: [ {0} ]", String.Join(',', spectrum));
 
             lastRaw = new double[spectrum.Length];
             Array.Copy(spectrum, lastRaw, spectrum.Length);
@@ -486,7 +486,7 @@ namespace EnlightenMAUI.Models
             measurement.reset();
             measurement.reload(this);
 
-            logger.info("Measurement after reload: [ {0} ]", String.Join(',', spectrum));
+            //logger.info("Measurement after reload: [ {0} ]", String.Join(',', spectrum));
 
             if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled) && wavenumbers != null)
             {
@@ -519,7 +519,7 @@ namespace EnlightenMAUI.Models
 
                 measurement.wavenumbers = wavenumbers;
                 measurement.postProcessed = spectrum;
-                logger.info("Measurement post-processed set to: [ {0} ]", String.Join(',', measurement.postProcessed));
+                //logger.info("Measurement post-processed set to: [ {0} ]", String.Join(',', measurement.postProcessed));
             }
 
             ////////////////////////////////////////////////////////////////////////
@@ -620,7 +620,7 @@ namespace EnlightenMAUI.Models
 
             if (okI >= 0)
             {
-                logger.info("successfully read {0} bytes: [ {1} ]", spectrumBuff.Length, String.Join(',', spectrumBuff));
+                //logger.info("successfully read {0} bytes: [ {1} ]", spectrumBuff.Length, String.Join(',', spectrumBuff));
             }
             else
             {
@@ -636,7 +636,7 @@ namespace EnlightenMAUI.Models
             for (int i = 0; i < pixels; i++)
                 spec[i] = subspectrum[i];
 
-            logger.info("successfully read spectrum: [ {0} ]", String.Join(',', spec));
+            //logger.info("successfully read spectrum: [ {0} ]", String.Join(',', spec));
 
             raiseAcquisitionProgress(1);
 

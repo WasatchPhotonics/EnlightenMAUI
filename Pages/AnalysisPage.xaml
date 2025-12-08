@@ -198,17 +198,19 @@
 
                     <!-- axes -->
                     <telerik:RadCartesianChart.HorizontalAxis>
-                        <telerik:NumericalAxis ShowLabels="False"
-                           LabelFitMode="MultiLine"
-                           LabelTextColor="Transparent"
-                           LineColor="Transparent"/>
+                        <telerik:NumericalAxis ShowLabels="True"
+                       LabelFitMode="MultiLine"
+                       LabelTextColor="#999"
+                       LabelFormat="{Binding xAxisLabelFormat}"/>
                     </telerik:RadCartesianChart.HorizontalAxis>
                     <telerik:RadCartesianChart.VerticalAxis>
-                        <telerik:NumericalAxis ShowLabels="False"
+                        <telerik:NumericalAxis ShowLabels="True"
                            LabelFitMode="MultiLine"
                            RangeExtendDirection="Positive"
-                           LineColor="Transparent"
-                           LabelTextColor="Transparent"/>
+                                            
+                           LabelTextColor="#999"
+                           Minimum="-0.02"
+                           Maximum="0.1"/>
                     </telerik:RadCartesianChart.VerticalAxis>
 
                     <!-- series data -->
