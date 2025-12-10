@@ -39,7 +39,18 @@ public class Settings : INotifyPropertyChanged
     public bool autoSave { get; set;} = true;
     public bool saveReference { get; set;} = true;
 
-    public float ellmanSlopeCorrection => 56520f;
+    public float ellmanSlopeCorrection
+    {
+        get => _ellmanSlopeCorrection;
+        set
+        {
+            logger.info("setting ellmanCorrection to {0:f2}", value);
+            _ellmanSlopeCorrection = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ellmanSlopeCorrection)));
+        }
+
+    }
+    float _ellmanSlopeCorrection = 56520f;
 
     public float matchThreshold
     {

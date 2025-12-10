@@ -18,6 +18,7 @@ namespace EnlightenMAUI.ViewModels
     {
         public Dictionary<string, AutoRamanParameters> AutoParameters;
         public double  MatchThereshold;
+        public double  EllmanCorrection;
         public int SNRThreshold;
     }
 
@@ -255,9 +256,9 @@ namespace EnlightenMAUI.ViewModels
                     }
                 }
 
+                settings.ellmanSlopeCorrection = (float)json.EllmanCorrection;
                 settings.matchThreshold = (float)json.MatchThereshold;
                 settings.snrThreshold = json.SNRThreshold;
-
             }
             else
             {
@@ -265,6 +266,7 @@ namespace EnlightenMAUI.ViewModels
             }
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(matchThreshold)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ellmanCorrection)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(snrThreshold)));
             initialized = true;
         }
@@ -302,6 +304,7 @@ namespace EnlightenMAUI.ViewModels
             jtw.closeBlock();
 
             jtw.writePair("MatchThereshold", settings.matchThreshold, null);
+            jtw.writePair("EllmanCorrection", settings.ellmanSlopeCorrection, null);
             jtw.writePair("SNRThreshold", settings.snrThreshold);
 
             await File.WriteAllTextAsync(configPath, jtw.ToString());
@@ -483,6 +486,18 @@ namespace EnlightenMAUI.ViewModels
             {
                 settings.matchThreshold = (float)value;
                 Preferences.Set("matchThreshold", (float)value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+
+        public decimal ellmanCorrection
+        {
+            get => (decimal)settings.ellmanSlopeCorrection;
+            set
+            {
+                settings.ellmanSlopeCorrection = (float)value;
+                Preferences.Set("ellmanCorrection", (float)value);
                 if (initialized)
                     updateConfigFile();
             }

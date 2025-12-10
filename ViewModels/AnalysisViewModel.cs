@@ -780,9 +780,11 @@ namespace EnlightenMAUI.ViewModels
             double score = slope * SEC_TO_MIN * settings.ellmanSlopeCorrection;
 
             logger.info("Scatter fit to c0: {0:g}, c1: {1:g}", line[0], line[1]);
+            logger.info("Ellman correction {0:g}", settings.ellmanSlopeCorrection);
             logger.info("Activity score {0:g}", score);
 
-            EllmanScoreString = score.ToString("F1");
+            EllmanScoreString = score.ToString("F1") + " umol ACh/min/L";
+            SlopeString = (slope * SEC_TO_MIN).ToString("F4") + " ΔOD/min";
         }
 
 
@@ -894,6 +896,17 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         string _EllmanScoreString = "";
+        
+        public string SlopeString
+        {
+            get => _SlopeString;
+            set
+            {
+                _SlopeString = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SlopeString)));
+            }
+        }
+        string _SlopeString = "";
 
         public bool isVIS
         {

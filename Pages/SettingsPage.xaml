@@ -136,6 +136,8 @@
                                 <!-- Match Threshold      -->
                                 <RowDefinition Height="Auto"/>
                                 <!-- SNR Threshold      -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Ellman Correction      -->
                             </Grid.RowDefinitions>
 
                             <Grid.ColumnDefinitions>
@@ -199,6 +201,25 @@
                                                      Value="{Binding snrThreshold}" 
                                                      IsEnabled="{Binding advancedModeEnabled}"
                                                      Minimum="0" Maximum="500" Step="1"
+                                                     HorizontalOptions="End">      
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+                            
+                            <Label Grid.Row="10" Text="Activity Correction" TextColor="#eee" VerticalTextAlignment="Center"/>
+                            <telerik:RadNumericInput x:Name="ellmanCorrection" 
+                                                     Grid.Row="10"
+                                                     Value="{Binding ellmanCorrection}" 
+                                                     IsEnabled="{Binding advancedModeEnabled}"
+                                                     Minimum="0" Maximum="100000" Step="1"
                                                      HorizontalOptions="End">      
                                 <telerik:RadNumericInput.IncreaseButtonStyle>
                                     <Style TargetType="telerik:RadNumericInput">
