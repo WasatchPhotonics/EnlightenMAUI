@@ -84,8 +84,28 @@ namespace EnlightenMAUI.ViewModels
                 }
             }
             else if (settings.library is WPLibrary)
-                _currentLibrary = "Wasatch";
+                _currentLibrary = settings.libraryLabel;
 
+            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            foreach (var cDir in cacheDirs)
+            {
+                var subs = cDir.ListFiles();
+                foreach (var sub in subs)
+                {
+                    if (sub.AbsolutePath.Split('/').Last() == "library")
+                    {
+                        if (sub.IsDirectory)
+                        {
+                            var subLibs = sub.ListFiles();
+                            foreach (var subLib in subLibs)
+                            {
+                                if (subLib.IsDirectory && !compLibrary.Contains(subLib.AbsolutePath.Split('/').Last()))
+                                    compLibrary.Add(subLib.AbsolutePath.Split('/').Last());
+                            }
+                        }
+                    }
+                }
+            }
 
             settings.LibraryChanged += Settings_LibraryChanged;
             Spectrometer.NewConnection += handleNewSpectrometer;
@@ -110,6 +130,27 @@ namespace EnlightenMAUI.ViewModels
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
             precisionCmd = new Command(() => { _ = triggerPrecision(); });
+
+            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            foreach (var cDir in cacheDirs)
+            {
+                var subs = cDir.ListFiles();
+                foreach (var sub in subs)
+                {
+                    if (sub.AbsolutePath.Split('/').Last() == "library")
+                    {
+                        if (sub.IsDirectory)
+                        {
+                            var subLibs = sub.ListFiles();
+                            foreach (var subLib in subLibs)
+                            {
+                                if (subLib.IsDirectory && !compLibrary.Contains(subLib.AbsolutePath.Split('/').Last()))
+                                    compLibrary.Add(subLib.AbsolutePath.Split('/').Last());
+                            }
+                        }
+                    }
+                }
+            }
 
             SetData(null, null);
 
@@ -227,7 +268,6 @@ namespace EnlightenMAUI.ViewModels
 
         static ObservableCollection<string> _compLibrary = new ObservableCollection<string>()
         {
-            "Wasatch",
             "3rd Party"
         };
 
@@ -244,10 +284,22 @@ namespace EnlightenMAUI.ViewModels
             }
 
         }
-        string _currentLibrary = "Wasatch";
+        string _currentLibrary = "3rd Party";
+
+        public bool libraryReady
+        {
+            get { return _libraryReady; }
+            set
+            {
+                _libraryReady = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(libraryReady)));
+            }
+        }
+        bool _libraryReady = false;
 
         void changeLibrary(string key)
         {
+            libraryReady = false;
             settings.setLibrary(key);
         }
 
@@ -260,6 +312,11 @@ namespace EnlightenMAUI.ViewModels
                     notifyToast?.Invoke("Issue loading library, make sure phone is paired");
                 });
             }
+            else
+            {
+                libraryReady = true;
+            }
+
             if (settings.library is DPLibrary)
             {
                 if ((settings.library as DPLibrary).isLoading)
@@ -351,7 +408,10 @@ namespace EnlightenMAUI.ViewModels
             xAxisMaximum = instance.xAxisMaximum;
             matchString = instance.matchString;
             scoreString = instance.scoreString;
+            spectrumLabel = instance.spectrumLabel;
             _matchFound = instance.matchFound;
+            _compLibrary = instance.compLibrary;
+            libraryReady = instance.libraryReady;
             spectrumCollected = instance.spectrumCollected;
             lastMeas = instance.lastMeas;
             matchIsPoly = instance.matchIsPoly;
@@ -457,7 +517,7 @@ namespace EnlightenMAUI.ViewModels
                 }
             }
             else if (settings.library is WPLibrary)
-                _currentLibrary = "Wasatch";
+                _currentLibrary = settings.libraryLabel;
         }
 
         async Task changeCorrection()
@@ -512,6 +572,8 @@ namespace EnlightenMAUI.ViewModels
         public void SetData(Measurement sample, Measurement reference)
         {
             bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
+            if (sample != null)
+            spectrumLabel = $"Spectrum {sample.specCount}";
 
             double scaleFactor = 1;
 
@@ -749,6 +811,20 @@ namespace EnlightenMAUI.ViewModels
             SpectraChanged?.Invoke(this, this);
         }
 
+        public string spectrumLabel
+        {
+            get
+            {
+                return _spectrumLabel;
+            }
+            set
+            {
+                _spectrumLabel = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumLabel)));
+            }
+        }
+        string _spectrumLabel = "Spectrum 0";
+
         public void AddScatter(double x, double y)
         {
             logger.info("adding scatter point");
@@ -791,7 +867,7 @@ namespace EnlightenMAUI.ViewModels
         ////////////////////////////////////////////////////////////////////////
         // X-Axis
         ////////////////////////////////////////////////////////////////////////
-        
+
         public string xAxisName => "Wavenumber";
 
         public double xAxisMinimum

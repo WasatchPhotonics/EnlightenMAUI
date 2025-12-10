@@ -24,6 +24,7 @@ using Xamarin.Google.Crypto.Tink.Signature;
 using DeconvolutionMAUI;
 using System.Security.AccessControl;
 using System.Diagnostics;
+using Accord.Math;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -114,7 +115,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings = Settings.getInstance();
         string savePath = settings.getSavePath();
 
+        if (settings.initialized)
+        {
+            if (settings.specCount > 0)
+                spec.measurement.specCount = settings.specCount;
+        }
+
         settings.PropertyChanged += handleSettingsChange;
+        settings.ConfigLoaded += Settings_ConfigLoaded;
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress;
         spec.measurement.PropertyChanged += handleSpectrometerChange;
@@ -172,7 +180,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() =>
             {
                 //library = new DPLibrary("database", spec);
-                library = new WPLibrary("library", spec); 
+                library = new WPLibrary("library/Wasatch", spec); 
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
                 (library as WPLibrary).showMatchProgress += showMatchProgress;
@@ -192,7 +200,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     library = new DPLibrary("database", spec);
-                    //library = new WPLibrary("library", spec);
+                    //library = new WPLibrary("library/Wasatch", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -214,6 +222,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
 
         initializeSpectrometer();
+    }
+
+    private void Settings_ConfigLoaded(object sender, Settings e)
+    {
+        if (settings.specCount > 0) 
+        spec.measurement.specCount = settings.specCount;
     }
 
     private async Task initializeSpectrometer()
@@ -306,6 +320,21 @@ public class ScopeViewModel : INotifyPropertyChanged
         (library as WPLibrary).showMatchProgress -= showMatchProgress;
         library = settings.library;
         (library as WPLibrary).showMatchProgress += showMatchProgress;
+        if (library is WPLibrary)
+        {
+            fullLibraryOverlayStatus.Clear();
+            overlaysViewModel.selections.Clear();
+
+            foreach (string sample in library.samples)
+            {
+                if (!fullLibraryOverlayStatus.ContainsKey(sample))
+                {
+                    fullLibraryOverlayStatus.Add(sample, false);
+                    overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
+                }
+            }
+        }
+
         AnalysisViewModel.getInstance().library = library;
     }
 
@@ -327,7 +356,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new WPLibrary("library", spec);
+                library = new WPLibrary("library/Wasatch", spec);
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
             });
@@ -396,6 +425,8 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         if (!settings.library.loadSucceeded)
             notifyToast?.Invoke("Issue loading library, make sure phone is paired to correct unit");
+        else
+            AnalysisViewModel.getInstance().libraryReady = true;
 
         if (library is DPLibrary)
         {
@@ -405,7 +436,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     //library = new DPLibrary("database", spec);
-                    library = new WPLibrary("library", spec); 
+                    library = new WPLibrary("library/Wasatch", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -415,13 +446,18 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
         }
 
-
-        foreach (string sample in library.samples)
+        else
         {
-            if (!fullLibraryOverlayStatus.ContainsKey(sample))
+            fullLibraryOverlayStatus.Clear();
+            overlaysViewModel.selections.Clear();
+
+            foreach (string sample in library.samples)
             {
-                fullLibraryOverlayStatus.Add(sample, false);
-                overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
+                if (!fullLibraryOverlayStatus.ContainsKey(sample))
+                {
+                    fullLibraryOverlayStatus.Add(sample, false);
+                    overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
+                }
             }
         }
     }
@@ -1441,6 +1477,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
+            settings.specCount = spec.measurement.specCount;
+            settings.lastTime = DateTime.Now;
+            await settings.updateConfigFile();
+
             // info-level logging so we can QC timing w/o verbose logging
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
@@ -1782,8 +1822,13 @@ public class ScopeViewModel : INotifyPropertyChanged
 
                     if (m != null)
                     {
+                        double libScale = m.processed.Max();
+                        double measScale = spec.measurement.processed.Max();
+
+                        double scaleFactor = measScale / libScale;
+
                         for (int i = 0; i < m.wavenumbers.Length; i++)
-                            newOverlay.Add(new ChartDataPoint() { intensity = m.processed[i], xValue = m.wavenumbers[i] });
+                            newOverlay.Add(new ChartDataPoint() { intensity = scaleFactor * m.processed[i], xValue = m.wavenumbers[i] });
                         if (DataOverlays.ContainsKey(omd.name))
                             DataOverlays[omd.name] = newOverlay;
                         else
@@ -2056,6 +2101,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             if (snr < settings.snrThreshold)
             {
+                if (settings.autoSave)
+                    await spec.measurement.saveAsync(autoSave: true);
                 ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
                 return false;
             }

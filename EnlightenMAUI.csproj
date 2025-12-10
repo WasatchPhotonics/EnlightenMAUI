@@ -45,19 +45,23 @@
 		<RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>
 		<PackageTags>wasatch;photonics;raman;spectrometer;ble</PackageTags>
 		<RepositoryType>git</RepositoryType>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.31</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.45</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
+	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.31</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.45</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
+	  <AndroidPackageFormat>apk</AndroidPackageFormat>
+	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -78,7 +82,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="libdpSDK.so" />
+	  <None Remove="libdpSTJE.so" />
+	  <None Remove="Stj.ProtectionSdk.so" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\apeture.svg" />
 	  <None Remove="Resources\Images\bulb_dark.svg" />
@@ -97,8 +102,14 @@
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
 	</ItemGroup>
 
-	<ItemGroup Condition="Exists('lib\arm64-v8a\libdpSDK.so')">
-	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSDK.so">
+	<ItemGroup Condition="Exists('lib\arm64-v8a\libdpSTJE.so')">
+	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSTJE.so">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </AndroidNativeLibrary>
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('lib\arm64-v8a\Stj.ProtectionSdk.so')">
+	  <AndroidNativeLibrary Include="lib\arm64-v8a\Stj.ProtectionSdk.so">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </AndroidNativeLibrary>
 	</ItemGroup>

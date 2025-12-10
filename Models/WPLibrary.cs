@@ -236,6 +236,8 @@ namespace EnlightenMAUI.Models
         protected Wavecal wavecal;
         protected int roiStart = 0;
         protected int roiEnd = 0;
+        public string tag;
+
         public WPLibrary(string root, Spectrometer spec, bool doLoad = true) : base(root, spec) 
         {
             logger.debug($"instantiating Library from {root}");
@@ -332,22 +334,46 @@ namespace EnlightenMAUI.Models
             library[name] = adjusted;
         }
 
+        Java.IO.File traverseDown(string[] rootPath, Java.IO.File dir)
+        {
+            var subs = dir.ListFiles();
+            Java.IO.File libraryFolder = null;
+
+            foreach (var sub in subs)
+            {
+                if (sub.AbsolutePath.Split('/').Last() == rootPath[0])
+                {
+                    if (rootPath.Length == 1)
+                    {
+                        libraryFolder = sub;
+                        break;
+                    }
+
+                    else if (sub.IsDirectory)
+                    {
+                        string[] shortenedPath = new string[rootPath.Length - 1];
+                        Array.Copy(rootPath, 1, shortenedPath, 0, rootPath.Length - 1);
+                        return traverseDown(shortenedPath, sub);
+                    }
+                }
+            }
+
+            return libraryFolder;
+        }
+
         async Task loadFiles(string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
         {
             isLoading = true;
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
+            string[] rootPath = root.Split('/');
+            int depth = rootPath.Length;
+
             foreach (var cDir in cacheDirs)
             {
-                var subs = cDir.ListFiles();
-                foreach(var sub in subs)
-                {
-                    if (sub.AbsolutePath.Split('/').Last() == root)
-                    {
-                        libraryFolder = sub;
-                        break;
-                    }
-                }
+                libraryFolder = traverseDown(rootPath, cDir);
+                if (libraryFolder != null)
+                    break;
 
             }
 
@@ -394,6 +420,9 @@ namespace EnlightenMAUI.Models
                 loadSucceeded = true;
             isLoading = false;
             logger.debug("finished loading library files");
+            if (root != "User Library")
+                tag = root.Split('/').Last();
+
             InvokeLoadFinished();
             logger.debug("prepping data for decon");
 
