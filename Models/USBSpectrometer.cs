@@ -59,6 +59,7 @@ namespace EnlightenMAUI.Models
         {
             reset();
             logger.debug("connecting to usb device vid: {0:x4}, pid: {1:x4}", accI.VendorId, accI.ProductId);
+            logger.debug("connecting to usb device vid: {0}, pid: {1}, class {2}, subclass {3}, protocol {4}", accI.VendorId, accI.ProductId, accI.Class, accI.DeviceSubclass.ToString(), accI.DeviceProtocol);
             featureIdentification = new FeatureIdentification(accI.VendorId, accI.ProductId);
             battery = new Battery();
 

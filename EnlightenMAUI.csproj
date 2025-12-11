@@ -83,6 +83,7 @@
 
 	<ItemGroup>
 	  <None Remove="libdpSTJE.so" />
+	  <None Remove="Platforms\Android\Resources\xml\device_filter.xml" />
 	  <None Remove="Stj.ProtectionSdk.so" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\apeture.svg" />
