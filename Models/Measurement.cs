@@ -477,10 +477,10 @@ public class Measurement : INotifyPropertyChanged
         roiEnd = spec is null ? pixels - 1 : (uint)spec.eeprom.ROIHorizEnd;
 
         var serialNumber = spec is null ? "sim" : spec.eeprom.serialNumber;
-        measurementID = string.Format("enlighten-{0}-{1}",
+        measurementID = string.Format("{0}-{1}",
             timestamp.ToString("yyyyMMdd-HHmmss-ffffff"),
             serialNumber);
-        filename = string.Format("enlighten-{0}-{1}.csv",
+        filename = string.Format("{0}-{1}.csv",
             timestamp.ToString("yyyyMMdd-HHmmss"),
             serialNumber);
         // location = WhereAmI.getInstance().location;
