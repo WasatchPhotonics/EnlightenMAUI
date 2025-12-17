@@ -95,6 +95,35 @@ internal class PlatformUtil
         }
     }
 
+    public static async Task SaveEllmanReportAsync(string filename, Dictionary<DateTime,double> points)
+    {
+        logger.debug("Measurement.saveAsync: starting");
+
+        Settings settings = Settings.getInstance();
+        string savePath = settings.getAutoSavePath();
+
+        if (savePath == null)
+        {
+            logger.error("saveAsync: can't get savePath");
+            return;
+        }
+
+        string pathname = Path.Join(savePath, filename);
+        logger.debug($"SaveEllmanReportAsync: creating {pathname}");
+
+        using (StreamWriter sw = new StreamWriter(pathname))
+        {
+            await sw.WriteLineAsync("Time,Absorbance");
+            foreach (KeyValuePair<DateTime, double> point in points)
+            {
+                await sw.WriteLineAsync(point.Key.ToString() + "," + point.Value.ToString("g"));
+            }
+        }
+
+        logger.debug($"SaveEllmanReportAsync: done");
+    }
+
+
     public static void RequestSelectLogFolder()
     {
         var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;

@@ -1033,7 +1033,10 @@ public class ScopeViewModel : INotifyPropertyChanged
             spec.toggleReferenceDark();
             spec.toggleReference();
             AnalysisViewModel.getInstance().VISID = "";
+            AnalysisViewModel.getInstance().EllmanScoreString = "";
+            AnalysisViewModel.getInstance().SlopeString = "";
             AnalysisViewModel.getInstance().VISComplete = false;
+            AnalysisViewModel.getInstance().VISReportWritten = false;
             AnalysisViewModel.getInstance().ClearScatter();
             logger.info("ellman reset complete");
         }
@@ -1048,6 +1051,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     void logData(Measurement m)
     {
+        /*
         logger.info("Measurement data {0} start", m.measurementID);
         if (m.dark != null)
             logger.info("Measurement dark: [ {0} ]", String.Join('\t', m.dark));
@@ -1074,6 +1078,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         else
             logger.info("Mesurement absorbance is null");
         logger.info("Measurement data {0} end", m.measurementID);
+        */
     }
 
     async Task<bool> collectAndAdvance()
@@ -1190,7 +1195,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         await Task.Delay(500);
 
         await Shell.Current.GoToAsync("//AnalysisPage");
-        while (stopwatch.ElapsedMilliseconds < 60000)
+        while (stopwatch.ElapsedMilliseconds < settings.ellmanDurationSec * 1000)
         {
             logger.info("Ellman spectrum collection {0}", index);
             ok = await doAcquireAsync();
@@ -1210,7 +1215,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
             //AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
             //logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
-            AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, intensity);
+            AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, intensity, DateTime.Now);
             logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, intensity);
             await Task.Delay(33);
             ++index;

@@ -20,6 +20,7 @@ namespace EnlightenMAUI.ViewModels
         public double  MatchThereshold;
         public double  EllmanCorrection;
         public int SNRThreshold;
+        public int EllmanDurationSec;
         public string lastSpecDate;
         public int? specCount;
     }
@@ -404,6 +405,18 @@ namespace EnlightenMAUI.ViewModels
             {
                 settings.ellmanSlopeCorrection = (float)value;
                 Preferences.Set("ellmanCorrection", (float)value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+
+        public decimal ellmanDurationSec
+        {
+            get => (decimal)settings.ellmanDurationSec;
+            set
+            {
+                settings.ellmanDurationSec = (int)value;
+                Preferences.Set("ellmanDurationSec", (int)value);
                 if (initialized)
                     updateConfigFile();
             }

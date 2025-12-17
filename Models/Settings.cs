@@ -56,6 +56,17 @@ public class Settings : INotifyPropertyChanged
     }
     float _ellmanSlopeCorrection = 56520f;
 
+    public int ellmanDurationSec
+    {
+        get => _ellmanDurationSec;
+        set
+        {
+            _ellmanDurationSec = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ellmanDurationSec)));
+        }
+    }
+    int _ellmanDurationSec = 60;
+
     public float matchThreshold
     {
         get => _matchThreshold;
@@ -324,7 +335,11 @@ public class Settings : INotifyPropertyChanged
                 }
             }
 
-            ellmanSlopeCorrection = (float)json.EllmanCorrection;
+            if (json.EllmanCorrection != 0)
+                ellmanSlopeCorrection = (float)json.EllmanCorrection;
+            if (json.EllmanDurationSec != 0)
+                ellmanDurationSec = json.EllmanDurationSec;
+
             matchThreshold = (float)json.MatchThereshold;
             snrThreshold = json.SNRThreshold;
 
@@ -387,6 +402,7 @@ public class Settings : INotifyPropertyChanged
 
         jtw.writePair("MatchThereshold", matchThreshold, null);
         jtw.writePair("EllmanCorrection", ellmanSlopeCorrection, null);
+        jtw.writePair("EllmanDurationSec", ellmanDurationSec);
         jtw.writePair("SNRThreshold", snrThreshold);
         jtw.writePair("specCount", specCount);
         jtw.writePair("lastSpecDate", lastTime.ToString("yyyyMMddHHmmss"));

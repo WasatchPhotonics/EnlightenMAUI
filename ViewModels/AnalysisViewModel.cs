@@ -447,15 +447,27 @@ namespace EnlightenMAUI.ViewModels
             foreach (ChartDataPoint point in instance.referenceData)
                 referenceData.Add(point);
             scatterData.Clear();
+            rawScatterData.Clear();
             foreach (ChartDataPoint point in instance.scatterData)
                 scatterData.Add(point);
+            foreach (var point in instance.rawScatterData.Keys)
+                rawScatterData.Add(point, instance.rawScatterData[point]);
 
             if (scatterData.Count > 10)
                 fitScatterLine();
+            else
+            {
+                EllmanScoreString = "";
+                SlopeString = "";
+                VISID = "";
+            }
 
             VISComplete = instance.VISComplete;
+            VISReportWritten = instance.VISReportWritten;
             VISID = instance.VISID;
             VISStamp = instance.VISStamp;
+            //EllmanScoreString = instance.EllmanScoreString;
+            //SlopeString = instance.SlopeString;
         }
 
         async Task<bool> doSave()
@@ -514,6 +526,7 @@ namespace EnlightenMAUI.ViewModels
 
         public ObservableCollection<ChartDataPoint> chartData { get; set; } = new ObservableCollection<ChartDataPoint>();
         public ObservableCollection<ChartDataPoint> scatterData { get; set; } = new ObservableCollection<ChartDataPoint>();
+        public Dictionary<DateTime, double> rawScatterData {  get; set; }  = new Dictionary<DateTime, double>();
         public ObservableCollection<ChartDataPoint> referenceData { get; set; } = new ObservableCollection<ChartDataPoint>();
 
         void handleNewSpectrometer(object sender, Spectrometer e)
@@ -565,6 +578,9 @@ namespace EnlightenMAUI.ViewModels
         {
             string filename = VISStamp.ToString("WP-yyMMddHHmm");
             await PlatformUtil.TakeScreenshotAsync(settings, filename + ".png");
+            await PlatformUtil.SaveEllmanReportAsync(filename + ".csv", rawScatterData);
+            VISReportWritten = true;
+            notifyToast?.Invoke($"Report {filename} saved as csv and screenshot");
         }
 
         async Task openEllmanResults()
@@ -573,7 +589,21 @@ namespace EnlightenMAUI.ViewModels
             string savePath = settings.getAutoSavePath();
             string pathname = Path.Join(savePath, filename);
 
-            await Launcher.Default.OpenAsync(pathname);
+            logger.info("Attempting to open {0}", pathname);
+
+            var target = new ReadOnlyFile(pathname);
+            var request = new OpenFileRequest { File = target };
+
+            bool ok = await Launcher.OpenAsync(request);
+
+            if (!ok)
+            {
+                logger.info("Report open seems to have failed");
+            }
+            else
+            {
+                logger.info("Report open seems to have worked");
+            }
         }
 
         public void refreshSpec()
@@ -851,10 +881,11 @@ namespace EnlightenMAUI.ViewModels
         }
         string _spectrumLabel = "Spectrum 0";
 
-        public void AddScatter(double x, double y)
+        public void AddScatter(double x, double y, DateTime time)
         {
             logger.info("adding scatter point");
             scatterData.Add(new ChartDataPoint() { intensity = y, xValue = x });
+            rawScatterData.Add(time, y);
             logger.info("triggering scatter add");
             SpectraChanged?.Invoke(this, this);
             logger.info("triggered scatter add");
@@ -866,7 +897,8 @@ namespace EnlightenMAUI.ViewModels
         public void ClearScatter()
         {
             logger.info("clearing scatter points");
-            scatterData.Clear();
+            scatterData.Clear(); 
+            rawScatterData.Clear();
             logger.info("triggering scatter change");
             SpectraChanged?.Invoke(this, this);
             logger.info("triggered scatter change");
@@ -899,7 +931,7 @@ namespace EnlightenMAUI.ViewModels
             logger.info("Ellman correction {0:g}", settings.ellmanSlopeCorrection);
             logger.info("Activity score {0:g}", score);
 
-            EllmanScoreString = score.ToString("F1") + " umol ACh/min/L";
+            EllmanScoreString = score.ToString("F1") + " U/mL";
             SlopeString = (slope * SEC_TO_MIN).ToString("F4") + " ΔOD/min";
         }
 
@@ -1047,6 +1079,17 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         bool _VISComplete = false;
+
+        public bool VISReportWritten
+        {
+            get => _VISReportWritten;
+            set
+            {
+                _VISReportWritten = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(VISReportWritten)));
+            }
+        }
+        bool _VISReportWritten = false;
 
         public bool isVIS
         {

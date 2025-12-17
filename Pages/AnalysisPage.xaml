@@ -205,12 +205,12 @@
                     </telerik:RadCartesianChart.HorizontalAxis>
                     <telerik:RadCartesianChart.VerticalAxis>
                         <telerik:NumericalAxis ShowLabels="True"
-                           LabelFitMode="MultiLine"
-                           RangeExtendDirection="Positive"
-                                            
-                           LabelTextColor="#999"
-                           Minimum="-0.02"
-                           Maximum="0.1"/>
+                            LabelFitMode="MultiLine"
+                            LabelTextColor="#999"/>
+                        <!--
+                            RangeExtendDirection="Positive"
+                            Minimum="-0.02"
+                            Maximum="0.1"/> -->
                     </telerik:RadCartesianChart.VerticalAxis>
 
                     <!-- series data -->
@@ -258,9 +258,9 @@
                         WidthRequest="140"
                         HeightRequest="50"
                         FontSize="16"
-                        Text="Save Results"
+                        Text="Open Results"
                         Command="{Binding ellmanOpenCmd}"
-                        IsVisible="{Binding VISComplete}" 
+                        IsVisible="{Binding VISReportWritten}" 
                         Margin="5,5,5,5"
                         BackgroundColor="#515151"/>
                 </StackLayout>
