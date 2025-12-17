@@ -19,6 +19,7 @@ using static Android.Widget.GridLayout;
 using Telerik.Maui.Controls;
 using Bumptech.Glide.Util;
 using System.Runtime.Serialization;
+using Python.Runtime;
 
 namespace EnlightenMAUI.ViewModels
 {
@@ -66,6 +67,8 @@ namespace EnlightenMAUI.ViewModels
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
             precisionCmd = new Command(() => { _ = triggerPrecision(); });
+            ellmanSaveCmd = new Command(() => { _ = saveEllmanResults(); });
+            ellmanOpenCmd = new Command(() => { _ = openEllmanResults(); });
 
             if (instance != null)
             {
@@ -129,7 +132,9 @@ namespace EnlightenMAUI.ViewModels
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
-            precisionCmd = new Command(() => { _ = triggerPrecision(); });
+            precisionCmd = new Command(() => { _ = triggerPrecision(); }); 
+            ellmanSaveCmd = new Command(() => { _ = saveEllmanResults(); });
+            ellmanOpenCmd = new Command(() => { _ = openEllmanResults(); });
 
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             foreach (var cDir in cacheDirs)
@@ -168,6 +173,8 @@ namespace EnlightenMAUI.ViewModels
         public Command correctionCmd { get; private set; }
         public Command retryCmd { get; private set; }
         public Command precisionCmd { get; private set; }
+        public Command ellmanSaveCmd { get; private set; }
+        public Command ellmanOpenCmd { get; private set; }
 
         bool triggerReanalyze()
         {
@@ -445,6 +452,10 @@ namespace EnlightenMAUI.ViewModels
 
             if (scatterData.Count > 10)
                 fitScatterLine();
+
+            VISComplete = instance.VISComplete;
+            VISID = instance.VISID;
+            VISStamp = instance.VISStamp;
         }
 
         async Task<bool> doSave()
@@ -548,6 +559,21 @@ namespace EnlightenMAUI.ViewModels
                     logger.error("Share failed with exception {0}", ex.Message);
                 }
             }
+        }
+
+        async Task saveEllmanResults()
+        {
+            string filename = VISStamp.ToString("WP-yyMMddHHmm");
+            await PlatformUtil.TakeScreenshotAsync(settings, filename + ".png");
+        }
+
+        async Task openEllmanResults()
+        {
+            string filename = VISStamp.ToString("WP-yyMMddHHmm") + ".png";
+            string savePath = settings.getAutoSavePath();
+            string pathname = Path.Join(savePath, filename);
+
+            await Launcher.Default.OpenAsync(pathname);
         }
 
         public void refreshSpec()
@@ -837,6 +863,20 @@ namespace EnlightenMAUI.ViewModels
             //logger.info("updated instance");
         }
 
+        public void ClearScatter()
+        {
+            logger.info("clearing scatter points");
+            scatterData.Clear();
+            logger.info("triggering scatter change");
+            SpectraChanged?.Invoke(this, this);
+            logger.info("triggered scatter change");
+        }
+
+        public void TriggerUpdate()
+        {
+            SpectraChanged?.Invoke(this, this);
+        }
+
         const double MS_TO_MIN = 60000;
         const double SEC_TO_MIN = 60;
 
@@ -983,6 +1023,30 @@ namespace EnlightenMAUI.ViewModels
             }
         }
         string _SlopeString = "";
+
+        public string VISID
+        {
+            get => _VISID;
+            set
+            {
+                _VISID = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(VISID)));
+            }
+        }
+        string _VISID = "";
+
+        public DateTime VISStamp = DateTime.Now;
+
+        public bool VISComplete
+        {
+            get => _VISComplete;
+            set
+            {
+                _VISComplete = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(VISComplete)));
+            }
+        }
+        bool _VISComplete = false;
 
         public bool isVIS
         {

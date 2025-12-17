@@ -238,7 +238,33 @@
                     <Label Margin="3" FontSize="16" TextColor="#eee" Text="Absorbance Change "/>
                     <Label Margin="3" FontSize="16" TextColor="#eee" Text="{Binding SlopeString}"/>
                 </StackLayout>
-                
+
+                <StackLayout Orientation="Horizontal" IsVisible="{Binding VISComplete}" HorizontalOptions="Center">
+                    <Label Margin="3" FontSize="16" TextColor="#eee" Text="ID "/>
+                    <Label Margin="3" FontSize="16" TextColor="#eee" Text="{Binding VISID}"/>
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" HorizontalOptions="Center">
+                    <Button CornerRadius="10"
+                        WidthRequest="140"
+                        HeightRequest="50"
+                        FontSize="16"
+                        Text="Save Results"
+                        Command="{Binding ellmanSaveCmd}"
+                        IsVisible="{Binding VISComplete}" 
+                        Margin="5,5,5,5"
+                        BackgroundColor="#515151"/>
+                    <Button CornerRadius="10"
+                        WidthRequest="140"
+                        HeightRequest="50"
+                        FontSize="16"
+                        Text="Save Results"
+                        Command="{Binding ellmanOpenCmd}"
+                        IsVisible="{Binding VISComplete}" 
+                        Margin="5,5,5,5"
+                        BackgroundColor="#515151"/>
+                </StackLayout>
+
             </StackLayout>
 
 

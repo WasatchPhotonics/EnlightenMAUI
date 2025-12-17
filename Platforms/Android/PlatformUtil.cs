@@ -68,6 +68,33 @@ internal class PlatformUtil
     static string configurationPath;
     static string autoSavePath;
 
+    public static async Task TakeScreenshotAsync(Settings settings, string filename)
+    {
+        if (Screenshot.Default.IsCaptureSupported)
+        {
+            logger.info("Taking screen");
+            IScreenshotResult screen = await Screenshot.Default.CaptureAsync();
+            logger.info("Took screen, getting save path");
+
+            string savePath = settings.getAutoSavePath();
+
+            string pathname = Path.Join(savePath, filename);
+            logger.debug($"Screenshot: creating {pathname}");
+
+            using (FileStream sw = System.IO.File.Create(pathname))
+            {
+                logger.info("Copying screen to file");
+                await screen.CopyToAsync(sw);
+            }
+            logger.info("Screenshot done");
+            //return ImageSource.FromStream(() => stream);
+        }
+        else
+        {
+            logger.info("Screens not supported");
+        }
+    }
+
     public static void RequestSelectLogFolder()
     {
         var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;

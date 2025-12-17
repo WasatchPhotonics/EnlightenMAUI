@@ -141,7 +141,7 @@ namespace EnlightenMAUI.Models
             // UI and the spectro we have to use static values rather than those in EEPROM 
             // integrationTimeMS = (ushort)(eeprom.startupIntegrationTimeMS > 0 && eeprom.startupIntegrationTimeMS < 5000 ? eeprom.startupIntegrationTimeMS : 20);
             // gainDb = eeprom.detectorGain;
-            integrationTimeMS = 21;
+            integrationTimeMS = 15;
             gainDb = 8;
             scansToAverage = 10;
 

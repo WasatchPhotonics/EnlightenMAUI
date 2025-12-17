@@ -1026,6 +1026,18 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     bool advanceInstructions()
     {
+        if (visIndex == 0 && spec.dark != null)
+        {
+            logger.info("resetting for another ellman run");
+            spec.toggleDark();
+            spec.toggleReferenceDark();
+            spec.toggleReference();
+            AnalysisViewModel.getInstance().VISID = "";
+            AnalysisViewModel.getInstance().VISComplete = false;
+            AnalysisViewModel.getInstance().ClearScatter();
+            logger.info("ellman reset complete");
+        }
+
         logger.info("Entered advance with index at {0}", visIndex);
         visIndex++;
         visInstructions = visInstructionSet[visIndex];
@@ -1204,6 +1216,11 @@ public class ScopeViewModel : INotifyPropertyChanged
             ++index;
             logger.info("Looping Ellman collection");
         }
+
+        AnalysisViewModel.getInstance().VISID = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        AnalysisViewModel.getInstance().VISStamp = DateTime.Now;
+        AnalysisViewModel.getInstance().VISComplete = true;
+        AnalysisViewModel.getInstance().TriggerUpdate();
     }
 
     /*
