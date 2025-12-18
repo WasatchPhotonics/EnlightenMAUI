@@ -1211,7 +1211,9 @@ public class ScopeViewModel : INotifyPropertyChanged
             if (neg)
                 noiseChange *= -1;
 
-            double intensity = spec.getAbsorbanceAtWavelength(ASSESSMENT_WL);
+            //double intensity = spec.getAbsorbanceAtWavelength(ASSESSMENT_WL, 0);
+            logger.info("Evaluating absorbance at {0}nm with {1} boxcar", settings.ellmanEvaluationWL, settings.ellmanBoxcar);
+            double intensity = spec.getAbsorbanceAtWavelength(settings.ellmanEvaluationWL, settings.ellmanBoxcar);
 
             //AnalysisViewModel.getInstance().AddScatter((double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);
             //logger.info("added scatter point ({0}, {1})", (double)stopwatch.ElapsedMilliseconds / 1000, stopwatch.ElapsedMilliseconds * msGap + noiseChange);

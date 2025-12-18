@@ -133,13 +133,9 @@
                                 <RowDefinition Height="Auto"/>
                                 <!-- Perform Deconvolution      -->
                                 <RowDefinition Height="Auto"/>
-                                <!-- Match Threshold      -->
+                                <!-- Match Threshold            -->
                                 <RowDefinition Height="Auto"/>
-                                <!-- SNR Threshold      -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Ellman Correction      -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Ellman Duration      -->
+                                <!-- SNR Threshold              -->
                             </Grid.RowDefinitions>
 
                             <Grid.ColumnDefinitions>
@@ -203,7 +199,7 @@
                                                      Value="{Binding snrThreshold}" 
                                                      IsEnabled="{Binding advancedModeEnabled}"
                                                      Minimum="0" Maximum="500" Step="1"
-                                                     HorizontalOptions="End">      
+                                                     HorizontalOptions="End">
                                 <telerik:RadNumericInput.IncreaseButtonStyle>
                                     <Style TargetType="telerik:RadNumericInput">
                                         <Setter Property="BackgroundColor" Value="#333"/>
@@ -215,14 +211,34 @@
                                     </Style>
                                 </telerik:RadNumericInput.DecreaseButtonStyle>
                             </telerik:RadNumericInput>
-                            
-                            <Label Grid.Row="10" Text="Activity Correction" TextColor="#eee" VerticalTextAlignment="Center"/>
+                        </Grid>
+                    </StackLayout>
+
+
+                    <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+
+                        <Label Text="Ellman Experiment Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                        <Grid HorizontalOptions="FillAndExpand" VerticalOptions="Start">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <!-- EMPTY                      -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Ellman Correction          -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Ellman Duration            -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Ellman Wavelength          -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Ellman Boxcar              -->
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="1" Text="Activity Correction" TextColor="#eee" VerticalTextAlignment="Center"/>
                             <telerik:RadNumericInput x:Name="ellmanCorrection" 
-                                                     Grid.Row="10"
+                                                     Grid.Row="1"
                                                      Value="{Binding ellmanCorrection}" 
                                                      IsEnabled="{Binding advancedModeEnabled}"
                                                      Minimum="0" Maximum="100000" Step="1"
-                                                     HorizontalOptions="End">      
+                                                     HorizontalOptions="End">
                                 <telerik:RadNumericInput.IncreaseButtonStyle>
                                     <Style TargetType="telerik:RadNumericInput">
                                         <Setter Property="BackgroundColor" Value="#333"/>
@@ -234,14 +250,52 @@
                                     </Style>
                                 </telerik:RadNumericInput.DecreaseButtonStyle>
                             </telerik:RadNumericInput>
-                            
-                            <Label Grid.Row="11" Text="Exp. Duration(sec)" TextColor="#eee" VerticalTextAlignment="Center"/>
+
+                            <Label Grid.Row="2" Text="Exp. Duration(sec)" TextColor="#eee" VerticalTextAlignment="Center"/>
                             <telerik:RadNumericInput x:Name="ellmanDuration" 
-                                                     Grid.Row="11"
+                                                     Grid.Row="2"
                                                      Value="{Binding ellmanDurationSec}" 
                                                      IsEnabled="{Binding advancedModeEnabled}"
                                                      Minimum="30" Maximum="3600" Step="1"
-                                                     HorizontalOptions="End">      
+                                                     HorizontalOptions="End">
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+
+                            <Label Grid.Row="3" Text="Eval Wavelength(nm)" TextColor="#eee" VerticalTextAlignment="Center"/>
+                            <telerik:RadNumericInput x:Name="ellmanWavelength" 
+                                                     Grid.Row="3"
+                                                     Value="{Binding ellmanEvaluationWL}" 
+                                                     IsEnabled="{Binding advancedModeEnabled}"
+                                                     Minimum="30" Maximum="2400" Step="1"
+                                                     HorizontalOptions="End">
+                                <telerik:RadNumericInput.IncreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.IncreaseButtonStyle>
+                                <telerik:RadNumericInput.DecreaseButtonStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                    </Style>
+                                </telerik:RadNumericInput.DecreaseButtonStyle>
+                            </telerik:RadNumericInput>
+
+                            <Label Grid.Row="4" Text="Boxcar Width" TextColor="#eee" VerticalTextAlignment="Center"/>
+                            <telerik:RadNumericInput x:Name="ellmanBoxcar" 
+                                                     Grid.Row="4"
+                                                     Value="{Binding ellmanBoxcar}" 
+                                                     IsEnabled="{Binding advancedModeEnabled}"
+                                                     Minimum="30" Maximum="2400" Step="1"
+                                                     HorizontalOptions="End">
                                 <telerik:RadNumericInput.IncreaseButtonStyle>
                                     <Style TargetType="telerik:RadNumericInput">
                                         <Setter Property="BackgroundColor" Value="#333"/>
@@ -256,6 +310,7 @@
 
                         </Grid>
                     </StackLayout>
+
 
                     <!-- Category header -->
                     <Label Text="Save Options" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />

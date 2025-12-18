@@ -67,6 +67,30 @@ public class Settings : INotifyPropertyChanged
     }
     int _ellmanDurationSec = 60;
 
+    public float ellmanEvaluationWL
+    {
+        get => _ellmanEvaluationWL;
+        set
+        {
+            logger.info("setting ellmanCorrection to {0:f2}", value);
+            _ellmanEvaluationWL = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ellmanEvaluationWL)));
+        }
+
+    }
+    float _ellmanEvaluationWL = 412f;
+
+    public int ellmanBoxcar
+    {
+        get => _ellmanBoxcar;
+        set
+        {
+            _ellmanBoxcar = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ellmanBoxcar)));
+        }
+    }
+    int _ellmanBoxcar = 0;
+
     public float matchThreshold
     {
         get => _matchThreshold;
@@ -339,6 +363,10 @@ public class Settings : INotifyPropertyChanged
                 ellmanSlopeCorrection = (float)json.EllmanCorrection;
             if (json.EllmanDurationSec != 0)
                 ellmanDurationSec = json.EllmanDurationSec;
+            if (json.EllmanEvaluationWavelength != 0)
+                ellmanEvaluationWL = (float)json.EllmanEvaluationWavelength;
+            if (json.EllmanBoxcar != 0)
+                ellmanBoxcar = json.EllmanBoxcar;
 
             matchThreshold = (float)json.MatchThereshold;
             snrThreshold = json.SNRThreshold;
@@ -403,6 +431,8 @@ public class Settings : INotifyPropertyChanged
         jtw.writePair("MatchThereshold", matchThreshold, null);
         jtw.writePair("EllmanCorrection", ellmanSlopeCorrection, null);
         jtw.writePair("EllmanDurationSec", ellmanDurationSec);
+        jtw.writePair("EllmanEvaluationWavelength", ellmanEvaluationWL);
+        jtw.writePair("EllmanBoxcar", ellmanBoxcar);
         jtw.writePair("SNRThreshold", snrThreshold);
         jtw.writePair("specCount", specCount);
         jtw.writePair("lastSpecDate", lastTime.ToString("yyyyMMddHHmmss"));

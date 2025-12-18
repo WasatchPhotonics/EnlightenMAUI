@@ -959,16 +959,30 @@ namespace EnlightenMAUI.Models
                 return pixel;
         }
 
-        public double getAbsorbanceAtWavelength(double nm)
+        public double getAbsorbanceAtWavelength(double nm, int boxcar)
         {
             int pixel = getPixelFromWavelength((double)nm);
             logger.info("pixel for intensity {0}", pixel);
             logger.info("absorbance at {0}nm = {1}", nm, measurement.absorbance[pixel]);
 
+            double total = 0;
+            int count = 0;
 
-            // OPTIONALLY ADD 
+            for (int i = -1 * boxcar; i < boxcar; ++i)
+            {
+                int index = i + pixel;
+                if (index > 0 && index < measurement.absorbance.Length)
+                {
+                    logger.info("absorbance at pixel {0}nm = {1}", index, measurement.absorbance[index]);
+                    total += measurement.absorbance[index];
+                    count++;
+                }
+            }
 
-            return measurement.absorbance[pixel];
+            double score = total / count;
+            logger.info("calculated absorbance at {0}nm = {1}", nm, score);
+
+            return score; //measurement.absorbance[pixel];
         }
 
         public bool FindAndApplyRamanShiftCorrection(Measurement spectrum, string compoundName)

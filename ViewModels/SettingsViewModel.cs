@@ -21,6 +21,8 @@ namespace EnlightenMAUI.ViewModels
         public double  EllmanCorrection;
         public int SNRThreshold;
         public int EllmanDurationSec;
+        public double EllmanEvaluationWavelength;
+        public int EllmanBoxcar;
         public string lastSpecDate;
         public int? specCount;
     }
@@ -417,6 +419,28 @@ namespace EnlightenMAUI.ViewModels
             {
                 settings.ellmanDurationSec = (int)value;
                 Preferences.Set("ellmanDurationSec", (int)value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+        public decimal ellmanBoxcar
+        {
+            get => (decimal)settings.ellmanBoxcar;
+            set
+            {
+                settings.ellmanBoxcar = (int)value;
+                Preferences.Set("ellmanBoxcar", (int)value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+        public decimal ellmanEvaluationWL
+        {
+            get => (decimal)settings.ellmanEvaluationWL;
+            set
+            {
+                settings.ellmanEvaluationWL = (int)value;
+                Preferences.Set("ellmanEvaluationWL", (int)value);
                 if (initialized)
                     updateConfigFile();
             }
