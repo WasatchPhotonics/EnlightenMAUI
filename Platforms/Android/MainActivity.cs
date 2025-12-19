@@ -5,10 +5,13 @@ using Android.OS;
 using Android.Content;
 using AndroidX.Core.App;
 using EnlightenMAUI.Common;
+using Android.Hardware.Usb;
 
 namespace EnlightenMAUI
 {
     [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density, ScreenOrientation = ScreenOrientation.Portrait)]
+    [IntentFilter(new[]{ "android.hardware.usb.action.USB_DEVICE_ATTACHED" })]
+    [MetaData("android.hardware.usb.action.USB_DEVICE_ATTACHED", Resource = "@xml/device_filter")]
     public class MainActivity : MauiAppCompatActivity
     {
         public static int REQUEST_TREE = 85;
@@ -27,6 +30,10 @@ namespace EnlightenMAUI
             if (requestCode == StorageHelper.RequestCode)
                 StorageHelper.OnActivityResult();
 
+
+            //UsbDevice device = (UsbDevice)data.GetParcelableExtra(UsbManager.ExtraDevice);
+            //UsbDevice device = (UsbDevice)data.GetSerializableExtra(UsbManager.ExtraDevice);
+            
             base.OnActivityResult(requestCode, resultCode, data);
 
             if (resultCode == Result.Ok)

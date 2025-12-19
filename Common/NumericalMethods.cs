@@ -621,7 +621,6 @@ namespace EnlightenMAUI.Common
 
     }
 
-
     public class CommonNumericalMethods
     {
         public static double[] linearInterpolation(double[] yIn, double[] xIn)
