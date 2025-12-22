@@ -968,7 +968,7 @@ namespace EnlightenMAUI.Models
             double total = 0;
             int count = 0;
 
-            for (int i = -1 * boxcar; i < boxcar; ++i)
+            for (int i = -1 * boxcar; i <= boxcar; ++i)
             {
                 int index = i + pixel;
                 if (index > 0 && index < measurement.absorbance.Length)
