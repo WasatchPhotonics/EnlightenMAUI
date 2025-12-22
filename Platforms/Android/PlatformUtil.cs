@@ -116,7 +116,7 @@ internal class PlatformUtil
             await sw.WriteLineAsync("Time,Absorbance");
             foreach (KeyValuePair<DateTime, double> point in points)
             {
-                await sw.WriteLineAsync(point.Key.ToString() + "," + point.Value.ToString("g"));
+                await sw.WriteLineAsync(point.Key.ToString("yyyy-MM-dd HH:mm:ss.fffzzz", System.Globalization.CultureInfo.InvariantCulture) + "," + point.Value.ToString("g"));
             }
         }
 
