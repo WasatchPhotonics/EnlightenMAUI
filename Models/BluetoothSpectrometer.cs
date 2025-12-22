@@ -37,6 +37,18 @@ public class BluetoothSpectrometer : Spectrometer
     const int MAX_RETRIES = 5;
     const int THROWAWAY_SPECTRA = 9;
 
+    const int NAK = 0;
+    const int ERR_BATT_SOC_INFO_NOT_RCVD = 1;
+    const int ERR_BATT_SOC_TOO_LOW = 2;
+    const int ERR_LASER_DIS_FLR = 3;
+    const int ERR_LASER_ENA_FLR = 4;
+    const int ERR_IMG_SNSR_IN_BAD_STATE = 5;
+    const int ERR_IMG_SNSR_STATE_TRANS_FLR = 6;
+    const int ERR_SPEC_ACQ_SIG_WAIT_TMO = 7;
+    const int ERR_AUTO_RAMAN_IN_PROGRESS = 8;
+    const int ERR_HW_INTERLOCK_OPEN = 9;
+    const int ERR_INVALID_PARAMS = 10;
+
     const int AUTO_OPT_TARGET_RATIO = 32;
     const int AUTO_TAKING_DARK = 33;
     const int AUTO_LASER_WARNING_DELAY = 34;
@@ -1459,6 +1471,8 @@ public class BluetoothSpectrometer : Spectrometer
         {
             if (totalPixelsRead > 0)
                 break;
+            else if (collectionErrorDetected)
+                return false;
 
             now = DateTime.Now;
             estimatedMilliseconds = (autoEnd - autoStart).TotalMilliseconds;
@@ -1588,11 +1602,28 @@ public class BluetoothSpectrometer : Spectrometer
         var c = characteristicUpdatedEventArgs.Characteristic;
 
         byte[] data = c.Value;
+        logger.hexdump(data, "collection status update: ");
 
         if (data[0] == 0xff && data[1] == 0xff)
         {
-            logger.hexdump(data, "collection status update: ");
+            if (data[2] == 11)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    notifyToast?.Invoke("Potential error detected, continuing for now");
+                });
+            }
+            if (data[2] < 11)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    notifyToast?.Invoke("Error attempting to perform auto wavecal, aborting");
+                });
 
+                logger.debug("Exiting collection early, read out error code {0}", data[2]);
+
+                collectionErrorDetected = true;
+            }
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
                 //raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));

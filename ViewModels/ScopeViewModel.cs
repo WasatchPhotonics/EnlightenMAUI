@@ -1658,7 +1658,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     void handleSpectrometerChange(object sender, PropertyChangedEventArgs e)
     {
         var name = e.PropertyName;
-        logger.debug($"SVM.handleSpectrometerChange: received notification from {sender} that property {name} changed");
+        //logger.debug($"SVM.handleSpectrometerChange: received notification from {sender} that property {name} changed");
 
         if (name == "acquiring")
             updateAcquireButtonProperties();
