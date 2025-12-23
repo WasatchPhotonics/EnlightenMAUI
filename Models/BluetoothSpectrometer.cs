@@ -8,6 +8,7 @@ using Java.Util.Functions;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
 using Xamarin.Google.Crypto.Tink.Prf;
+using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI.Models;
 
@@ -22,6 +23,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public delegate void ToastNotification(string msg);
     public event ToastNotification notifyToast;
+    public event EventHandler<BluetoothSpectrometer> DisconnectTriggered;
 
     // Singleton
     static BluetoothSpectrometer instance = null;
@@ -1183,15 +1185,41 @@ public class BluetoothSpectrometer : Spectrometer
         return true;
     }
 
+    const int MAX_BAD_SIGNAL_COUNT = 64;
+
     public async Task updateRSSI()
     {
+        int badSignalCount = 0;
+
         while (paired)
         {
-            
-            //logger.debug("current RSSI {0}", rssi);
+            logger.debug("current RSSI {0}", rssi);
             NotifyPropertyChanged("rssi");
             await Task.Delay(500); 
+            if (rssi < -90)
+            {
+                ++badSignalCount;
 
+                if (badSignalCount > MAX_BAD_SIGNAL_COUNT)
+                {
+                    DisconnectTriggered.Invoke(this, this);
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        notifyToast?.Invoke("Spectrometer disconnected due to poor signal. Re-pair needed to collect data");
+                    });
+                }
+                else if (badSignalCount > 2)
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        notifyToast?.Invoke(String.Format("Critically poor signal. Automatic disconnect in {0} seconds", (MAX_BAD_SIGNAL_COUNT - badSignalCount) / 2));
+                    });
+                }
+            }
+            else
+            {
+                badSignalCount = 0;
+            }
         }
     }
 
@@ -1544,6 +1572,14 @@ public class BluetoothSpectrometer : Spectrometer
     bool firstCollect = true;
     int delta = 0;
 
+    public void raiseToast(string message)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            notifyToast?.Invoke(message);
+        });
+    }
+
     public void receivePixels(
         object sender,
         CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
@@ -1594,7 +1630,7 @@ public class BluetoothSpectrometer : Spectrometer
         logger.debug($"BVM.receivePixels: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
     }
 
-    public void receiveSpectralUpdate(
+    public async void receiveSpectralUpdate(
             object sender,
             CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
     {
@@ -1606,6 +1642,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (data[0] == 0xff && data[1] == 0xff)
         {
+            /*
             if (data[2] == 11)
             {
                 MainThread.BeginInvokeOnMainThread(() =>
@@ -1613,12 +1650,16 @@ public class BluetoothSpectrometer : Spectrometer
                     notifyToast?.Invoke("Potential error detected, continuing for now");
                 });
             }
-            if (data[2] < 11)
+            */
+            if (data[2] <= 11)
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     notifyToast?.Invoke("Error attempting to perform auto wavecal, aborting");
                 });
+
+                await Task.Delay(1500);
+
 
                 logger.debug("Exiting collection early, read out error code {0}", data[2]);
 

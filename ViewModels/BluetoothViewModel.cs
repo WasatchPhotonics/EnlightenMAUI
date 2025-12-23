@@ -114,6 +114,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.ctor: adding ScanTimeoutElapsed handler");
         adapter.ScanTimeoutElapsed += _bleAdapterStoppedScanning;
 
+        adapter.DeviceConnectionLost += _bleAdapterDeviceConnectionLost;
+
         logger.debug("BVM.ctor: creating primaryServiceId");
         primaryServiceId = _makeGuid("ff00");
 
@@ -159,6 +161,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         logger.debug("BVM.ctor: done");
 }
+
+    private async void _bleAdapterDeviceConnectionLost(object sender, DeviceErrorEventArgs e)
+    {
+        if (spec != null && spec is BluetoothSpectrometer)
+        {
+            (spec as BluetoothSpectrometer).raiseToast("Bluetooth connection lost. Re-pair needed to collect data");
+            await doDisconnectAsync(true);
+        }
+    }
 
     private void _bleAdapterStoppedScanning(object sender, EventArgs e)
     {
@@ -1021,6 +1032,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
             {
                 (spec as BluetoothSpectrometer).bleDevice = bleDevice;
                 (spec as BluetoothSpectrometer).updateRSSI();
+                (spec as BluetoothSpectrometer).DisconnectTriggered += BluetoothViewModel_DisconnectTriggered;
             }
             else if (spec is API6BLESpectrometer)
             {
@@ -1042,6 +1054,11 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         logger.debug("BVM.doConnectAsync: done");
         return true;
+    }
+
+    private async void BluetoothViewModel_DisconnectTriggered(object sender, BluetoothSpectrometer e)
+    {
+        await doDisconnectAsync(true);
     }
 
     static bool isAPI6(string versionString)
