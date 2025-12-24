@@ -1026,6 +1026,14 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
                     await c.StartUpdatesAsync();
                 }
+                else if (c.CanUpdate && name == "acquireSpectrum" && spec is API9BLESpectrometer)
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += (spec as API9BLESpectrometer).receiveSpectralUpdate;
+
+                    await c.StartUpdatesAsync();
+                }
                 else if (c.CanUpdate && name == "spectrum" && spec is BluetoothSpectrometer)
                 {
                     logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
