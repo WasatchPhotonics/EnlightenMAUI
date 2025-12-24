@@ -146,6 +146,8 @@ public class Settings : INotifyPropertyChanged
         logger.info($"hostDescription = {hostDescription}");
         logger.info($"OS = {os}"); 
         if (spec == null || !spec.paired)
+            spec = API9BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = API6BLESpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();

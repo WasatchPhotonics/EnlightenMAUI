@@ -23,7 +23,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public delegate void ToastNotification(string msg);
     public event ToastNotification notifyToast;
-    public event EventHandler<BluetoothSpectrometer> DisconnectTriggered;
+    public event EventHandler<Spectrometer> DisconnectTriggered;
 
     // Singleton
     static BluetoothSpectrometer instance = null;

@@ -163,6 +163,8 @@ namespace EnlightenMAUI.ViewModels
             laserWarningDelaySec = 0;
 
             if (spec == null || !spec.paired)
+                spec = API9BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
                 spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();

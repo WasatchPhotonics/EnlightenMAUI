@@ -15,6 +15,10 @@ public class API6BLESpectrometer : Spectrometer
 {
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
 
+    public delegate void ToastNotification(string msg);
+    public event ToastNotification notifyToast;
+    public event EventHandler<Spectrometer> DisconnectTriggered;
+
     // Singleton
     static API6BLESpectrometer instance = null;
 
@@ -687,15 +691,41 @@ public class API6BLESpectrometer : Spectrometer
         return true;
     }
 
+    const int MAX_BAD_SIGNAL_COUNT = 64;
+
     public async Task updateRSSI()
     {
+        int badSignalCount = 0;
+
         while (paired)
         {
-
-            //logger.debug("current RSSI {0}", rssi);
+            logger.debug("current RSSI {0}", rssi);
             NotifyPropertyChanged("rssi");
             await Task.Delay(500);
+            if (rssi < -90)
+            {
+                ++badSignalCount;
 
+                if (badSignalCount > MAX_BAD_SIGNAL_COUNT)
+                {
+                    DisconnectTriggered.Invoke(this, this);
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        notifyToast?.Invoke("Spectrometer disconnected due to poor signal. Re-pair needed to collect data");
+                    });
+                }
+                else if (badSignalCount > 2)
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        notifyToast?.Invoke(String.Format("Critically poor signal. Automatic disconnect in {0} seconds", (MAX_BAD_SIGNAL_COUNT - badSignalCount) / 2));
+                    });
+                }
+            }
+            else
+            {
+                badSignalCount = 0;
+            }
         }
     }
 

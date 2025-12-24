@@ -99,6 +99,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
+            spec = API9BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = API6BLESpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
@@ -159,7 +161,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
+            if (spec is USBSpectrometer || spec is BluetoothSpectrometer || spec is API9BLESpectrometer)
                 spec.autoRamanEnabled = true;
             else
             {
@@ -1005,17 +1007,17 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool ble3Bar
     {
-        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -60; 
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer || spec is API9BLESpectrometer) && spec.rssi >= -60; 
     }
     
     public bool ble2Bar
     {
-        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -85 && spec.rssi < -60;
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer || spec is API9BLESpectrometer) && spec.rssi >= -85 && spec.rssi < -60;
     }
     
     public bool ble1Bar
     {
-        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi < -85;
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer || spec is API9BLESpectrometer) && spec.rssi < -85;
     }
 
     public string qrText
