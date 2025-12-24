@@ -581,12 +581,12 @@ namespace EnlightenMAUI.Models
 
             if (buffer[1] == (byte)AUTO_RAMAN_PROGRESS_STATE.AUTO_RAMAN_TOP_LVL_FSM_STATE_OPTIMIZATION)
             {
-                int counts = buffer[4] << 8 + buffer[5];
+                int counts = (int)(((long)buffer[4] << 8) + buffer[5]);
 
                 if (counts != prevCounts)
                 {
                     DateTime now = DateTime.Now;
-                    double ratio = (counts) / targetCounts;
+                    double ratio = (double)(counts) / targetCounts;
 
                     if (prevCounts != 0)
                     {
