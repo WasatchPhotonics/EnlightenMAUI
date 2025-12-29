@@ -196,6 +196,7 @@ namespace EnlightenMAUI.Models
                     }
                     */
 
+                    tag = "3rd Party";
                     logger.info("library loaded successfully");
                     loadSucceeded = true;
                     isLoading = false;
