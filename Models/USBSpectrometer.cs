@@ -609,7 +609,7 @@ namespace EnlightenMAUI.Models
                     optDone = true;
                     await syncParams();
 
-                    double estimatedMilliseconds = 2 * scansToAverage * integrationTimeMS;
+                    double estimatedMilliseconds = 2 * (scansToAverage + 1) * (integrationTimeMS + 50);
                     endTime = DateTime.Now.AddMilliseconds(estimatedMilliseconds);
                     logger.debug("new endtime estimate via param sync {0}", endTime.ToString("hh:mm:ss.fff"));
                 }

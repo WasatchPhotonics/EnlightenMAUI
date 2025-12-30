@@ -12,6 +12,23 @@ using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI.Models;
 
+public enum COLLECTION_FAILURE_CODES
+{
+    SPECTRUM_NAK_EC_NONE ,   // No Error
+    SPECTRUM_NAK_EC_BATT_SOC_INFO_NOT_RCVD,
+    SPECTRUM_NAK_EC_BATT_SOC_TOO_LOW,
+    SPECTRUM_NAK_EC_LASER_DIS_FLR,
+    SPECTRUM_NAK_EC_LASER_ENA_FLR,
+    SPECTRUM_NAK_EC_IMG_SNSR_IN_BAD_STATE,
+    SPECTRUM_NAK_EC_IMG_SNSR_STATE_TRANS_FLR,
+    SPECTRUM_NAK_EC_SPEC_ACQ_SIG_WAIT_TMO,
+    SPECTRUM_NAK_EC_INTERLOCK_NOT_CLOSED,
+    SPECTRUM_NAK_EC_UNKNOWN,
+    SPECTRUM_NAK_EC_BAD_MSG_FROM_STM32,
+    SPECTRUM_NAK_EC_AUTO_RAMAN_PROC_FLR,
+    SPECTRUM_NAK_EC_SEG_TX_FLR
+};
+
 // This more-or-less corresponds to WasatchNET.Spectrometer, or 
 // SiGDemo.Spectrometer.  Spectrometer state and logic should be 
 // encapsulated here.
@@ -38,18 +55,6 @@ public class BluetoothSpectrometer : Spectrometer
 
     const int MAX_RETRIES = 5;
     const int THROWAWAY_SPECTRA = 9;
-
-    const int NAK = 0;
-    const int ERR_BATT_SOC_INFO_NOT_RCVD = 1;
-    const int ERR_BATT_SOC_TOO_LOW = 2;
-    const int ERR_LASER_DIS_FLR = 3;
-    const int ERR_LASER_ENA_FLR = 4;
-    const int ERR_IMG_SNSR_IN_BAD_STATE = 5;
-    const int ERR_IMG_SNSR_STATE_TRANS_FLR = 6;
-    const int ERR_SPEC_ACQ_SIG_WAIT_TMO = 7;
-    const int ERR_AUTO_RAMAN_IN_PROGRESS = 8;
-    const int ERR_HW_INTERLOCK_OPEN = 9;
-    const int ERR_INVALID_PARAMS = 10;
 
     const int AUTO_OPT_TARGET_RATIO = 32;
     const int AUTO_TAKING_DARK = 33;
@@ -1651,17 +1656,27 @@ public class BluetoothSpectrometer : Spectrometer
                 });
             }
             */
-            if (data[2] <= 11)
+            if (data[2] <= (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_SEG_TX_FLR)
             {
+                string failureMessage = "Error attempting to collect spectra, aborting";
+                if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_BATT_SOC_TOO_LOW)
+                    failureMessage = "Error, battery critically low, aborting";
+                else if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_INTERLOCK_NOT_CLOSED)
+                    failureMessage = "Error, laser interlock disabled, aborting";
+                else if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_BATT_SOC_INFO_NOT_RCVD)
+                    failureMessage = "Error, battery appears disconnected, aborting";
+                else if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_IMG_SNSR_IN_BAD_STATE)
+                    failureMessage = "Spectrometer system failure, aborting";
+
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    notifyToast?.Invoke("Error attempting to perform auto wavecal, aborting");
+                    notifyToast?.Invoke(failureMessage);
                 });
 
                 await Task.Delay(1500);
 
 
-                logger.debug("Exiting collection early, read out error code {0}", data[2]);
+                logger.debug("Exiting collection early, read out error code {0}, raised {1} to user", data[2], failureMessage);
 
                 collectionErrorDetected = true;
             }
