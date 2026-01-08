@@ -124,6 +124,8 @@ public class Measurement : INotifyPropertyChanged
 
     const string UPLOAD_URL = "https://wasatchphotonics.com/save-spectra.php";
 
+    // this iterates on every call of reload(). There is a reload() before any spectra are collected,
+    // and then a reload() per spectrum, so this ensures we start counting spectra at 0
     public int specCount { get; set; } = -2;
 
     ////////////////////////////////////////////////////////////////////////

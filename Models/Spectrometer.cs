@@ -478,16 +478,16 @@ namespace EnlightenMAUI.Models
         }
         protected ushort _maxIntTimeMS = 1000;
 
-        public virtual byte minGainDb
+        public virtual byte autoRamanMinGainDb
         {
-            get => _minGainDb;
+            get => _autoRamanMinGainDb;
             set
             {
                 if (0 <= value && value <= 72)
                 {
-                    _minGainDb = value;
+                    _autoRamanMinGainDb = value;
                     logger.debug($"Spectrometer.minGainDb: next = {value}");
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(minGainDb)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanMinGainDb)));
                 }
                 else
                 {
@@ -495,18 +495,18 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _minGainDb = 0;
+        protected byte _autoRamanMinGainDb = 0;
 
-        public virtual byte maxGainDb
+        public virtual byte autoRamanMaxGainDb
         {
-            get => _maxGainDb;
+            get => _autoRamanMaxGainDb;
             set
             {
                 if (0 <= value && value <= 72)
                 {
-                    _maxGainDb = value;
+                    _autoRamanMaxGainDb = value;
                     logger.debug($"Spectrometer.maxGainDb: next = {value}");
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(maxGainDb)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRamanMaxGainDb)));
                 }
                 else
                 {
@@ -514,7 +514,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxGainDb = 12;
+        protected byte _autoRamanMaxGainDb = 12;
 
         public virtual ushort targetCounts
         {
@@ -631,8 +631,8 @@ namespace EnlightenMAUI.Models
             data.Add((byte)((maxIntTimeMS >> 8) & 0xFF));
             data.Add((byte)(minIntTimeMS & 0xFF));
             data.Add((byte)((minIntTimeMS >> 8) & 0xFF));
-            data.Add((byte)(maxGainDb & 0xFF));
-            data.Add((byte)(minGainDb & 0xFF));
+            data.Add((byte)(autoRamanMaxGainDb & 0xFF));
+            data.Add((byte)(autoRamanMinGainDb & 0xFF));
             data.Add((byte)(targetCounts & 0xFF));
             data.Add((byte)((targetCounts >> 8) & 0xFF));
             data.Add((byte)(maxCounts & 0xFF));

@@ -776,14 +776,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    public override byte minGainDb
+    public override byte autoRamanMinGainDb
     {
-        get => _minGainDb;
+        get => _autoRamanMinGainDb;
         set
         {
             if (0 <= value && value <= 72)
             {
-                _minGainDb = value;
+                _autoRamanMinGainDb = value;
                 logger.debug($"Spectrometer.minGainDb: next = {value}");
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
@@ -795,14 +795,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    public override byte maxGainDb
+    public override byte autoRamanMaxGainDb
     {
-        get => _maxGainDb;
+        get => _autoRamanMaxGainDb;
         set
         {
             if (0 <= value && value <= 72)
             {
-                _maxGainDb = value;
+                _autoRamanMaxGainDb = value;
                 logger.debug($"Spectrometer.maxGainDb: next = {value}");
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();

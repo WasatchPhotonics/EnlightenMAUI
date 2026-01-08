@@ -361,8 +361,8 @@ namespace EnlightenMAUI.ViewModels
                 spec.startGainDb = parameters.startGainDb;
                 spec.minIntTimeMS = parameters.minIntTimeMS;
                 spec.maxIntTimeMS = parameters.maxIntTimeMS;
-                spec.minGainDb = parameters.minGainDb;
-                spec.maxGainDb = parameters.maxGainDb;
+                spec.autoRamanMinGainDb = parameters.minGainDb;
+                spec.autoRamanMaxGainDb = parameters.maxGainDb;
                 spec.targetCounts = parameters.targetCounts;
                 spec.minCounts = parameters.minCounts;
                 spec.maxCounts = parameters.maxCounts;
