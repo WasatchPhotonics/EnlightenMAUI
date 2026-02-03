@@ -1,7 +1,4 @@
-﻿using Android.Widget;
-using Android.Content;
-using Android.OS.Storage;
-using Microsoft.Maui;
+﻿using Microsoft.Maui;
 using System;
 using System.Text;
 using static System.Net.Mime.MediaTypeNames;
