@@ -10,17 +10,13 @@ using EnlightenMAUI.Platforms;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Popups;
-using static Android.Provider.DocumentsContract;
-using static Java.Util.Jar.Attributes;
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
 #endif
 using EnlightenMAUI.Common;
-using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using System.Reflection.Metadata;
 using System.Text;
-using Xamarin.Google.Crypto.Tink.Signature;
 using DeconvolutionMAUI;
 using System.Security.AccessControl;
 using Accord.Math;
@@ -457,133 +453,21 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     private async Task findUserFiles()
     {
-        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-        Java.IO.File libraryFolder = null;
-        foreach (var cDir in cacheDirs)
+        userDataLibrary.Clear();
+        Dictionary<string, Measurement> temp = await PlatformUtil.findUserFiles(spec);
+        if (temp != null)
         {
-            var subs = await cDir.ListFilesAsync();
-            foreach (var sub in subs)
+            foreach (string sample in temp.Keys)
             {
-                if (sub.AbsolutePath.Split('/').Last() == "Documents")
+                if (!fullLibraryOverlayStatus.ContainsKey(sample))
                 {
-                    libraryFolder = sub;
-                    break;
+                    fullLibraryOverlayStatus.Add(sample, false);
+                    overlaysViewModel.selections.Add(new SelectionMetadata(sample, false));
                 }
+
+                userDataLibrary.Add(sample, temp[sample]);
             }
         }
-
-        if (libraryFolder == null)
-            return;
-
-        Regex csvReg = new Regex(@".*\.csv$");
-
-        var libraryFiles = libraryFolder.ListFiles();
-
-        foreach (var libraryFile in libraryFiles)
-        {
-            if (libraryFile.IsDirectory)
-            {
-                findUserFilesDeeper(libraryFile);
-            }
-            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
-            {
-                try
-                {
-                    await addUserFile(libraryFile);
-                }
-                catch (Exception e)
-                {
-                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
-                }
-            }
-        }
-    }
-
-    async Task findUserFilesDeeper(Java.IO.File folder)
-    {
-        var libraryFiles = folder.ListFiles();
-
-        foreach (var libraryFile in libraryFiles)
-        {
-            if (libraryFile.IsDirectory)
-            {
-                findUserFilesDeeper(libraryFile);
-            }
-            else
-            {
-                await addUserFile(libraryFile, true);
-            }
-        }
-    }
-
-    async Task addUserFile(Java.IO.File file, bool addToLibrary = false)
-    {
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
-        if (!fullLibraryOverlayStatus.ContainsKey(name))
-        {
-            if (addToLibrary)
-                await loadCSV(file);
-
-            fullLibraryOverlayStatus.Add(name, false);
-            overlaysViewModel.selections.Add(new SelectionMetadata(name, false));
-        }
-    }
-
-    async Task loadCSV(Java.IO.File file)
-    {
-        logger.info("start loading library file from {0}", file.AbsolutePath);
-
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
-
-        SimpleCSVParser parser = new SimpleCSVParser();
-        Stream s = File.OpenRead(file.AbsolutePath);
-        StreamReader sr = new StreamReader(s);
-        await parser.parseStream(s);
-
-        Measurement m = new Measurement();
-        m.wavenumbers = parser.wavenumbers.ToArray();
-        m.raw = parser.intensities.ToArray();
-        m.excitationNM = 785;
-        Wavecal wavecal = new Wavecal(spec.pixels);
-        wavecal.coeffs = spec.eeprom.wavecalCoeffs;
-        wavecal.excitationNM = spec.laserExcitationNM;
-
-        Measurement mOrig = m.copy();
-
-        /*
-        double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
-        while (smoothedSpec == null || smoothedSpec.Length == 0)
-        {
-            smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
-            await Task.Delay(50);
-        }
-        */
-
-        if (PlatformUtil.transformerLoaded)
-        {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
-            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
-            Measurement updated = new Measurement();
-            updated.wavenumbers = wavenumbers;
-            updated.raw = smoothed;
-            userDataLibrary.Add(name, updated);
-        }
-
-        else
-        {
-            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
-            double airPLSLambda = 10000;
-            int airPLSMaxIter = 100;
-            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)spec.eeprom.ROIHorizStart, (int)spec.eeprom.ROIHorizEnd);
-            double[] shortened = new double[updated.processed.Length];
-            Array.Copy(array, 0, shortened, spec.eeprom.ROIHorizStart, array.Length);
-            updated.raw = shortened;
-            updated.dark = null;
-
-            userDataLibrary.Add(name, updated);
-        }
-
-        logger.info("finish loading library file from {0}", file.AbsolutePath);
     }
 
 

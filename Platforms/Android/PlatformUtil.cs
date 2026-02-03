@@ -1,22 +1,24 @@
 ﻿using Android;
+using Android.Content;
 using Android.Content.Res;
+using Android.OS;
+using Android.Webkit;
+using AndroidX.AppCompat.Widget;
+using AndroidX.DocumentFile.Provider;
+using EnlightenMAUI.Models;
+using EnlightenMAUI.Common;
+using Java.IO;
+using Microsoft.ML;
+using Microsoft.ML.Data;
+using Microsoft.ML.OnnxRuntime.Tensors;
+using Microsoft.ML.Transforms.Onnx;
+using Newtonsoft.Json;
+using NumSharp;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.ML;
-using Microsoft.ML.Data;
-using Microsoft.ML.Transforms.Onnx;
 using Telerik.Maui.Controls.Scheduler;
-using Microsoft.ML.OnnxRuntime.Tensors;
-using AndroidX.AppCompat.Widget;
-using EnlightenMAUI.Models;
-using Android.Content;
-using Android.OS;
-using Android.Webkit;
-using AndroidX.DocumentFile.Provider;
-using Java.IO;
-using Newtonsoft.Json;
-using NumSharp;
+using static Android.Widget.GridLayout;
 namespace EnlightenMAUI.Platforms; 
 
 
@@ -367,6 +369,129 @@ internal class PlatformUtil
             logger.info("onnx load failed with exception {0}", e.Message);
         }
     }
+
+
+
+    public static async Task<Dictionary<string, Measurement>> findUserFiles(Spectrometer spec)
+    {
+        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        Java.IO.File libraryFolder = null;
+
+        Dictionary<string, Measurement> temp = new Dictionary<string, Measurement>();
+
+        foreach (var cDir in cacheDirs)
+        {
+            var subs = await cDir.ListFilesAsync();
+            foreach (var sub in subs)
+            {
+                if (sub.AbsolutePath.Split('/').Last() == "Documents")
+                {
+                    libraryFolder = sub;
+                    break;
+                }
+            }
+        }
+
+        if (libraryFolder == null)
+            return null;
+
+        Regex csvReg = new Regex(@".*\.csv$");
+
+        var libraryFiles = libraryFolder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.IsDirectory)
+            {
+                await findUserFilesDeeper(libraryFile, spec, temp);
+            }
+            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+            {
+                try
+                {
+                    await addUserFile(libraryFile, spec, temp);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                }
+            }
+        }
+
+        return temp;
+    }
+
+    async static Task findUserFilesDeeper(Java.IO.File folder, Spectrometer spec, Dictionary<string, Measurement> dict)
+    {
+        var libraryFiles = folder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.IsDirectory)
+            {
+                await findUserFilesDeeper(libraryFile, spec, dict);
+            }
+            else
+            {
+                await addUserFile(libraryFile, spec, dict);
+            }
+        }
+    }
+
+    async static Task addUserFile(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)
+    {
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        await loadCSV(file, spec, dict);
+    }
+
+    async static Task loadCSV(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)
+    {
+        logger.info("start loading library file from {0}", file.AbsolutePath);
+
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+        Wavecal wavecal = new Wavecal(spec.pixels);
+        wavecal.coeffs = spec.eeprom.wavecalCoeffs;
+        wavecal.excitationNM = spec.laserExcitationNM;
+
+        Measurement mOrig = m.copy();
+
+        if (transformerLoaded)
+        {
+            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            dict.Add(name, updated);
+        }
+
+        else
+        {
+            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)spec.eeprom.ROIHorizStart, (int)spec.eeprom.ROIHorizEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, spec.eeprom.ROIHorizStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+            dict.Add(name, updated);
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsolutePath);
+    }
+
+
 
 
     static async Task loadCorrections(string file)

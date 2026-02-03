@@ -12,13 +12,7 @@ using EnlightenMAUI.Common;
 //using Android.Hardware.Usb;
 //using Android.Content;
 using LibUsbDotNet.Main;
-using Android.Content;
-using Android.Hardware.Usb;
-using Android.App;
-using Android.Nfc;
-using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui;
-using Xamarin.Google.Crypto.Tink.Subtle;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -30,7 +24,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     public ObservableCollection<BLEDevice> bleDeviceList { get; private set; }
     public ObservableCollection<USBViewDevice> usbDeviceList { get; private set; }
     BLEDevice bleDevice;
-    Android.Hardware.Usb.UsbDevice acc;
     //Task libraryTester;
 
     public Command scanCmd { get; }
@@ -67,10 +60,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     }
 };*/
         
-    
-
-    PendingIntent usbIntent;
-
     IService service;
 
     Dictionary<string, Guid> guidByName = new Dictionary<string, Guid>();
@@ -430,18 +419,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     
     private async Task<bool> doUSBScanAsync()
     {
-        /*
-        //UsbManager manager = ContextWrapper.
-        Context con = Android.App.Application.Context;
-        UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
-
-        foreach (UsbDevice acc in manager.DeviceList.Values)
-        {
-            //acc.
-            acc.
-
-        }
-        */
         logger.info("Looking for usb devices via Android services");
         try
         {
@@ -489,42 +466,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             logger.info("USB grab failed with error {0}", ex.Message);
         }
-
-        /*
-        try
-        {
-            UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
-            if (deviceRegistries == null)
-            {
-                logger.info("No USB devices found");
-            }
-            else if (deviceRegistries.Count == 0)
-            {
-                logger.info("No USB devices found");
-            }
-
-            else
-            {
-                foreach (UsbRegistry usbRegistry in deviceRegistries)
-                {
-                    String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
-                        usbRegistry.Vid,
-                        usbRegistry.Pid,
-                        (ushort)usbRegistry.Rev,
-                        usbRegistry[SPDRP.DeviceDesc]);
-
-                    logger.info("attempting to open {0}", desc);
-
-                    USBViewDevice uvd = new USBViewDevice("Test", usbRegistry.Vid.ToString("x4"), usbRegistry.Pid.ToString("x4"));
-                    usbDeviceList.Add(uvd);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.info("USB grab failed with error {0}", ex.Message);
-        }
-        */
 
         return true;
         
