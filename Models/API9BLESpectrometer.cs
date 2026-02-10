@@ -3,11 +3,8 @@ using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using static Android.Widget.GridLayout;
-using Java.Util.Functions;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
-using Xamarin.Google.Crypto.Tink.Prf;
 using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI.Models

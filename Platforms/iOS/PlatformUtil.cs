@@ -1,16 +1,30 @@
-﻿using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using EnlightenMAUI.Models;
+using Intents;
+using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
 using Microsoft.ML.Data;
-using Microsoft.ML.Transforms.Onnx;
-using Telerik.Maui.Controls.Scheduler;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using EnlightenMAUI.Models;
+using Microsoft.ML.Transforms.Onnx;
 using Newtonsoft.Json;
 using NumSharp;
-using Intents;
-namespace EnlightenMAUI.Platforms.iOS;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using Telerik.Maui.Controls.Scheduler;
+namespace EnlightenMAUI.Platforms;
+
+public static class StorageHelper
+{
+    public static async Task<bool> GetManageAllFilesPermission()
+    {
+        return false;
+    }
+
+    public static void OnActivityResult()
+    {
+        //GetPermissionTask?.SetResult(AndrOS.Environment.IsExternalStorageManager);
+    }
+}
 
 internal class PlatformUtil
 {
@@ -587,7 +601,14 @@ internal class PlatformUtil
     {
         return null;
     }
-
+    public static List<string> getSubLibraries()
+    {
+        return null;
+    }
+    public async static Task<Dictionary<string, Measurement>> loadFiles(string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+    {
+        return null;
+    }
 
     static bool writeable(string path)
     {

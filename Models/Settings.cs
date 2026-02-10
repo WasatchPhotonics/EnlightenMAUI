@@ -4,8 +4,6 @@ using EnlightenMAUI.Common;
 using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
-using static Android.Widget.GridLayout;
-using AndroidX.Startup;
 using Newtonsoft.Json;
 using WPProduction.Utils;
 

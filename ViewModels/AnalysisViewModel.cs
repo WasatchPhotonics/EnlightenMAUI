@@ -3,9 +3,8 @@ using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
 using EnlightenMAUI.Popups;
-using Microsoft.Maui.ApplicationModel;
-using Google.Android.Material.Shape;
 using MathNet.Numerics.Statistics;
+using Microsoft.Maui.ApplicationModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,7 +14,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.ViewModels
 {
@@ -80,25 +78,10 @@ namespace EnlightenMAUI.ViewModels
             else if (settings.library is WPLibrary)
                 _currentLibrary = settings.libraryLabel;
 
-            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            foreach (var cDir in cacheDirs)
+            List<string> sublibraries = PlatformUtil.getSubLibraries();
+            foreach (string  sublibrary in sublibraries)
             {
-                var subs = cDir.ListFiles();
-                foreach (var sub in subs)
-                {
-                    if (sub.AbsolutePath.Split('/').Last() == "library")
-                    {
-                        if (sub.IsDirectory)
-                        {
-                            var subLibs = sub.ListFiles();
-                            foreach (var subLib in subLibs)
-                            {
-                                if (subLib.IsDirectory && !compLibrary.Contains(subLib.AbsolutePath.Split('/').Last()))
-                                    compLibrary.Add(subLib.AbsolutePath.Split('/').Last());
-                            }
-                        }
-                    }
-                }
+                compLibrary.Add(sublibrary);
             }
 
             settings.LibraryChanged += Settings_LibraryChanged;
@@ -123,26 +106,12 @@ namespace EnlightenMAUI.ViewModels
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
             precisionCmd = new Command(() => { _ = triggerPrecision(); });
 
-            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            foreach (var cDir in cacheDirs)
+            List<string> sublibraries = PlatformUtil.getSubLibraries();
+            foreach (string sublibrary in sublibraries)
             {
-                var subs = cDir.ListFiles();
-                foreach (var sub in subs)
-                {
-                    if (sub.AbsolutePath.Split('/').Last() == "library")
-                    {
-                        if (sub.IsDirectory)
-                        {
-                            var subLibs = sub.ListFiles();
-                            foreach (var subLib in subLibs)
-                            {
-                                if (subLib.IsDirectory && !compLibrary.Contains(subLib.AbsolutePath.Split('/').Last()))
-                                    compLibrary.Add(subLib.AbsolutePath.Split('/').Last());
-                            }
-                        }
-                    }
-                }
+                compLibrary.Add(sublibrary);
             }
+
 
             SetData(null, null);
 

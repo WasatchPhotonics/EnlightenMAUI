@@ -10,8 +10,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using static Android.Provider.ContactsContract.CommonDataKinds;
-using static Android.Telephony.CarrierConfigManager;
 
 namespace EnlightenMAUI.Models
 {

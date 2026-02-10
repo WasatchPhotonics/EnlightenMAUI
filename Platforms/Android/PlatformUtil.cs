@@ -1,24 +1,34 @@
 ﻿using Android;
 using Android.Content;
 using Android.Content.Res;
+using Android.Nfc;
 using Android.OS;
 using Android.Webkit;
 using AndroidX.AppCompat.Widget;
 using AndroidX.DocumentFile.Provider;
-using EnlightenMAUI.Models;
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Models;
 using Java.IO;
+using Kotlin.Contracts;
+using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Transforms.Onnx;
 using Newtonsoft.Json;
 using NumSharp;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
+using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using static Android.Widget.GridLayout;
+using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
+using AndrApp = Android.App;
+using AndrContent = Android.Content;
+using AndrOS = Android.OS;
+using AndrNet = Android.Net;
 namespace EnlightenMAUI.Platforms; 
 
 
@@ -52,6 +62,41 @@ internal class SimplePrediction
 
 }
 
+public static class StorageHelper
+{
+    public const int RequestCode = 2296;
+    private static TaskCompletionSource<bool>? GetPermissionTask { get; set; }
+
+    public static async Task<bool> GetManageAllFilesPermission()
+    {
+        if (!AndrOS.Environment.IsExternalStorageManager)
+        {
+            try
+            {
+                AndrNet.Uri uri = AndrNet.Uri.Parse("package:" + Platform.CurrentActivity.ApplicationInfo.PackageName);
+
+                GetPermissionTask = new();
+                Intent intent = new(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
+                Platform.CurrentActivity.StartActivityForResult(intent, RequestCode);
+            }
+            catch (Exception ex)
+            {
+                // Handle Exception
+            }
+
+            return await GetPermissionTask.Task;
+        }
+
+        else
+            return true;
+    }
+
+    public static void OnActivityResult()
+    {
+        GetPermissionTask?.SetResult(AndrOS.Environment.IsExternalStorageManager);
+    }
+}
+
 internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
@@ -73,11 +118,11 @@ internal class PlatformUtil
     public static void RequestSelectLogFolder()
     {
         var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-        var intent = new Android.Content.Intent(Android.Content.Intent.ActionOpenDocumentTree);
-        intent.AddFlags(Android.Content.ActivityFlags.GrantReadUriPermission |
-                        Android.Content.ActivityFlags.GrantWriteUriPermission |
-                        Android.Content.ActivityFlags.GrantPersistableUriPermission |
-                        Android.Content.ActivityFlags.GrantPrefixUriPermission);
+        var intent = new AndrContent.Intent(AndrContent.Intent.ActionOpenDocumentTree);
+        intent.AddFlags(AndrContent.ActivityFlags.GrantReadUriPermission |
+                        AndrContent.ActivityFlags.GrantWriteUriPermission |
+                        AndrContent.ActivityFlags.GrantPersistableUriPermission |
+                        AndrContent.ActivityFlags.GrantPrefixUriPermission);
         current_activity.StartActivityForResult(intent, REQUEST_TREE);
     }
 
@@ -1123,7 +1168,7 @@ internal class PlatformUtil
     }
     public static string getLibraryPath()
     {
-        var docDir = Android.App.Application.Context.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments);
+        var docDir = AndrApp.Application.Context.GetExternalFilesDir(AndrOS.Environment.DirectoryDocuments);
         return Path.Join(docDir.Path, "MatchingLibrary");
     }
 
@@ -1137,7 +1182,7 @@ internal class PlatformUtil
             return savePath;
         }
 
-        var docDir = Android.App.Application.Context.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments);
+        var docDir = AndrApp.Application.Context.GetExternalFilesDir(AndrOS.Environment.DirectoryDocuments);
         var today = DateTime.Now.ToString("yyyy-MM-dd");
         var todayDir = Path.Join(docDir.Path, today);
 
@@ -1159,7 +1204,7 @@ internal class PlatformUtil
             return userLibraryPath;
         }
 
-        var docDir = Android.App.Application.Context.GetExternalFilesDir(null);
+        var docDir = AndrApp.Application.Context.GetExternalFilesDir(null);
         var today = DateTime.Now.ToString("yyyy-MM-dd");
         var userLibDir = Path.Join(docDir.Path, "User Library");
 
@@ -1181,7 +1226,7 @@ internal class PlatformUtil
             return configurationPath;
         }
 
-        var docDir = Android.App.Application.Context.GetExternalFilesDir(null).AbsolutePath;
+        var docDir = AndrApp.Application.Context.GetExternalFilesDir(null).AbsolutePath;
 
         if (!writeable(docDir))
         {
@@ -1222,6 +1267,283 @@ internal class PlatformUtil
         }
 
         return autoSavePath = todayDir;
+    }
+
+    public static List<string> getSubLibraries()
+    {
+        List<string> compLibrary = new List<string>();
+
+        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        foreach (var cDir in cacheDirs)
+        {
+            var subs = cDir.ListFiles();
+            foreach (var sub in subs)
+            {
+                if (sub.AbsolutePath.Split('/').Last() == "library")
+                {
+                    if (sub.IsDirectory)
+                    {
+                        var subLibs = sub.ListFiles();
+                        foreach (var subLib in subLibs)
+                        {
+                            if (subLib.IsDirectory && !compLibrary.Contains(subLib.AbsolutePath.Split('/').Last()))
+                                compLibrary.Add(subLib.AbsolutePath.Split('/').Last());
+                        }
+                    }
+                }
+            }
+        }
+
+        return compLibrary;
+    }
+
+    public async static Task<Dictionary<string, Measurement>> loadFiles(string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+    {
+        //isLoading = true;
+        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        Java.IO.File libraryFolder = null;
+        string[] rootPath = root.Split('/');
+        int depth = rootPath.Length;
+
+        foreach (var cDir in cacheDirs)
+        {
+            libraryFolder = traverseDown(rootPath, cDir);
+            if (libraryFolder != null)
+                break;
+
+        }
+
+        if (libraryFolder == null)
+        {
+            /*
+            if (library.Count > 0)
+                loadSucceeded = true;
+            isLoading = false;
+            InvokeLoadFinished();
+            return;
+            */
+            return library;
+        }
+
+        Regex csvReg = new Regex(@".*\.csv$");
+        Regex jsonReg = new Regex(@".*\.json$");
+
+        var libraryFiles = libraryFolder.ListFiles();
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (jsonReg.IsMatch(libraryFile.AbsolutePath))
+            {
+                try
+                {
+                    await loadJSON(libraryFile, originalRaws, originalDarks, library);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                }
+            }
+            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+            {
+                try
+                {
+                    await loadCSV(libraryFile, originalRaws, library);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                }
+            }
+        }
+
+        /*
+        if (library.Count > 0)
+            loadSucceeded = true;
+        isLoading = false;
+        logger.debug("finished loading library files");
+        if (root != "User Library")
+            tag = root.Split('/').Last();
+
+        InvokeLoadFinished();
+        logger.debug("prepping data for decon");
+        */
+
+        if (doDecon)
+        {
+#if USE_DECON
+                if (PlatformUtil.transformerLoaded)
+                {
+                    double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
+                }
+                else
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+#endif
+        }
+
+        logger.debug("finished prepping data for decon");
+        return library;
+    }
+
+    static Java.IO.File traverseDown(string[] rootPath, Java.IO.File dir)
+    {
+        var subs = dir.ListFiles();
+        Java.IO.File libraryFolder = null;
+
+        foreach (var sub in subs)
+        {
+            if (sub.AbsolutePath.Split('/').Last() == rootPath[0])
+            {
+                if (rootPath.Length == 1)
+                {
+                    libraryFolder = sub;
+                    break;
+                }
+
+                else if (sub.IsDirectory)
+                {
+                    string[] shortenedPath = new string[rootPath.Length - 1];
+                    Array.Copy(rootPath, 1, shortenedPath, 0, rootPath.Length - 1);
+                    return traverseDown(shortenedPath, sub);
+                }
+            }
+        }
+
+        return libraryFolder;
+    }
+
+    static async Task loadCSV(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
+    {
+        logger.info("start loading library file from {0}", file.AbsolutePath);
+
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+
+
+#if USE_DECON
+            Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
+#endif
+
+        Measurement mOrig = m.copy();
+        originalRaws.Add(name, mOrig.raw);
+
+        /*
+        double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+        while (smoothedSpec == null || smoothedSpec.Length == 0)
+        {
+            smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            await Task.Delay(50);
+        }
+        */
+
+        if (false)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+
+        else
+        {
+            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
+
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = newIntensities;
+            //double airPLSLambda = 10000;
+            //int airPLSMaxIter = 100;
+            //double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            //double[] shortened = new double[updated.processed.Length];
+            //Array.Copy(array, 0, shortened, roiStart, array.Length);
+            //updated.raw = shortened;
+            //updated.dark = null;
+
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(updated.wavenumbers), new List<double>(updated.processed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsolutePath);
+    }
+    static async Task loadJSON(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, Dictionary<string, Measurement> library)
+    {
+        logger.info("start loading library file from {0}", file.AbsolutePath);
+
+        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+        StreamReader sr = new StreamReader(s);
+        string blob = await sr.ReadToEndAsync();
+
+        spectrumJSON json = JsonConvert.DeserializeObject<spectrumJSON>(blob);
+        if (json.tag != null && json.tag.Length > 0)
+        {
+            name = json.tag;
+        }
+
+        Measurement m = new Measurement(json);
+        Wavecal otherCal = new Wavecal(m.pixels);
+        otherCal.coeffs = m.wavecalCoeffs;
+        otherCal.excitationNM = m.excitationNM;
+
+        Measurement mOrig = m.copy();
+        originalRaws.Add(name, mOrig.raw);
+        originalDarks.Add(name, mOrig.dark);
+
+
+        if (PlatformUtil.transformerLoaded)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+        else
+        {
+            /*
+            Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+            */
+
+            library.Add(name, mOrig);
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsolutePath);
     }
 
 

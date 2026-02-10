@@ -2,7 +2,6 @@
 using EnlightenMAUI.Platforms;
 using System.ComponentModel;
 using System.Text;
-using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.Models;
 

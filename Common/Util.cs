@@ -7,6 +7,7 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using Telerik.Maui;
 using EnlightenMAUI.Models;
+using EnlightenMAUI.Platforms;
 using MathNet.Numerics.LinearAlgebra.Factorization;
 // Create an alias for CSparse's SparseLU class.
 using CSparseLU = CSparse.Double.Factorization.SparseLU;
@@ -20,41 +21,6 @@ using MathNet.Numerics.LinearAlgebra.Double;
 using SkiaSharp;
 
 namespace EnlightenMAUI.Common;
-
-public static class StorageHelper
-{
-    public const int RequestCode = 2296;
-    private static TaskCompletionSource<bool>? GetPermissionTask { get; set; }
-
-    public static async Task<bool> GetManageAllFilesPermission()
-    {
-        if (!Android.OS.Environment.IsExternalStorageManager)
-        {
-            try
-            {
-                Android.Net.Uri uri = Android.Net.Uri.Parse("package:" + Platform.CurrentActivity.ApplicationInfo.PackageName);
-
-                GetPermissionTask = new();
-                Intent intent = new(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
-                Platform.CurrentActivity.StartActivityForResult(intent, RequestCode);
-            }
-            catch (Exception ex)
-            {
-                // Handle Exception
-            }
-
-            return await GetPermissionTask.Task;
-        }
-
-        else
-            return true;
-    }
-
-    public static void OnActivityResult()
-    {
-        GetPermissionTask?.SetResult(Android.OS.Environment.IsExternalStorageManager);
-    }
-}
 
 /// <summary>
 /// This class provides some generic utility methods to the whole

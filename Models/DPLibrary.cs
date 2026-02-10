@@ -46,14 +46,6 @@ namespace EnlightenMAUI.Models
             "Narcotics, Drugs, Controlled Substances Vol. 2 (customs)"
         };
 
-        public class DPCR : Android.Content.ContentResolver
-        {
-            public DPCR(Context context) : base(context)
-            {
-
-            }
-        }
-
         public DPLibrary(string root, Spectrometer spec) : base(root, spec, false)
         {
             spectrum.y = new float[0];
