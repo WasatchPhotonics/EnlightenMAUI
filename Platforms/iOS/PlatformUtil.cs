@@ -10,7 +10,7 @@ using EnlightenMAUI.Models;
 using Newtonsoft.Json;
 using NumSharp;
 using Intents;
-namespace EnlightenMAUI.Platforms;
+namespace EnlightenMAUI.Platforms.iOS;
 
 internal class PlatformUtil
 {
