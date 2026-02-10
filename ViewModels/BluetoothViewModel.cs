@@ -428,7 +428,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     private async Task<bool> doUSBScanAsync()
     {
         logger.info("Looking for usb devices via Android services");
-        List<USBViewDevice> temp = await PlatformBluetooth.doUSBScanAsync();
+        List<USBViewDevice> temp = await PlatformUSB.doUSBScanAsync();
         usbDeviceList = new ObservableCollection<USBViewDevice>(temp);
 
         return true;        
@@ -563,7 +563,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     
     private async Task<bool> doConnectOrDisconnectUSBAsync()
     {
-        bool ok = await PlatformBluetooth.doConnectOrDisconnectUSBAsync(spec);
+        bool ok = await PlatformUSB.doConnectOrDisconnectUSBAsync(spec);
 
         if (ok)
         {

@@ -10,7 +10,7 @@ using AndrApp = Android.App;
 
 namespace EnlightenMAUI.Platforms.Android
 {
-    internal class PlatformBluetooth
+    internal class PlatformUSB
     {
         static UsbDevice device;
         static AndrApp.PendingIntent usbIntent;

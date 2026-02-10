@@ -5,7 +5,7 @@ using EnlightenMAUI.Models;
 
 namespace EnlightenMAUI.Platforms.iOS
 {
-    internal class PlatformBluetooth
+    internal class PlatformUSB
     {
         internal static async Task<List<USBViewDevice>> doUSBScanAsync()
         {
