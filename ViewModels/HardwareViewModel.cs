@@ -33,6 +33,8 @@ public class HardwareViewModel : INotifyPropertyChanged
         eepromFields = new ObservableCollection<ViewableSetting>(eeprom.viewableSettings);
 
         if (spec == null || !spec.paired)
+            spec = API9BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = API6BLESpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
@@ -41,6 +43,11 @@ public class HardwareViewModel : INotifyPropertyChanged
         {
             logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
             (spec as BluetoothSpectrometer).bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
+        }
+        else if (spec is API9BLESpectrometer)
+        {
+            logger.debug("HVM.ctor: subscribing to updates of BLEDevice descriptors");
+            (spec as API9BLESpectrometer).bleDeviceInfo.PropertyChanged += _bleDeviceUpdate;
         }
         else if (spec is API6BLESpectrometer)
         {

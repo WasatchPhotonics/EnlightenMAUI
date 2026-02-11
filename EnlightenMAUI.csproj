@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-android34.0</TargetFrameworks>
+		<TargetFrameworks>net9.0-android35.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
@@ -31,7 +31,7 @@
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">32.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
@@ -45,19 +45,23 @@
 		<RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>
 		<PackageTags>wasatch;photonics;raman;spectrometer;ble</PackageTags>
 		<RepositoryType>git</RepositoryType>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.34</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.49</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
+	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.34</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.49</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
+	  <AndroidPackageFormat>apk</AndroidPackageFormat>
+	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -78,7 +82,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="libdpSDK.so" />
+	  <None Remove="libdpSTJE.so" />
+	  <None Remove="Platforms\Android\Resources\xml\device_filter.xml" />
+	  <None Remove="Stj.ProtectionSdk.so" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />
 	  <None Remove="Resources\Images\apeture.svg" />
 	  <None Remove="Resources\Images\bulb_dark.svg" />
@@ -97,8 +103,14 @@
 	  <None Remove="Resources\Images\ui_slider_knob.png" />
 	</ItemGroup>
 
-	<ItemGroup Condition="Exists('lib\arm64-v8a\libdpSDK.so')">
-	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSDK.so">
+	<ItemGroup Condition="Exists('lib\arm64-v8a\libdpSTJE.so')">
+	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSTJE.so">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </AndroidNativeLibrary>
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('lib\arm64-v8a\Stj.ProtectionSdk.so')">
+	  <AndroidNativeLibrary Include="lib\arm64-v8a\Stj.ProtectionSdk.so">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </AndroidNativeLibrary>
 	</ItemGroup>

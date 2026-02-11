@@ -114,6 +114,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
         logger.debug("BVM.ctor: adding ScanTimeoutElapsed handler");
         adapter.ScanTimeoutElapsed += _bleAdapterStoppedScanning;
 
+        adapter.DeviceConnectionLost += _bleAdapterDeviceConnectionLost;
+
         logger.debug("BVM.ctor: creating primaryServiceId");
         primaryServiceId = _makeGuid("ff00");
 
@@ -131,6 +133,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
         guidByName["eepromData"]        = _makeGuid("ff08");
         guidByName["batteryStatus"]     = _makeGuid("ff09");
         guidByName["generic"]           = _makeGuid("ff0a"); // was ROI
+        guidByName["spectrum"]          = _makeGuid("ff0b"); // was ROI
 
         foreach (var pair in guidByName)
             nameByGuid[pair.Value] = pair.Key;
@@ -158,6 +161,15 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         logger.debug("BVM.ctor: done");
 }
+
+    private async void _bleAdapterDeviceConnectionLost(object sender, DeviceErrorEventArgs e)
+    {
+        if (spec != null && spec is BluetoothSpectrometer)
+        {
+            (spec as BluetoothSpectrometer).raiseToast("Bluetooth connection lost. Re-pair needed to collect data");
+            await doDisconnectAsync(true);
+        }
+    }
 
     private void _bleAdapterStoppedScanning(object sender, EventArgs e)
     {
@@ -359,6 +371,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     private async Task<bool> doScanAsync()
     {
+        //DPLibrary library = new DPLibrary("database", null);
+
         if (useBluetooth)
             return await doBluetoothScanAsync();
         else
@@ -946,7 +960,14 @@ public class BluetoothViewModel : INotifyPropertyChanged
             // populate Spectrometer
             logger.debug("BVM.doConnectAsync: initializing spectrometer");
 
-            if (isAPI6((spec as BluetoothSpectrometer).bleDeviceInfo.softwareRevision))
+            if (isAPI9((spec as BluetoothSpectrometer).bleDeviceInfo.softwareRevision))
+            {
+                Spectrometer tempSpec = API9BLESpectrometer.getInstance();
+                (tempSpec as API9BLESpectrometer).bleDevice = (spec as BluetoothSpectrometer).bleDevice;
+                spec = tempSpec;
+                spec.showConnectionProgress += showSpectrometerConnectionProgress;
+            }
+            else if (isAPI6((spec as BluetoothSpectrometer).bleDeviceInfo.softwareRevision))
             {
                 Spectrometer tempSpec = API6BLESpectrometer.getInstance();
                 (tempSpec as API6BLESpectrometer).bleDevice = (spec as BluetoothSpectrometer).bleDevice;
@@ -970,7 +991,11 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 }
             }
 
-            if (spec is API6BLESpectrometer)
+            if (spec is API9BLESpectrometer)
+            {
+                await (spec as API9BLESpectrometer).initAsync(characteristicsByName);
+            }
+            else if (spec is API6BLESpectrometer)
             {
                 await (spec as API6BLESpectrometer).initAsync(characteristicsByName);
             }
@@ -1001,6 +1026,22 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
                     await c.StartUpdatesAsync();
                 }
+                else if (c.CanUpdate && name == "acquireSpectrum" && spec is API9BLESpectrometer)
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += (spec as API9BLESpectrometer).receiveSpectralUpdate;
+
+                    await c.StartUpdatesAsync();
+                }
+                else if (c.CanUpdate && name == "spectrum" && spec is BluetoothSpectrometer)
+                {
+                    logger.debug($"BVM.doConnectAsync: starting notification updates on {name}");
+                    //c.ValueUpdated -= _characteristicUpdated;
+                    c.ValueUpdated += (spec as BluetoothSpectrometer).receivePixels;
+
+                    await c.StartUpdatesAsync();
+                }
             }
 
             ////////////////////////////////////////////////////////////////////
@@ -1010,11 +1051,19 @@ public class BluetoothViewModel : INotifyPropertyChanged
             {
                 (spec as BluetoothSpectrometer).bleDevice = bleDevice;
                 (spec as BluetoothSpectrometer).updateRSSI();
+                (spec as BluetoothSpectrometer).DisconnectTriggered += BluetoothViewModel_DisconnectTriggered;
+            }
+            else if (spec is API9BLESpectrometer)
+            {
+                (spec as API9BLESpectrometer).bleDevice = bleDevice;
+                (spec as API9BLESpectrometer).updateRSSI();
+                (spec as API9BLESpectrometer).DisconnectTriggered += BluetoothViewModel_DisconnectTriggered;
             }
             else if (spec is API6BLESpectrometer)
             {
                 (spec as API6BLESpectrometer).bleDevice = bleDevice;
                 (spec as API6BLESpectrometer).updateRSSI();
+                (spec as API6BLESpectrometer).DisconnectTriggered += BluetoothViewModel_DisconnectTriggered;
             }
 
             BLEDevice.paired = true;
@@ -1033,10 +1082,28 @@ public class BluetoothViewModel : INotifyPropertyChanged
         return true;
     }
 
+    private async void BluetoothViewModel_DisconnectTriggered(object sender, Spectrometer e)
+    {
+        await doDisconnectAsync(true);
+    }
+
     static bool isAPI6(string versionString)
     {
         string[] parts = versionString.Split('.');
         if (Int16.Parse(parts[1]) <= 9)
+            return true;
+        else
+            return false;
+    }
+
+    static bool isAPI9(string versionString)
+    {
+        if (isAPI6(versionString))
+            return false;
+
+        string[] parts = versionString.Split('.');
+
+        if (Int16.Parse(parts[1]) == 10 && Int16.Parse(parts[2]) <= 5)
             return true;
         else
             return false;

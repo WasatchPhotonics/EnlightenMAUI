@@ -51,6 +51,8 @@ namespace EnlightenMAUI.ViewModels
         {
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
+                spec = API9BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
                 spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
@@ -108,6 +110,8 @@ namespace EnlightenMAUI.ViewModels
         public AnalysisViewModel(bool isInstance = false)
         {
             spec = BluetoothSpectrometer.getInstance();
+            if (spec == null || !spec.paired)
+                spec = API9BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
@@ -357,8 +361,8 @@ namespace EnlightenMAUI.ViewModels
                 spec.startGainDb = parameters.startGainDb;
                 spec.minIntTimeMS = parameters.minIntTimeMS;
                 spec.maxIntTimeMS = parameters.maxIntTimeMS;
-                spec.minGainDb = parameters.minGainDb;
-                spec.maxGainDb = parameters.maxGainDb;
+                spec.autoRamanMinGainDb = parameters.minGainDb;
+                spec.autoRamanMaxGainDb = parameters.maxGainDb;
                 spec.targetCounts = parameters.targetCounts;
                 spec.minCounts = parameters.minCounts;
                 spec.maxCounts = parameters.maxCounts;
@@ -382,6 +386,7 @@ namespace EnlightenMAUI.ViewModels
             xAxisMaximum = instance.xAxisMaximum;
             matchString = instance.matchString;
             scoreString = instance.scoreString;
+            spectrumLabel = instance.spectrumLabel;
             _matchFound = instance.matchFound;
             _compLibrary = instance.compLibrary;
             libraryReady = instance.libraryReady;
@@ -518,6 +523,8 @@ namespace EnlightenMAUI.ViewModels
         {
             spec = BluetoothSpectrometer.getInstance();
             if (spec == null || !spec.paired)
+                spec = API9BLESpectrometer.getInstance();
+            if (spec == null || !spec.paired)
                 spec = API6BLESpectrometer.getInstance();
             if (spec == null || !spec.paired)
                 spec = USBSpectrometer.getInstance();
@@ -534,6 +541,8 @@ namespace EnlightenMAUI.ViewModels
         public void SetData(Measurement sample, Measurement reference)
         {
             bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
+            if (sample != null)
+            spectrumLabel = $"Spectrum {sample.specCount}";
 
             double scaleFactor = 1;
 
@@ -748,10 +757,24 @@ namespace EnlightenMAUI.ViewModels
             SpectraChanged?.Invoke(this, this);
         }
 
+        public string spectrumLabel
+        {
+            get
+            {
+                return _spectrumLabel;
+            }
+            set
+            {
+                _spectrumLabel = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(spectrumLabel)));
+            }
+        }
+        string _spectrumLabel = "Spectrum 0";
+
         ////////////////////////////////////////////////////////////////////////
         // X-Axis
         ////////////////////////////////////////////////////////////////////////
-        
+
         public string xAxisName => "Wavenumber";
 
         public double xAxisMinimum

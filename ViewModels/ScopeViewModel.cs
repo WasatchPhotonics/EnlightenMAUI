@@ -23,6 +23,7 @@ using System.Text;
 using Xamarin.Google.Crypto.Tink.Signature;
 using DeconvolutionMAUI;
 using System.Security.AccessControl;
+using Accord.Math;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -98,9 +99,16 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
+            spec = API9BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = API6BLESpectrometer.getInstance();
         if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
+
+        if (spec != null && spec is BluetoothSpectrometer)
+        {
+            (spec as BluetoothSpectrometer).notifyToast += (string msg) => EnlightenMAUI.Common.Util.toast(msg);
+        }
 
         Task loader = PlatformUtil.loadONNXModel("onnx", "etalon_correction.json");
         loader.Wait();
@@ -110,7 +118,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         settings = Settings.getInstance();
         string savePath = settings.getSavePath();
 
+        if (settings.initialized)
+        {
+            if (settings.specCount > 0)
+                spec.measurement.specCount = settings.specCount;
+        }
+
         settings.PropertyChanged += handleSettingsChange;
+        settings.ConfigLoaded += Settings_ConfigLoaded;
         spec.PropertyChanged += handleSpectrometerChange;
         spec.showAcquisitionProgress += showAcquisitionProgress;
         spec.measurement.PropertyChanged += handleSpectrometerChange;
@@ -146,7 +161,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            if (spec is USBSpectrometer || spec is BluetoothSpectrometer)
+            if (spec is USBSpectrometer || spec is BluetoothSpectrometer || spec is API9BLESpectrometer)
                 spec.autoRamanEnabled = true;
             else
             {
@@ -205,6 +220,12 @@ public class ScopeViewModel : INotifyPropertyChanged
         AnalysisViewModel.getInstance().TriggerIncreasedPrecision += ScopeViewModel_TriggerIncreasedPrecision;
 
         initializeSpectrometer();
+    }
+
+    private void Settings_ConfigLoaded(object sender, Settings e)
+    {
+        if (settings.specCount > 0) 
+        spec.measurement.specCount = settings.specCount;
     }
 
     private async Task initializeSpectrometer()
@@ -986,17 +1007,17 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     public bool ble3Bar
     {
-        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -60; 
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer || spec is API9BLESpectrometer) && spec.rssi >= -60; 
     }
     
     public bool ble2Bar
     {
-        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi >= -85 && spec.rssi < -60;
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer || spec is API9BLESpectrometer) && spec.rssi >= -85 && spec.rssi < -60;
     }
     
     public bool ble1Bar
     {
-        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer) && spec.rssi < -85;
+        get => (spec is BluetoothSpectrometer || spec is API6BLESpectrometer || spec is API9BLESpectrometer) && spec.rssi < -85;
     }
 
     public string qrText
@@ -1149,6 +1170,10 @@ public class ScopeViewModel : INotifyPropertyChanged
         var ok = await spec.takeOneAveragedAsync();
         if (ok)
         {
+            settings.specCount = spec.measurement.specCount;
+            settings.lastTime = DateTime.Now;
+            await settings.updateConfigFile();
+
             // info-level logging so we can QC timing w/o verbose logging
             var elapsedMS = (DateTime.Now - startTime).TotalMilliseconds;
             logger.info($"Completed acquisition in {elapsedMS} ms");
@@ -1635,7 +1660,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     void handleSpectrometerChange(object sender, PropertyChangedEventArgs e)
     {
         var name = e.PropertyName;
-        logger.debug($"SVM.handleSpectrometerChange: received notification from {sender} that property {name} changed");
+        //logger.debug($"SVM.handleSpectrometerChange: received notification from {sender} that property {name} changed");
 
         if (name == "acquiring")
             updateAcquireButtonProperties();
@@ -1755,6 +1780,8 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             if (snr < settings.snrThreshold)
             {
+                if (settings.autoSave)
+                    await spec.measurement.saveAsync(autoSave: true);
                 ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());
                 return false;
             }

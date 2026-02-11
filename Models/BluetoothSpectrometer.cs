@@ -8,8 +8,26 @@ using Java.Util.Functions;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
 using Xamarin.Google.Crypto.Tink.Prf;
+using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI.Models;
+
+public enum COLLECTION_FAILURE_CODES
+{
+    SPECTRUM_NAK_EC_NONE ,   // No Error
+    SPECTRUM_NAK_EC_BATT_SOC_INFO_NOT_RCVD,
+    SPECTRUM_NAK_EC_BATT_SOC_TOO_LOW,
+    SPECTRUM_NAK_EC_LASER_DIS_FLR,
+    SPECTRUM_NAK_EC_LASER_ENA_FLR,
+    SPECTRUM_NAK_EC_IMG_SNSR_IN_BAD_STATE,
+    SPECTRUM_NAK_EC_IMG_SNSR_STATE_TRANS_FLR,
+    SPECTRUM_NAK_EC_SPEC_ACQ_SIG_WAIT_TMO,
+    SPECTRUM_NAK_EC_INTERLOCK_NOT_CLOSED,
+    SPECTRUM_NAK_EC_UNKNOWN,
+    SPECTRUM_NAK_EC_BAD_MSG_FROM_STM32,
+    SPECTRUM_NAK_EC_AUTO_RAMAN_PROC_FLR,
+    SPECTRUM_NAK_EC_SEG_TX_FLR
+};
 
 // This more-or-less corresponds to WasatchNET.Spectrometer, or 
 // SiGDemo.Spectrometer.  Spectrometer state and logic should be 
@@ -19,6 +37,10 @@ public class BluetoothSpectrometer : Spectrometer
     const int BLE_SUCCESS = 0; // result of Characteristic.WriteAsync
     const int EXTENDED_SEM_TIMEOUT = 5000;
     const int SEM_TIMEOUT = 150;
+
+    public delegate void ToastNotification(string msg);
+    public event ToastNotification notifyToast;
+    public event EventHandler<Spectrometer> DisconnectTriggered;
 
     // Singleton
     static BluetoothSpectrometer instance = null;
@@ -754,14 +776,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    public override byte minGainDb
+    public override byte autoRamanMinGainDb
     {
-        get => _minGainDb;
+        get => _autoRamanMinGainDb;
         set
         {
             if (0 <= value && value <= 72)
             {
-                _minGainDb = value;
+                _autoRamanMinGainDb = value;
                 logger.debug($"Spectrometer.minGainDb: next = {value}");
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
@@ -773,14 +795,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    public override byte maxGainDb
+    public override byte autoRamanMaxGainDb
     {
-        get => _maxGainDb;
+        get => _autoRamanMaxGainDb;
         set
         {
             if (0 <= value && value <= 72)
             {
-                _maxGainDb = value;
+                _autoRamanMaxGainDb = value;
                 logger.debug($"Spectrometer.maxGainDb: next = {value}");
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
@@ -1168,15 +1190,41 @@ public class BluetoothSpectrometer : Spectrometer
         return true;
     }
 
+    const int MAX_BAD_SIGNAL_COUNT = 64;
+
     public async Task updateRSSI()
     {
+        int badSignalCount = 0;
+
         while (paired)
         {
-            
-            //logger.debug("current RSSI {0}", rssi);
+            logger.debug("current RSSI {0}", rssi);
             NotifyPropertyChanged("rssi");
             await Task.Delay(500); 
+            if (rssi < -90)
+            {
+                ++badSignalCount;
 
+                if (badSignalCount > MAX_BAD_SIGNAL_COUNT)
+                {
+                    DisconnectTriggered.Invoke(this, this);
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        notifyToast?.Invoke("Spectrometer disconnected due to poor signal. Re-pair needed to collect data");
+                    });
+                }
+                else if (badSignalCount > 2)
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        notifyToast?.Invoke(String.Format("Critically poor signal. Automatic disconnect in {0} seconds", (MAX_BAD_SIGNAL_COUNT - badSignalCount) / 2));
+                    });
+                }
+            }
+            else
+            {
+                badSignalCount = 0;
+            }
         }
     }
 
@@ -1456,6 +1504,8 @@ public class BluetoothSpectrometer : Spectrometer
         {
             if (totalPixelsRead > 0)
                 break;
+            else if (collectionErrorDetected)
+                return false;
 
             now = DateTime.Now;
             estimatedMilliseconds = (autoEnd - autoStart).TotalMilliseconds;
@@ -1527,7 +1577,65 @@ public class BluetoothSpectrometer : Spectrometer
     bool firstCollect = true;
     int delta = 0;
 
-    public void receiveSpectralUpdate(
+    public void raiseToast(string message)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            notifyToast?.Invoke(message);
+        });
+    }
+
+    public void receivePixels(
+        object sender,
+        CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
+    {
+        logger.debug($"BVM.receivePixels: start");
+        var c = characteristicUpdatedEventArgs.Characteristic;
+
+        byte[] data = c.Value;
+
+        int pixelsInPacket = (int)data.Length / 2 - 1;
+
+        ushort startPixel = (ushort)(data[1] | data[0] << 8);
+        logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
+        logger.hexdump(data, "pixel data: ");
+        if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                notifyToast?.Invoke("dropped packet detected");
+            });
+
+            totalPixelsRead += startPixel;
+        }
+        else if (totalPixelsRead != startPixel)
+        {
+            collectionErrorDetected = true;
+        }
+
+        for (int i = 1; i <= pixelsInPacket; i++)
+        {
+            var offset = i * 2;
+            ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
+
+            //logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
+            //logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
+
+            if (totalPixelsRead >= spectrum.Length)
+                logger.error("more received data than expected...");
+            else
+                spectrum[totalPixelsRead] = intensity;
+            totalPixelsRead += 1;
+        }
+
+        if (autoRamanEnabled || autoDarkEnabled)
+            raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
+        else
+            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+        logger.debug($"BVM.receivePixels: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
+    }
+
+    public async void receiveSpectralUpdate(
             object sender,
             CharacteristicUpdatedEventArgs characteristicUpdatedEventArgs)
     {
@@ -1535,11 +1643,43 @@ public class BluetoothSpectrometer : Spectrometer
         var c = characteristicUpdatedEventArgs.Characteristic;
 
         byte[] data = c.Value;
+        logger.hexdump(data, "collection status update: ");
 
         if (data[0] == 0xff && data[1] == 0xff)
         {
-            logger.hexdump(data, "collection status update: ");
+            /*
+            if (data[2] == 11)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    notifyToast?.Invoke("Potential error detected, continuing for now");
+                });
+            }
+            */
+            if (data[2] <= (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_SEG_TX_FLR)
+            {
+                string failureMessage = "Error attempting to collect spectra, aborting";
+                if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_BATT_SOC_TOO_LOW)
+                    failureMessage = "Error, battery critically low, aborting";
+                else if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_INTERLOCK_NOT_CLOSED)
+                    failureMessage = "Error, laser interlock disabled, aborting";
+                else if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_BATT_SOC_INFO_NOT_RCVD)
+                    failureMessage = "Error, battery appears disconnected, aborting";
+                else if (data[2] == (byte)COLLECTION_FAILURE_CODES.SPECTRUM_NAK_EC_IMG_SNSR_IN_BAD_STATE)
+                    failureMessage = "Spectrometer system failure, aborting";
 
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    notifyToast?.Invoke(failureMessage);
+                });
+
+                await Task.Delay(1500);
+
+
+                logger.debug("Exiting collection early, read out error code {0}, raised {1} to user", data[2], failureMessage);
+
+                collectionErrorDetected = true;
+            }
             if (data[2] == AUTO_OPT_TARGET_RATIO)
             {
                 //raiseAcquisitionProgress(0.25 * (1 - Math.Abs(100 - data[3]) / (double)100));
@@ -1625,41 +1765,11 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else
         {
-            int pixelsInPacket = (int)data.Length / 2 - 1;
-
-            ushort startPixel = (ushort)(data[1] | data[0] << 8);
-            logger.debug("reading {0} pixels at start pixel {1}", pixelsInPacket, startPixel);
-            logger.hexdump(data, "pixel data: ");
-            if (totalPixelsRead == 0 && startPixel != 0 && pixelsInPacket < eeprom.ROIHorizStart)
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                totalPixelsRead += startPixel;
-            }
-            else if (totalPixelsRead != startPixel)
-            {
-                collectionErrorDetected = true;
-            }
-
-            for (int i = 1; i <= pixelsInPacket; i++)
-            {
-                var offset = i * 2;
-                ushort intensity = (ushort)((data[offset + 1] << 8) | data[offset]);
-
-                //logger.debug("reading bytes {0} and {1} as {2:X} and {3:X}", totalPixelsRead * 2, totalPixelsRead * 2 + 1, data[offset], data[offset + 1]);
-                //logger.debug("reading pixel {0} as {1}", totalPixelsRead, intensity);
-
-                 if (totalPixelsRead >= spectrum.Length)
-                    logger.error("more received data than expected...");
-                else
-                    spectrum[totalPixelsRead] = intensity;
-                totalPixelsRead += 1;
-            }
-
-            if (autoRamanEnabled || autoDarkEnabled)
-                raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
-            else
-                raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
-            logger.debug($"BVM.receiveSpectralUpdate: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
+                notifyToast?.Invoke("unexpected data on receiveSpectra command");
+            });
+            logger.hexdump(data, "unexpected data on receiveSpectra command: ");
         }
-        //characteristicUpdatedEventArgs.Characteristic.
     }
 }
