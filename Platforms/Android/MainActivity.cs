@@ -5,6 +5,7 @@ using Android.OS;
 using Android.Content;
 using AndroidX.Core.App;
 using EnlightenMAUI.Common;
+using EnlightenMAUI.Platforms;
 using Android.Hardware.Usb;
 
 namespace EnlightenMAUI

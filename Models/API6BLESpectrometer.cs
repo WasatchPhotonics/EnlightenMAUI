@@ -3,8 +3,6 @@ using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using static Android.Widget.GridLayout;
-using Java.Util.Functions;
 
 namespace EnlightenMAUI.Models;
 
