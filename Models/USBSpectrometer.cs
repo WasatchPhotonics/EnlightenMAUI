@@ -4,18 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
-using Android.Hardware.Usb;
-using Android.OS;
 using CommunityToolkit.Maui.Converters;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using Java.Nio;
-using Microsoft.Extensions.Logging.Abstractions;
-using Plugin.BLE.Abstractions.Contracts;
-using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
-using static Android.InputMethodServices.Keyboard;
-using static Android.Provider.ContactsContract.CommonDataKinds;
-using static Android.Telephony.CarrierConfigManager;
 
 namespace EnlightenMAUI.Models
 {
@@ -37,8 +28,7 @@ namespace EnlightenMAUI.Models
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx") || eeprom.model.ToLower().Contains("xs");
         public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase));
 
-        static UsbDeviceConnection udc;
-        static UsbDevice acc;
+        USBWrapper usbWrapper;
 
         static public USBSpectrometer getInstance()
         {
@@ -57,16 +47,16 @@ namespace EnlightenMAUI.Models
             reset();
         }
 
-        public USBSpectrometer(UsbDeviceConnection udcI, UsbDevice accI) : base()
+        public USBSpectrometer(USBWrapper usbWrapper) : base()
         {
             reset();
-            logger.debug("connecting to usb device vid: {0:x4}, pid: {1:x4}", accI.VendorId, accI.ProductId);
-            logger.debug("connecting to usb device vid: {0}, pid: {1}, class {2}, subclass {3}, protocol {4}", accI.VendorId, accI.ProductId, accI.Class, accI.DeviceSubclass.ToString(), accI.DeviceProtocol);
-            featureIdentification = new FeatureIdentification(accI.VendorId, accI.ProductId);
+
+            this.usbWrapper = usbWrapper;
+            logger.debug("connecting to usb device vid: {0:x4}, pid: {1:x4}", usbWrapper.vid, usbWrapper.pid);
+            //logger.debug("connecting to usb device vid: {0}, pid: {1}, class {2}, subclass {3}, protocol {4}", usbWrapper.vid, usbWrapper.pid, accI.Class, accI.DeviceSubclass.ToString(), accI.DeviceProtocol);
+            featureIdentification = new FeatureIdentification(usbWrapper.vid, usbWrapper.pid);
             battery = new Battery();
 
-            udc = udcI;
-            acc = accI;
             connect();
             //instance = new USBSpectrometer(udc, acc);
             //instance.connect();
@@ -74,8 +64,7 @@ namespace EnlightenMAUI.Models
 
         public override void disconnect()
         {
-            udc.ReleaseInterface(acc.GetInterface(0));
-            udc.Close();
+            usbWrapper.disconnect();
             paired = false;
             logger.info("closed usb device");
         }
@@ -184,17 +173,7 @@ namespace EnlightenMAUI.Models
 
             if (!paired)
             {
-                bool ok = udc.SetConfiguration(acc.GetConfiguration(0));
-                if (ok)
-                {
-                    logger.info("successfully set configuration");
-                    ok = udc.ClaimInterface(acc.GetInterface(0), false);
-                    if (ok)
-                    {
-                        logger.info("successfully claimed interface");
-                        paired = true;
-                    }
-                }
+                paired = usbWrapper.connect();
             }
         }
 
@@ -653,9 +632,7 @@ namespace EnlightenMAUI.Models
 
         public async Task<int> transferAndReturn(byte[] spectrumBuff, int timeout)
         {
-            logger.debug("buffer init with {0} in pix 0", spectrumBuff[0]);
-            int result = await udc.BulkTransferAsync(acc.GetInterface(0).GetEndpoint(0), spectrumBuff, spectrumBuff.Length, timeout);
-            logger.debug("buffer transfered with {0} in pix 0", spectrumBuff[0]);
+            int result = await usbWrapper.bulkTransfer(spectrumBuff, timeout);
             acqDone = true;
             return result;
         }
@@ -742,34 +719,13 @@ namespace EnlightenMAUI.Models
             return (ushort)((lsb << 8) | msb);
         }
 
-        /// <summary>
-        /// Execute a request-response control transaction using the given opcode.
-        /// </summary>
-        /// <param name="opcode">the opcode of the desired request</param>
-        /// <param name="len">the number of needed return bytes</param>
-        /// <param name="wIndex">an optional numeric argument used by some opcodes</param>
-        /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
-        /// <remarks>not sure fullLen is actually required...testing</remarks>
-        /// <returns>the array of returned bytes (null on error)</returns>
         internal async Task<byte[]> getCmdAsync(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
             if (shuttingDown)
                 return null;
 
-            int bytesToRead = Math.Max(len, fullLen);
-            if (isARM || isStroker) // ARM should always read at least 8 bytes
-                bytesToRead = Math.Min(8, bytesToRead);
-            byte[] buf = new byte[bytesToRead];
+            return await usbWrapper.getCmdAsync(opcode, len, wIndex, fullLen, minRead: isARM);
 
-            logger.debug("about to send getCmd...");
-            
-            int okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, cmd[opcode], 0, wIndex, buf, bytesToRead, 100);
-
-            if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
-
-            // extract just the bytes we really needed
-            return await Task.Run(() => Util.truncateArray(buf, len));
         }
 
         internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
@@ -777,209 +733,55 @@ namespace EnlightenMAUI.Models
             if (shuttingDown)
                 return null;
 
-            int bytesToRead = Math.Max(len, fullLen);
-            if (isARM || isStroker) // ARM should always read at least 8 bytes
-                bytesToRead = Math.Min(8, bytesToRead);
-            byte[] buf = new byte[bytesToRead];
-
-            logger.debug("about to send getCmd...");
-            
-            int okI = udc.ControlTransfer((UsbAddressing)DEVICE_TO_HOST, cmd[opcode], 0, wIndex, buf, bytesToRead, 100);
-
-            if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
-
-            // extract just the bytes we really needed
-            return Util.truncateArray(buf, len);
+            return usbWrapper.getCmd(opcode, len, wIndex, fullLen, minRead: isARM);
         }
 
-        /// <summary>
-        /// Execute a request-response transfer with a "second-tier" request.
-        /// </summary>
-        /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
-        /// <param name="len">how many bytes of response are expected</param>
-        /// <returns>array of returned bytes (null on error)</returns>
-        /// 
         internal async Task<byte[]> getCmd2Async(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
             if (shuttingDown)
                 return null;
 
-            int bytesToRead = len;
-            if (isARM || isStroker)
-                bytesToRead = Math.Max(bytesToRead, fakeBufferLengthARM);
-
-            byte[] buf = new byte[bytesToRead];
-
-            bool expectedSuccessResult = true;
-            if (isARM && armInvertedRetvals.Contains(opcode))
-                expectedSuccessResult = !expectedSuccessResult;
-
-            bool result = false;
-
-            int okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, cmd[Opcodes.SECOND_TIER_COMMAND], cmd[opcode], wIndex, buf, bytesToRead, 100);
-
-            if (result != expectedSuccessResult && okI < len)
-            {
-                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
-                    opcode.ToString(), cmd[opcode], okI, len, expectedSuccessResult, result);
-                logger.hexdump(buf, $"{opcode} result");
-                //return null;
-            }
-
-            logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
-                    opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
-
-            // extract just the bytes we really needed
-            return Util.truncateArray(buf, len);
+            return await usbWrapper.getCmd2Async(opcode, len, wIndex, fakeBufferLengthARM, minRead: isARM);
         }
+
         internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
             if (shuttingDown)
                 return null;
 
-            int bytesToRead = len;
-            if (isARM || isStroker)
-                bytesToRead = Math.Max(bytesToRead, fakeBufferLengthARM);
-
-            byte[] buf = new byte[bytesToRead];
-
-            bool expectedSuccessResult = true;
-            if (isARM && armInvertedRetvals.Contains(opcode))
-                expectedSuccessResult = !expectedSuccessResult;
-
-            bool result = false;
-
-            int okI = udc.ControlTransfer((UsbAddressing)DEVICE_TO_HOST, cmd[Opcodes.SECOND_TIER_COMMAND], cmd[opcode], wIndex, buf, bytesToRead, 100);
-
-            if (result != expectedSuccessResult || okI < len)
-            {
-                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
-                    opcode.ToString(), cmd[opcode], okI, len, expectedSuccessResult, result);
-                logger.hexdump(buf, $"{opcode} result");
-                return null;
-            }
-
-            if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
-                    opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
-
-            // extract just the bytes we really needed
-            return Util.truncateArray(buf, len);
+            return usbWrapper.getCmd2(opcode, len, wIndex, fakeBufferLengthARM, minRead: isARM);
         }
-
-        /// <summary>
-        /// send a single control transfer command (response not checked)
-        /// </summary>
-        /// <param name="opcode">the desired command</param>
-        /// <param name="wValue">an optional secondary argument used by most commands</param>
-        /// <param name="wIndex">an optional tertiary argument used by some commands</param>
-        /// <param name="buf">a data buffer used by some commands</param>
-        /// <returns>true on success, false on error</returns>
-        /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
-        /// 
+        
         internal async Task<bool> sendCmdAsync(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
                 return false;
 
-            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
-                buf = new byte[8];
-
-            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
-
-            bool? expectedSuccessResult = true;
-            if (isARM)
-            {
-                if (opcode != Opcodes.SECOND_TIER_COMMAND)
-                    expectedSuccessResult = armInvertedRetvals.Contains(opcode);
-                else
-                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum (MZ: whut?)
-            }
-
-            int okI = await udc.ControlTransferAsync((UsbAddressing)HOST_TO_DEVICE, cmd[opcode], wValue, wIndex, buf, wLength, 100);
-
-            if (opcode == Opcodes.ACQUIRE_SPECTRUM)
-            {
-                logger.info("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
-                    opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, okI, expectedSuccessResult);
-            }
-
-            if (expectedSuccessResult != null && okI < 0)
-            {
-                logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
-                    opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, okI, expectedSuccessResult);
-                return false;
-            }
-
-            return true;
+            return await usbWrapper.sendCmdAsync(opcode, wValue, wIndex, buf, minRead: isARM);
         }
+
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
                 return false;
 
-            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
-                buf = new byte[8];
-
-            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
-
-            bool? expectedSuccessResult = true;
-            if (isARM)
-            {
-                if (opcode != Opcodes.SECOND_TIER_COMMAND)
-                    expectedSuccessResult = armInvertedRetvals.Contains(opcode);
-                else
-                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum (MZ: whut?)
-            }
-
-            int okI = udc.ControlTransfer((UsbAddressing)HOST_TO_DEVICE, cmd[opcode], wValue, wIndex, buf, wLength, 100);
-
-            if (expectedSuccessResult != null && okI < 0)
-            {
-                logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
-                    opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, okI, expectedSuccessResult);
-                return false;
-            }
-
-            return true;
+            return usbWrapper.sendCmd(opcode, wValue, wIndex, buf, minRead: isARM);
         }
 
-        /// <summary>
-        /// send a single 2nd-tier control transfer command (response not checked)
-        /// </summary>
-        /// <param name="opcode">the desired command</param>
-        /// <param name="wIndex">an optional secondary argument used by some 2nd-tier commands</param>
-        /// <param name="buf">a data buffer used by some commands</param>
-        /// <returns>true on success, false on error</returns>
-        /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
         internal async Task<bool> sendCmd2Async(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
                 return false;
 
-            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
-                buf = new byte[8];
-
-            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
-
-            int okI = await udc.ControlTransferAsync((UsbAddressing)HOST_TO_DEVICE, cmd[Opcodes.SECOND_TIER_COMMAND], cmd[opcode], wIndex, buf, wLength, 100);
-
-            return true;
+            return await usbWrapper.sendCmd2Async(opcode, wIndex, buf, minRead: isARM);
         }
+
         internal bool sendCmd2(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
                 return false;
 
-            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
-                buf = new byte[8];
-
-            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
-
-            int okI = udc.ControlTransfer((UsbAddressing)HOST_TO_DEVICE, cmd[Opcodes.SECOND_TIER_COMMAND], cmd[opcode], wIndex, buf, wLength, 100);
-
-            return true;
+            return usbWrapper.sendCmd2(opcode, wIndex, buf, minRead: isARM);
         }
     }
 }

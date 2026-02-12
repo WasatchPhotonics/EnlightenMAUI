@@ -13,14 +13,7 @@ using EnlightenMAUI.Common;
 //using Android.Content;
 using LibUsbDotNet.Main;
 using Microsoft.Maui;
-
-#if ANDROID
-using EnlightenMAUI.Platforms.Android;
-#endif
-
-#if IOS
-using EnlightenMAUI.Platforms.iOS;
-#endif
+using EnlightenMAUI.Platforms;
 
 namespace EnlightenMAUI.ViewModels;
 

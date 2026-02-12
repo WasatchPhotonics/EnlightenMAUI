@@ -1,6 +1,4 @@
-﻿using Android.Content;
-using Android.Content.Res;
-using EnlightenMAUI.Platforms;
+﻿using EnlightenMAUI.Platforms;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,11 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
-using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
-using static Android.Provider.DocumentsContract;
-using static Java.Util.Jar.Attributes;
-using Android.Renderscripts;
 using System.Runtime.CompilerServices;
 
 namespace EnlightenMAUI.Models
@@ -62,22 +55,7 @@ namespace EnlightenMAUI.Models
             try
             {
                 libraryIDs.Clear();
-                string finalFullPath = "";
-
-                var dir = Platform.AppContext.GetExternalFilesDir(null);
-
-                Java.IO.File[] paths = await dir.ListFilesAsync();
-                foreach (Java.IO.File path in paths)
-                {
-                    string file = path.AbsolutePath.Split('/').Last();
-
-                    if (file != null && file.Length > 0)
-                    {
-                        string fullPath = dir + "/" + file;
-                        if (file.Split('.').Last().ToLower() == "idex")
-                            finalFullPath = fullPath;
-                    }
-                }
+                string finalFullPath = await PlatformUtil.getBulkLibraryPath();
 
                 if (_lib != 0)
                     _dpLIBClose(_lib);

@@ -610,6 +610,11 @@ internal class PlatformUtil
         return null;
     }
 
+    public async static Task<string> getBulkLibraryPath()
+    {
+        return null;
+    }
+
     static bool writeable(string path)
     {
         return false;

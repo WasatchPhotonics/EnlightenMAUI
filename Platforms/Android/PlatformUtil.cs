@@ -29,6 +29,7 @@ using AndrApp = Android.App;
 using AndrContent = Android.Content;
 using AndrOS = Android.OS;
 using AndrNet = Android.Net;
+using Android.Locations;
 namespace EnlightenMAUI.Platforms; 
 
 
@@ -1384,6 +1385,31 @@ internal class PlatformUtil
         logger.debug("finished prepping data for decon");
         return library;
     }
+
+
+    public async static Task<string> getBulkLibraryPath()
+    {
+        string finalFullPath = "";
+
+        var dir = Platform.AppContext.GetExternalFilesDir(null);
+
+        Java.IO.File[] paths = await dir.ListFilesAsync();
+        foreach (Java.IO.File path in paths)
+        {
+            string file = path.AbsolutePath.Split('/').Last();
+
+            if (file != null && file.Length > 0)
+            {
+                string fullPath = dir + "/" + file;
+                if (file.Split('.').Last().ToLower() == "idex")
+                    finalFullPath = fullPath;
+            }
+        }
+
+        return finalFullPath;
+    }
+
+
 
     static Java.IO.File traverseDown(string[] rootPath, Java.IO.File dir)
     {
