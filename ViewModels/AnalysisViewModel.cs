@@ -1,4 +1,5 @@
 ﻿using Accord.Statistics.Testing.Power;
+using CommunityToolkit.Maui.Extensions;
 using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
 using EnlightenMAUI.Platforms;
@@ -399,7 +400,7 @@ namespace EnlightenMAUI.ViewModels
             saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
             savePopup = new AddToLibraryPopup(saveViewModel);
             popupClosing = false;
-            Shell.Current.ShowPopup<AddToLibraryPopup>(savePopup);
+            object value = Shell.Current.ShowPopupAsync<AddToLibraryPopup>(savePopup);
         }
 
         private async void SaveViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -841,13 +842,13 @@ namespace EnlightenMAUI.ViewModels
         bool doAdd()
         {
             OverlaysPopup op = new OverlaysPopup(sublibraryViewModel);
-            op.Closed += Op_Closed; ;
+            op.Closed += Op_Closed;
             Shell.Current.ShowPopupAsync<OverlaysPopup>(op);
 
             return true;
         }
 
-        private void Op_Closed(object sender, CommunityToolkit.Maui.Core.PopupClosedEventArgs e)
+        private void Op_Closed(object sender, EventArgs e)
         {
             Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
 
@@ -861,7 +862,5 @@ namespace EnlightenMAUI.ViewModels
                 (settings.library as DPLibrary).setFilter(activeLibraries);
             }
         }
-
-
     }
 }

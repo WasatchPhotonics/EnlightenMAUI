@@ -5,7 +5,6 @@ using Android.Nfc;
 using Android.OS;
 using Android.Webkit;
 using AndroidX.AppCompat.Widget;
-using AndroidX.DocumentFile.Provider;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Models;
 using Java.IO;
@@ -22,7 +21,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
-using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using AndrApp = Android.App;
@@ -134,12 +132,12 @@ internal class PlatformUtil
         List<UriPermission> permissions = current_activity.ContentResolver.PersistedUriPermissions.ToList();
         if (permissions != null && permissions.Count > 0)
         {
-            DocumentFile log_folder = DocumentFile.FromTreeUri(current_activity, permissions[0].Uri);
-            DocumentFile log_file = log_folder.CreateFile(MimeTypeMap.Singleton.GetMimeTypeFromExtension("csv"), file_name);
-            ParcelFileDescriptor pfd = current_activity.ContentResolver.OpenFileDescriptor(log_file.Uri, "w");
-            FileOutputStream file_output_stream = new FileOutputStream(pfd.FileDescriptor);
-            file_output_stream.Write(Encoding.UTF8.GetBytes(file_contents));
-            file_output_stream.Close();
+            //DocumentFile log_folder = DocumentFile.FromTreeUri(current_activity, permissions[0].Uri);
+            //DocumentFile log_file = log_folder.CreateFile(MimeTypeMap.Singleton.GetMimeTypeFromExtension("csv"), file_name);
+            //ParcelFileDescriptor pfd = current_activity.ContentResolver.OpenFileDescriptor(log_file.Uri, "w");
+            //FileOutputStream file_output_stream = new FileOutputStream(pfd.FileDescriptor);
+            //file_output_stream.Write(Encoding.UTF8.GetBytes(file_contents));
+            //file_output_stream.Close();
         }
     }
 

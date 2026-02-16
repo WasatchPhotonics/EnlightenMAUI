@@ -14,12 +14,12 @@ using EnlightenMAUI.Popups;
 using Deconvolution = DeconvolutionMAUI;
 #endif
 using EnlightenMAUI.Common;
-using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 using System.Reflection.Metadata;
 using System.Text;
 using DeconvolutionMAUI;
 using System.Security.AccessControl;
 using Accord.Math;
+using CommunityToolkit.Maui.Extensions;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -1360,7 +1360,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
     }
 
-    private void Op_Closed(object sender, PopupClosedEventArgs e)
+    private void Op_Closed(object sender, EventArgs e)
     {
         bool somethingChanged = false;
 
@@ -1452,7 +1452,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         saveViewModel.PropertyChanged += SaveViewModel_PropertyChanged;
         savePopup = new SaveSpectrumPopup(saveViewModel);
         popupClosing = false;
-        Shell.Current.ShowPopup<SaveSpectrumPopup>(savePopup);
+        Shell.Current.ShowPopupAsync<SaveSpectrumPopup>(savePopup);
     }
 
     private async void SaveViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)

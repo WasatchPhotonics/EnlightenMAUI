@@ -1,6 +1,5 @@
 ﻿using System;
 using EnlightenMAUI.Common;
-using Telerik.Windows.Documents.Spreadsheet.Expressions.Functions;
 
 namespace EnlightenMAUI.Models
 {
