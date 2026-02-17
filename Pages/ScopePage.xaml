@@ -99,74 +99,62 @@
                 <FlexLayout Wrap="Wrap" AlignItems="Stretch"  VerticalOptions="Start" JustifyContent="SpaceBetween">
 
                     <!-- Laser -->
-                    <ImageButton Margin="2" 
-                                Padding="20" 
-                                    CornerRadius="10"
-                                HorizontalOptions="StartAndExpand" 
-                                WidthRequest="50"
-                                HeightRequest="50"
-                                Command="{Binding laserCmd}"
-                                Source="Images/laser.svg"
-                                BackgroundColor="{Binding laserButtonBackgroundColor}" />
+                    <ImageButton    Margin="2" 
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding laserCmd}"
+                                    Source="Images/laser.svg"
+                                    BackgroundColor="{Binding laserButtonBackgroundColor}" />
 
 
                     <!-- Acquire -->
-                    <ImageButton Margin="2" 
-                                Padding="20" 
-                                    CornerRadius="10"
-                                HorizontalOptions="StartAndExpand" 
-                                WidthRequest="50"
-                                HeightRequest="50"
-                                Command="{Binding acquireCmd}"
-                                Source="Images/apeture.svg"
-                                BackgroundColor="{Binding acquireButtonBackgroundColor}" />
+                    <ImageButton    Margin="2" 
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding acquireCmd}"
+                                    Source="Images/apeture.svg"
+                                    BackgroundColor="{Binding acquireButtonBackgroundColor}" />
 
                     <!-- Dark -->
-                    <ImageButton Margin="2" 
-                                Padding="20" 
-                                    CornerRadius="10"
-                                HorizontalOptions="StartAndExpand" 
-                                WidthRequest="50"
-                                HeightRequest="50"
-                                Command="{Binding darkCmd}"
-                                Source="Images/bulb_dark.svg"
-                                BackgroundColor="{Binding darkButtonBackgroundColor}" />
+                    <ImageButton    Margin="2" 
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding darkCmd}"
+                                    Source="Images/bulb_dark.svg"
+                                    BackgroundColor="{Binding darkButtonBackgroundColor}" />
                     <!-- Save -->
                     <ImageButton    Margin="2" 
-                Padding="20" 
-                CornerRadius="10"
-                HorizontalOptions="StartAndExpand" 
-                WidthRequest="50"
-                HeightRequest="50"
-                Command="{Binding saveCmd}"
-                IsEnabled="{Binding hasSpectrum}"
-                Source="Images/triangle_down_underline.svg"
-                BackgroundColor="#515151"/>
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding saveCmd}"
+                                    IsEnabled="{Binding hasSpectrum}"
+                                    Source="Images/triangle_down_underline.svg"
+                                    BackgroundColor="#515151"/>
 
 
                     <!-- Add -->
                     <ImageButton    Margin="2" 
-                Padding="20" 
-                CornerRadius="10"
-                HorizontalOptions="StartAndExpand" 
-                WidthRequest="50"
-                HeightRequest="50"
-                Command="{Binding addCmd}" 
-                IsEnabled="{Binding hasSpectrum}"
-                Source="Images/eye.svg" 
-                BackgroundColor="#515151"/>
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding addCmd}" 
+                                    IsEnabled="{Binding hasSpectrum}"
+                                    Source="Images/eye.svg" 
+                                    BackgroundColor="#515151"/>
 
                     <!-- Clear -->
                     <ImageButton    Margin="2" 
-                Padding="20" 
-                CornerRadius="10"
-                HorizontalOptions="StartAndExpand" 
-                WidthRequest="50"
-                HeightRequest="50"
-                Command="{Binding clearCmd}"
-                IsEnabled="{Binding hasTraces}"
-                Source="Images/eraser.svg" 
-                BackgroundColor="#515151"/>
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding clearCmd}"
+                                    IsEnabled="{Binding hasTraces}"
+                                    Source="Images/eraser.svg" 
+                                    BackgroundColor="#515151"/> 
 
 
                 </FlexLayout>
@@ -213,27 +201,23 @@
 
                     <!-- Add -->
                     <ImageButton    Margin="2" 
-                Padding="20" 
-                CornerRadius="10"
-                HorizontalOptions="StartAndExpand" 
-                WidthRequest="50"
-                HeightRequest="50"
-                Command="{Binding addCmd}" 
-                IsEnabled="{Binding hasSpectrum}"
-                Source="Images/eye.svg" 
-                BackgroundColor="#515151"/>
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding addCmd}" 
+                                    IsEnabled="{Binding hasSpectrum}"
+                                    Source="Images/eye.svg" 
+                                    BackgroundColor="#515151"/>
 
                     <!-- Clear -->
                     <ImageButton    Margin="2" 
-                Padding="20" 
-                CornerRadius="10"
-                HorizontalOptions="StartAndExpand" 
-                WidthRequest="50"
-                HeightRequest="50"
-                Command="{Binding clearCmd}"
-                IsEnabled="{Binding hasTraces}"
-                Source="Images/eraser.svg" 
-                BackgroundColor="#515151"/>
+                                    CornerRadius="30"
+                                    WidthRequest="50"
+                                    HeightRequest="50"
+                                    Command="{Binding clearCmd}"
+                                    IsEnabled="{Binding hasTraces}"
+                                    Source="Images/eraser.svg" 
+                                    BackgroundColor="#515151"/>
 
                 </StackLayout>
 
@@ -302,14 +286,14 @@
         </Grid>
 
         <!-- StatusBar -->
-        <Frame IsVisible="False" CornerRadius="10" VerticalOptions="End" BackgroundColor="#666" Padding="2">
-            <Frame CornerRadius="10" BackgroundColor="#444" Padding="2">
-                <StackLayout Orientation="Horizontal" Spacing="10" Padding="10" HorizontalOptions="FillAndExpand">
+        <Border IsVisible="False" VerticalOptions="End" BackgroundColor="#666" Padding="2">
+            <Border BackgroundColor="#444" Padding="2">
+                <StackLayout Orientation="Horizontal" Spacing="10" Padding="10">
                     <Label TextColor="#eee" Text="Battery"/>
                     <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}" />
                 </StackLayout>
-            </Frame>
-        </Frame>
+            </Border>
+        </Border>
 
     </StackLayout>
 </ContentPage>

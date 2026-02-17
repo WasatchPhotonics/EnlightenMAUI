@@ -1469,7 +1469,10 @@ public class BluetoothSpectrometer : Spectrometer
             await Task.Delay(33);
 
             if (totalPixelsRead == totalPixelsToRead)
+            {
+                logger.debug("collection finished in {0} ms", sw.ElapsedMilliseconds);
                 return true;
+            }
             else if (collectionErrorDetected)
                 return false;
         }
