@@ -535,9 +535,6 @@ internal class PlatformUtil
         logger.info("finish loading library file from {0}", file.AbsolutePath);
     }
 
-
-
-
     static async Task loadCorrections(string file)
     {
         logger.info("start loading correction factors from {0}", file);
@@ -1383,8 +1380,6 @@ internal class PlatformUtil
         logger.debug("finished prepping data for decon");
         return library;
     }
-
-
     public async static Task<string> getBulkLibraryPath()
     {
         string finalFullPath = "";
@@ -1406,9 +1401,6 @@ internal class PlatformUtil
 
         return finalFullPath;
     }
-
-
-
     static Java.IO.File traverseDown(string[] rootPath, Java.IO.File dir)
     {
         var subs = dir.ListFiles();

@@ -1027,7 +1027,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         // ignore anything that doesn't have "WP" or "SiG" in the name
         var nameLC = device.Name.ToLower();
-        if (!nameLC.Contains("wp") && !nameLC.Contains("sig"))
+        if (!nameLC.Contains("wp") && !nameLC.Contains("sig") && !nameLC.Contains("v2"))
         {
             if (!ignoredNames.Contains(device.Name))
             {

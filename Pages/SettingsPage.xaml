@@ -45,18 +45,7 @@
                             <telerik:RadNumericInput x:Name="integrationTime" 
                                                  Value="{Binding integrationTimeMS}" 
                                                  Minimum="1" Maximum="5000"
-                                                 HorizontalOptions="EndAndExpand">
-                                <telerik:RadNumericInput.IncreaseButtonStyle>
-                                    <Style TargetType="telerik:RadNumericInput">
-                                        <Setter Property="BackgroundColor" Value="#333"/>
-                                    </Style>
-                                </telerik:RadNumericInput.IncreaseButtonStyle>
-                                <telerik:RadNumericInput.DecreaseButtonStyle>
-                                    <Style TargetType="telerik:RadNumericInput">
-                                        <Setter Property="BackgroundColor" Value="#333"/>
-                                    </Style>
-                                </telerik:RadNumericInput.DecreaseButtonStyle>
-                            </telerik:RadNumericInput>
+                                                 HorizontalOptions="EndAndExpand"/>
                         </StackLayout>
 
                         <!-- gain -->
@@ -74,9 +63,14 @@
                                 </telerik:RadNumericInput.IncreaseButtonStyle>
                                 <telerik:RadNumericInput.DecreaseButtonStyle>
                                     <Style TargetType="telerik:RadNumericInput">
-                                        <Setter Property="BackgroundColor" Value="#333"/>
+                                        <Setter Property="BackgroundColor" Value="#fff"/>
                                     </Style>
                                 </telerik:RadNumericInput.DecreaseButtonStyle>
+                                <telerik:RadNumericInput.TextInputStyle>
+                                    <Style TargetType="telerik:RadNumericInput">
+                                        <Setter Property="BackgroundColor"  Value="#fff"/>
+                                    </Style>
+                                </telerik:RadNumericInput.TextInputStyle>
                             </telerik:RadNumericInput>
                         </StackLayout>
 

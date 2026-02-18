@@ -425,7 +425,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _startIntTimeMS = 50;
+        protected ushort _startIntTimeMS = 200;
 
         public virtual byte startGainDb
         {
@@ -512,7 +512,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _autoRamanMaxGainDb = 12;
+        protected byte _autoRamanMaxGainDb = 30;
 
         public virtual ushort targetCounts
         {
@@ -527,7 +527,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _targetCounts = 10000;
+        protected ushort _targetCounts = 35000;
         
         public virtual ushort minCounts
         {
@@ -542,7 +542,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _minCounts = 8000;
+        protected ushort _minCounts = 20000;
 
         public virtual ushort maxCounts
         {
@@ -557,7 +557,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _maxCounts = 12000;
+        protected ushort _maxCounts = 50000;
         
         public virtual byte maxFactor
         {

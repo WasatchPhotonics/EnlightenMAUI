@@ -82,7 +82,8 @@ namespace EnlightenMAUI.ViewModels
             List<string> sublibraries = PlatformUtil.getSubLibraries();
             foreach (string  sublibrary in sublibraries)
             {
-                compLibrary.Add(sublibrary);
+                if (!compLibrary.Contains(sublibrary))
+                    compLibrary.Add(sublibrary);
             }
 
             settings.LibraryChanged += Settings_LibraryChanged;
@@ -110,7 +111,8 @@ namespace EnlightenMAUI.ViewModels
             List<string> sublibraries = PlatformUtil.getSubLibraries();
             foreach (string sublibrary in sublibraries)
             {
-                compLibrary.Add(sublibrary);
+                if (!compLibrary.Contains(sublibrary))
+                    compLibrary.Add(sublibrary);
             }
 
 
