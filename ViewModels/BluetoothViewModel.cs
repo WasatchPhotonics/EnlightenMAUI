@@ -422,7 +422,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         logger.info("Looking for usb devices via Android services");
         List<USBViewDevice> temp = await PlatformUSB.doUSBScanAsync();
-        usbDeviceList = new ObservableCollection<USBViewDevice>(temp);
+        usbDeviceList.Clear();
+        foreach (USBViewDevice device in temp) 
+            usbDeviceList.Add(device);
 
         return true;        
     }
@@ -560,10 +562,23 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         if (ok)
         {
+            logger.info("BVM.doConnectOrDisconnectUSBAsync: successfully connected to USB device");
+            spec = USBSpectrometer.getInstance();
+            logger.info("BVM.doConnectOrDisconnectUSBAsync: spec is valid {0}, spec is paired {1}", spec != null, spec != null && spec.paired);
+            spec.paired = true;
+
             if (spec != null && spec.paired)
             {
+                logger.debug("invoking new connection");
                 if (Spectrometer.NewConnection != null)
                     Spectrometer.NewConnection.Invoke(this, spec);
+                connectionProgress = 1;
+                buttonConnectEnabled = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+                Settings.getInstance().spec = spec;
+                await Shell.Current.GoToAsync("//ScopePage");
+                connectionProgress = 0;
+                return ok;
             }
         }
 
@@ -1095,6 +1110,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
         buttonConnectEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
 
-        logger.debug($"BVM.selectBLEDevice: done");
+        logger.debug($"BVM.selectUSBDevice: done");
     }
 }

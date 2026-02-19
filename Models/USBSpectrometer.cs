@@ -71,9 +71,11 @@ namespace EnlightenMAUI.Models
 
         public async Task<bool> initAsync()
         {
-            raiseConnectionProgress(0.175);
-            connect();
-            raiseConnectionProgress(0.2);
+            logger.info("Spectrometer.initAsync: started init");
+            //raiseConnectionProgress(0.175);
+            //connect();
+            //raiseConnectionProgress(0.2);
+            logger.info("Spectrometer.initAsync: reading EEPROM");
             var pages = await readEEPROMAsync();
             if (pages is null)
             {
@@ -87,7 +89,7 @@ namespace EnlightenMAUI.Models
                 logger.error("Spectrometer.initAsync: failed to parse EEPROM");
                 return false;
             }
-            raiseConnectionProgress(0.925);
+            //raiseConnectionProgress(0.925);
 
             ////////////////////////////////////////////////////////////////////
             // post-process EEPROM
@@ -111,7 +113,7 @@ namespace EnlightenMAUI.Models
 
             logger.debug("Spectrometer.initAsync: generating pixel axis");
             generatePixelAxis();
-            raiseConnectionProgress(0.95);
+            //raiseConnectionProgress(0.95);
 
             // set this early so battery and other BLE calls can progress
             paired = true;
@@ -126,7 +128,7 @@ namespace EnlightenMAUI.Models
             pixels = eeprom.activePixelsHoriz;
 
             await updateBatteryAsync();
-            raiseConnectionProgress(0.975);
+            //raiseConnectionProgress(0.975);
 
             // ignore EEPROM configuration and hardcode int time and gain. Our preferred defaults here
             // are different than those written to EEPROM and since there is strong data binding between the
@@ -157,6 +159,7 @@ namespace EnlightenMAUI.Models
             //
             // whereAmI = WhereAmI.getInstance();
 
+            paired = true;
             logger.debug("Spectrometer.initAsync: done");
             return true;
         }
@@ -465,7 +468,7 @@ namespace EnlightenMAUI.Models
 
                 logger.hexdump(buf, $"adding page {page}: ");
                 pages.Add(buf);
-                raiseConnectionProgress(.2 + .7 * (page + 1) / 8);
+                //raiseConnectionProgress(.2 + .7 * (page + 1) / 8);
             }
             logger.debug($"Spectrometer.readEEPROMAsync: done");
             return pages;

@@ -328,12 +328,14 @@ namespace EnlightenMAUI.Platforms
 
                     if (acc.VendorId == 0x24aa)
                     {
+                        logger.info("usb device matches vid, adding to list");
                         USBViewDevice uvd = new USBViewDevice(acc.DeviceName, acc.VendorId.ToString("x4"), acc.ProductId.ToString("x4"));
-                        //usbDeviceList.Add(uvd);
+                        usbDeviceList.Add(uvd);
 
                         usbIntent = AndrApp.PendingIntent.GetBroadcast(con, 0, new Intent(ACTION_USB_PERMISSION), AndrApp.PendingIntentFlags.Immutable);
 
                         //LibUsbDotNet.UsbDevice usbDevice = LibUsbDotNet.UsbDevice.OpenUsbDevice(d => d.Pid == acc.ProductId);
+                        logger.info("requesting permission to access USB device");
                         manager.RequestPermission(acc, usbIntent);
 
                     }
@@ -345,6 +347,7 @@ namespace EnlightenMAUI.Platforms
                 logger.info("USB grab failed with error {0}", ex.Message);
             }
 
+            logger.info("returning {0} USB devices", usbDeviceList.Count);
             return usbDeviceList;
         }
 
@@ -374,7 +377,7 @@ namespace EnlightenMAUI.Platforms
                         USBWrapper passthrough = new USBWrapper(udc, device);
                         USBSpectrometer usbSpectrometer = new USBSpectrometer(passthrough);
                         spec = usbSpectrometer;
-
+                        logger.info("about to init device");
                         bool ok = await (spec as USBSpectrometer).initAsync();
                         if (ok)
                         {
@@ -383,7 +386,6 @@ namespace EnlightenMAUI.Platforms
                         logger.debug("init complete setting instance and paired");
                         USBSpectrometer.setInstance(usbSpectrometer);
                         USBViewDevice.paired = true;
-                        Settings.getInstance().spec = spec;
                         return ok;
                     }
                     else
