@@ -1,4 +1,7 @@
-﻿using EnlightenMAUI.Models;
+﻿using CommunityToolkit.Maui.Core.Primitives;
+using EnlightenMAUI.Common;
+using EnlightenMAUI.Models;
+using Foundation;
 using Intents;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
@@ -11,7 +14,38 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
+using Telerik.Windows.Documents.Fixed.Model.Editing;
 namespace EnlightenMAUI.Platforms;
+
+internal class ModelInput
+{
+    [ColumnName("serving_default_input_layer:0")]
+    [VectorType(1, 2376, 1)]
+    public float[] spectrum { get; set; }
+}
+
+internal class Prediction
+{
+    [ColumnName("StatefulPartitionedCall_1:0")]
+    [VectorType(1, 2008, 1)]
+    public float[] spectrum { get; set; }
+
+}
+
+internal class SimpleModelInput
+{
+    [ColumnName("serving_default_input_1:0")]
+    [VectorType(1, 2376, 1)]
+    public float[] spectrum { get; set; }
+}
+
+internal class SimplePrediction
+{
+    [ColumnName("StatefulPartitionedCall:0")]
+    [VectorType(1, 2008, 1)]
+    public float[] spectrum { get; set; }
+
+}
 
 public static class StorageHelper
 {
@@ -28,6 +62,11 @@ public static class StorageHelper
 
 internal class PlatformUtil
 {
+    static MLContext mlContext = new MLContext();
+    static PredictionEngine<ModelInput, Prediction> engine;
+    static PredictionEngine<SimpleModelInput, SimplePrediction> simpleEngine;
+    static ITransformer transformer;
+
     static Logger logger = Logger.getInstance();
     public static bool transformerLoaded = false;
     public static bool simpleTransformerLoaded = false;
@@ -56,18 +95,335 @@ internal class PlatformUtil
         return false;
     }
 
-    public async static Task loadONNXModel(string extension, string correctionPath)
+    public static string recurseAndFindPath(NSUrl directory, string name)
     {
+        if (directory.HasDirectoryPath)
+        {
 
+            NSFileManager fileManager = NSFileManager.DefaultManager;
+            NSUrl[] paths = fileManager.GetDirectoryContent(
+                directory,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+
+            string finalBlob = null;
+
+            if (paths != null)
+            {
+                foreach (NSUrl path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsoluteString);
+                    string tempBlob = recurseAndFindPath(path, name);
+                    if (tempBlob != null && finalBlob == null)
+                        finalBlob = tempBlob;
+                }
+
+                return finalBlob;
+            }
+
+            return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsoluteString);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsoluteString) && directory.LastPathComponent == name)
+            {
+                return directory.AbsoluteString;
+            }
+
+            return null;
+        }
     }
 
+    public static List<string> recurseAndFindPaths(NSUrl directory, Regex regex, bool isPrime, List<string> findsSoFar)
+    {
+        if (directory.HasDirectoryPath)
+        {
+            NSFileManager fileManager = NSFileManager.DefaultManager;
+            NSUrl[] paths = fileManager.GetDirectoryContent(
+                directory,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
 
+            if (paths != null)
+            {
+                foreach (NSUrl path in paths)
+                {
+                    logger.info("going deeper down {0}", path.AbsoluteString);
+                    recurseAndFindPaths(path, regex, false, findsSoFar);
+                }
+            }
+
+            if (isPrime)
+                return findsSoFar;
+            else
+                return null;
+        }
+        else
+        {
+            logger.info("found endpoint at {0}", directory.AbsoluteString);
+            //Java.IO. directory.AbsolutePath
+            if (System.IO.File.Exists(directory.AbsoluteString) && regex.IsMatch(directory.LastPathComponent))
+            {
+                findsSoFar.Add(directory.AbsoluteString);
+            }
+
+            return null;
+        }
+    }
+
+    public async static Task loadONNXModel(string extension, string correctionPath)
+    {
+        try
+        {
+            string fullPath = null;
+
+            NSUrl extPath = NSFileManager.DefaultManager.GetUrl(
+                NSSearchPathDirectory.DocumentDirectory,
+                NSSearchPathDomain.User,
+                new NSUrl("folder", true),
+                true,
+                out var _);
+            NSUrl libraryFolder = null;
+
+            NSFileManager fileManager = NSFileManager.DefaultManager;
+            NSUrl[] cacheDirs = fileManager.GetDirectoryContent(
+                extPath,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+
+            foreach (var cDir in cacheDirs)
+            {
+                logger.debug("recursing down dir {0}", cDir.AbsoluteString);
+                fullPath = recurseAndFindPath(cDir, correctionPath);
+                if (fullPath != null)
+                    break;
+            }
+
+            if (fullPath != null)
+            {
+                loadCorrections(fullPath);
+                fullPath = null;
+            }
+
+            Regex extensionReg = new Regex(@".*\." + extension + @"$"); 
+            cacheDirs = fileManager.GetDirectoryContent(
+                extPath,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+            List<string> fullPaths = null;
+            foreach (var cDir in cacheDirs)
+            {
+                logger.debug("recursing down dir {0}", cDir.AbsoluteString);
+                fullPaths = recurseAndFindPaths(cDir, extensionReg, true, new List<string>());
+                if (fullPaths != null && fullPaths.Count > 0)
+                    break;
+            }
+
+            if (fullPaths == null || fullPaths.Count == 0)
+                return;
+
+            foreach (string path in fullPaths)
+            {
+                bool loadSucceeded = false;
+
+                try
+                {
+                    var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
+                    logger.debug("building pipeline");
+                    var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
+                    logger.debug("building transformer");
+                    transformer = pipeline.Fit(data);
+                    var transCope = transformer;
+                    logger.debug("creating engine");
+                    engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
+                    var engCop = engine;
+
+                    logger.debug("onnx model load complete");
+                    transformerLoaded = complexTransformerLoaded = loadSucceeded = true;
+                }
+                catch (Exception e2)
+                {
+                    logger.info("onnx load failed with exception {0}", e2.Message);
+                }
+
+                if (!loadSucceeded)
+                {
+
+                    try
+                    {
+                        var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<SimpleModelInput>());
+                        logger.debug("building pipeline");
+                        var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+                        logger.debug("building transformer");
+                        transformer = pipeline.Fit(data);
+                        var transCope = transformer;
+                        logger.debug("creating engine");
+                        simpleEngine = mlContext.Model.CreatePredictionEngine<SimpleModelInput, SimplePrediction>(transformer);
+                        var engCop = engine;
+
+                        logger.debug("onnx model load complete");
+                        transformerLoaded = simpleTransformerLoaded = loadSucceeded = true;
+                    }
+                    catch (Exception e3)
+                    {
+                        logger.info("onnx load failed with exception {0}", e3.Message);
+                    }
+                }
+
+
+            }
+        }
+        catch (Exception e)
+        {
+            logger.info("onnx load failed with exception {0}", e.Message);
+        }
+    }
 
     public static async Task<Dictionary<string, Measurement>> findUserFiles(Spectrometer spec)
     {
-        return null;
+        //var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        Dictionary<string, Measurement> temp = new Dictionary<string, Measurement>();
+
+        NSUrl path = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+        NSUrl libraryFolder = null;
+
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        NSUrl[] filePaths = fileManager.GetDirectoryContent(
+            path, 
+            null, 
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles, 
+            out var _);
+
+        foreach (var filePath in filePaths)
+        {
+
+            if (filePath.LastPathComponent == "Documents")
+            {
+                libraryFolder = filePath;
+                break;
+            }
+
+        }
+
+        if (libraryFolder == null)
+            return null;
+
+
+        Regex csvReg = new Regex(@".*\.csv$");
+        NSUrl[] libraryFiles = fileManager.GetDirectoryContent(
+            libraryFolder,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.HasDirectoryPath)
+            {
+                await findUserFilesDeeper(libraryFile, spec, temp);
+            }
+            else if (csvReg.IsMatch(libraryFile.AbsoluteString))
+            {
+                try
+                {
+                    await addUserFile(libraryFile, spec, temp);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsoluteString, e.Message);
+                }
+            }
+        }
+
+
+
+        return temp;
     }
 
+    async static Task findUserFilesDeeper(NSUrl folder, Spectrometer spec, Dictionary<string, Measurement> dict)
+    {
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        var libraryFiles = fileManager.GetDirectoryContent(
+            folder,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (libraryFile.HasDirectoryPath)
+            {
+                await findUserFilesDeeper(libraryFile, spec, dict);
+            }
+            else
+            {
+                await addUserFile(libraryFile, spec, dict);
+            }
+        }
+    }
+
+    async static Task addUserFile(NSUrl file, Spectrometer spec, Dictionary<string, Measurement> dict)
+    {
+        await loadCSV(file, spec, dict);
+    }
+
+    async static Task loadCSV(NSUrl file, Spectrometer spec, Dictionary<string, Measurement> dict)
+    {
+        logger.info("start loading library file from {0}", file.AbsoluteString);
+
+        string name = file.LastPathComponent.Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file.AbsoluteString);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+        Wavecal wavecal = new Wavecal(spec.pixels);
+        wavecal.coeffs = spec.eeprom.wavecalCoeffs;
+        wavecal.excitationNM = spec.laserExcitationNM;
+
+        Measurement mOrig = m.copy();
+
+        if (transformerLoaded)
+        {
+            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            dict.Add(name, updated);
+        }
+
+        else
+        {
+            Measurement updated = wavecal.crossMapWavenumberData(m.wavenumbers, m.raw);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)spec.eeprom.ROIHorizStart, (int)spec.eeprom.ROIHorizEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, spec.eeprom.ROIHorizStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+            dict.Add(name, updated);
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsoluteString);
+    }
 
     static async Task loadCorrections(string file)
     {
@@ -91,7 +447,128 @@ internal class PlatformUtil
 
     public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
     {
-        return null;
+        try
+        {
+            //logger.logArray("pre-processed wavenum", wavenumbers);
+            //logger.logArray("pre-processed counts", counts);
+
+            double[] local = new double[counts.Length];
+
+            if (correctionFactors != null && correctionFactors.ContainsKey(serial))
+            {
+                double[] corrections = correctionFactors[serial];
+                for (int i = 0; i < counts.Length; i++)
+                    local[i] = counts[i] / corrections[i];
+            }
+            else
+            {
+                Array.Copy(counts, local, counts.Length);
+            }
+
+            //logger.logArray("etalon-corrected counts", counts);
+
+            double[] targetWavenum = new double[2376];
+            for (int i = 0; i < targetWavenum.Length; i++)
+            {
+                targetWavenum[i] = i + 216;
+            }
+
+            List<double> trimmedWN = new List<double>();
+            List<double> trimmedCounts = new List<double>();
+
+            for (int i = roiStart; i < wavenumbers.Length; i++)
+            {
+                trimmedWN.Add(wavenumbers[i]);
+                trimmedCounts.Add(local[i]);
+            }
+
+            double[] interpolatedCounts = Wavecal.mapWavenumbers(trimmedWN.ToArray(), trimmedCounts.ToArray(), targetWavenum);
+
+            double max = interpolatedCounts.Max();
+
+            if (useSimple)
+            {
+                for (int i = 0; i < interpolatedCounts.Length; i++)
+                {
+                    interpolatedCounts[i] = interpolatedCounts[i] / max;
+                }
+
+                SimpleModelInput modelInput = new SimpleModelInput();
+                modelInput.spectrum = new float[2376];
+                for (int i = 0; i < interpolatedCounts.Length; i++)
+                    modelInput.spectrum[i] = (float)interpolatedCounts[i];
+
+                SimplePrediction p = new SimplePrediction();
+
+                logger.debug("making prediction");
+                p = simpleEngine.Predict(modelInput);
+                logger.debug("packing prediction");
+
+                //logger.logArray("transformed counts", p.spectrum);
+
+                int outputSize = p.spectrum.GetLength(0);
+                double[] output = new double[outputSize];
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = p.spectrum[i] * max;
+                }
+                double min = output.Min();
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = output[i] - min; // * max;
+                }
+
+                //logger.logArray("rebased counts", output);
+
+                output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
+                ////logger.logArray("deconvoluted counts", output);
+
+                logger.debug("returning processed spectrum");
+                return output;
+
+            }
+
+            else
+            {
+                ////logger.logArray("interpolated wavenum", targetWavenum);
+                //logger.logArray("interpolated counts", interpolatedCounts);
+
+                ModelInput modelInput = new ModelInput();
+                modelInput.spectrum = new float[2376];
+                for (int i = 0; i < interpolatedCounts.Length; i++)
+                    modelInput.spectrum[i] = (float)interpolatedCounts[i];
+
+                Prediction p = new Prediction();
+
+                logger.debug("making prediction");
+                p = engine.Predict(modelInput);
+                logger.debug("packing prediction");
+
+
+                //logger.logArray("transformed counts", p.spectrum);
+
+                int outputSize = p.spectrum.GetLength(0);
+                double[] output = new double[outputSize];
+                double min = p.spectrum.Min();
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = p.spectrum[i] - min; // * max;
+                }
+
+                //logger.logArray("rebased counts", output);
+
+                output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
+                //logger.logArray("deconvoluted counts", output);
+
+                logger.debug("returning processed spectrum");
+                return output;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.debug("background process failed with exception {0}", e.Message);
+            return null;
+        }
     }
 
     static double[] deconvoluteSpectrum(double[] wnOut, double[] spectrum, double fwhm)
@@ -584,31 +1061,447 @@ internal class PlatformUtil
     // PC: \Internal shared storage\Android\data\com.wasatchphotonics.enlightenmaui\files\Documents\2024-04-30
     public static string getSavePath()
     {
-        return null;
+        if (savePath != null)
+        {
+            logger.debug($"getSavePath: returning previous savePath {savePath}");
+            return savePath;
+        }
+
+        NSUrl docDir = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var todayDir = Path.Join(docDir.Path, today);
+
+        if (!writeable(todayDir))
+        {
+            logger.error($"getSavePath: unable to write todayDir {todayDir}");
+            return null;
+        }
+
+        logger.debug($"getSavePath: returning writeable todayDir {todayDir}");
+        return savePath = todayDir;
     }
 
     public static string getUserLibraryPath()
     {
-        return null;
+        if (userLibraryPath != null)
+        {
+            logger.debug($"getuserLibraryPath: returning previous userLibraryPath {userLibraryPath}");
+            return userLibraryPath;
+        }
+
+        NSUrl docDir = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var userLibDir = Path.Join(docDir.Path, "User Library");
+
+        if (!writeable(userLibDir))
+        {
+            logger.error($"getuserLibraryPath: unable to write userLibDir {userLibDir}");
+            return null;
+        }
+
+        logger.debug($"getuserLibraryPath: returning writeable userLibDir {userLibDir}");
+        return userLibraryPath = userLibDir;
     }
 
     public static string getConfigFilePath()
     {
-        return null;
+        if (configurationPath != null)
+        {
+            logger.debug($"getConfigFilePath: returning previous configPath {configurationPath}");
+            return configurationPath;
+        }
+
+        NSUrl docDir = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
+        if (!writeable(docDir.AbsoluteString))
+        {
+            logger.error($"getuserLibraryPath: unable to write userLibDir {docDir}");
+            return null;
+        }
+
+        logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
+        return configurationPath = Path.Join(docDir.AbsoluteString, "configuration.json");
     }
+
+    /*
+     * 
+     * TO-DO: figure out permission for "higher level" auto save. Requires permissions on Android, and likely requires the same on iOS. For now, just save to the app's document directory, 
+     * which is accessible via iTunes file sharing and the Files app.
+     * 
+     */
+
 
     public static string getAutoSavePath(bool highLevelAutoSave)
     {
-        return null;
+        if (autoSavePath != null)
+        {
+            logger.debug($"getAutoSavePath: returning previous {userLibraryPath}");
+            return autoSavePath;
+        }
+
+        var docDir = getSavePath();
+
+        /*
+        if (highLevelAutoSave)
+        {
+            string temp = Path.Join("/storage/emulated/0", "EnlightenSpectra");
+            if (writeable(temp))
+                docDir = temp;
+            else
+                docDir = "/storage/emulated/0/Documents";
+        }
+        */
+
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var todayDir = Path.Join(docDir, today);
+
+        if (!writeable(todayDir))
+        {
+            logger.error($"getAutoSavePath: unable to write autoSaveDir {todayDir}");
+            return null;
+        }
+
+        return autoSavePath = todayDir;
     }
     public static List<string> getSubLibraries()
     {
-        return null;
+        List<string> compLibrary = new List<string>();
+
+        NSUrl extPath = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+        NSUrl libraryFolder = null;
+
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        NSUrl[] cacheDirs = fileManager.GetDirectoryContent(
+            extPath,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
+
+        foreach (var cDir in cacheDirs)
+        {
+            var subs = fileManager.GetDirectoryContent(
+                cDir,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+
+            foreach (var sub in subs)
+            {
+                if (sub.LastPathComponent == "library")
+                {
+                    if (sub.HasDirectoryPath)
+                    {
+                        var subLibs = fileManager.GetDirectoryContent(
+                            sub,
+                            null,
+                            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                            out var _);
+
+                        foreach (var subLib in subLibs)
+                        {
+                            if (subLib.HasDirectoryPath && !compLibrary.Contains(subLib.LastPathComponent))
+                                compLibrary.Add(subLib.LastPathComponent);
+                        }
+                    }
+                }
+            }
+        }
+
+        return compLibrary;
     }
     public async static Task<Dictionary<string, Measurement>> loadFiles(string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
     {
-        return null;
+        //isLoading = true;
+        NSUrl extPath = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        NSUrl[] cacheDirs = fileManager.GetDirectoryContent(
+            extPath,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
+
+        NSUrl libraryFolder = null;
+        string[] rootPath = root.Split('/');
+        int depth = rootPath.Length;
+
+        foreach (var cDir in cacheDirs)
+        {
+            libraryFolder = traverseDown(rootPath, cDir);
+            if (libraryFolder != null)
+                break;
+
+        }
+
+        if (libraryFolder == null)
+        {
+            /*
+            if (library.Count > 0)
+                loadSucceeded = true;
+            isLoading = false;
+            InvokeLoadFinished();
+            return;
+            */
+            return library;
+        }
+
+        Regex csvReg = new Regex(@".*\.csv$");
+        Regex jsonReg = new Regex(@".*\.json$");
+
+        var libraryFiles = fileManager.GetDirectoryContent(
+                libraryFolder,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+
+        foreach (var libraryFile in libraryFiles)
+        {
+            if (jsonReg.IsMatch(libraryFile.AbsoluteString))
+            {
+                try
+                {
+                    await loadJSON(libraryFile, originalRaws, originalDarks, library);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsoluteString, e.Message);
+                }
+            }
+            else if (csvReg.IsMatch(libraryFile.AbsoluteString))
+            {
+                try
+                {
+                    await loadCSV(libraryFile, originalRaws, library);
+                }
+                catch (Exception e)
+                {
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsoluteString, e.Message);
+                }
+            }
+        }
+
+        /*
+        if (library.Count > 0)
+            loadSucceeded = true;
+        isLoading = false;
+        logger.debug("finished loading library files");
+        if (root != "User Library")
+            tag = root.Split('/').Last();
+
+        InvokeLoadFinished();
+        logger.debug("prepping data for decon");
+        */
+
+        if (doDecon)
+        {
+#if USE_DECON
+                if (PlatformUtil.transformerLoaded)
+                {
+                    double[] wavenumbers = Enumerable.Range(400, library.Values.First().processed.Length).Select(x => (double)x).ToArray();
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavenumbers));
+                }
+                else
+                    await deconvolutionLibrary.setWavenumberAxis(new List<double>(wavecal.wavenumbers));
+#endif
+        }
+
+        logger.debug("finished prepping data for decon");
+        return library;
     }
+
+    static NSUrl traverseDown(string[] rootPath, NSUrl dir)
+    {
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        var subs = fileManager.GetDirectoryContent(
+                dir,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+        NSUrl libraryFolder = null;
+
+        foreach (var sub in subs)
+        {
+            if (sub.LastPathComponent == rootPath[0])
+            {
+                if (rootPath.Length == 1)
+                {
+                    libraryFolder = sub;
+                    break;
+                }
+
+                else if (sub.HasDirectoryPath)
+                {
+                    string[] shortenedPath = new string[rootPath.Length - 1];
+                    Array.Copy(rootPath, 1, shortenedPath, 0, rootPath.Length - 1);
+                    return traverseDown(shortenedPath, sub);
+                }
+            }
+        }
+
+        return libraryFolder;
+    }
+
+    static async Task loadCSV(NSUrl file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
+    {
+        logger.info("start loading library file from {0}", file.AbsoluteString);
+
+        string name = file.LastPathComponent.Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file.AbsoluteString);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+
+
+#if USE_DECON
+            Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
+#endif
+
+        Measurement mOrig = m.copy();
+        originalRaws.Add(name, mOrig.raw);
+
+        /*
+        double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+        while (smoothedSpec == null || smoothedSpec.Length == 0)
+        {
+            smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            await Task.Delay(50);
+        }
+        */
+
+        if (false)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+
+        else
+        {
+            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
+
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = newIntensities;
+            //double airPLSLambda = 10000;
+            //int airPLSMaxIter = 100;
+            //double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            //double[] shortened = new double[updated.processed.Length];
+            //Array.Copy(array, 0, shortened, roiStart, array.Length);
+            //updated.raw = shortened;
+            //updated.dark = null;
+
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(updated.wavenumbers), new List<double>(updated.processed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsoluteString);
+    }
+    static async Task loadJSON(NSUrl file, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, Dictionary<string, Measurement> library)
+    {
+        logger.info("start loading library file from {0}", file.AbsoluteString);
+
+        string name = file.LastPathComponent.Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file.AbsoluteString);
+        StreamReader sr = new StreamReader(s);
+        string blob = await sr.ReadToEndAsync();
+
+        spectrumJSON json = JsonConvert.DeserializeObject<spectrumJSON>(blob);
+        if (json.tag != null && json.tag.Length > 0)
+        {
+            name = json.tag;
+        }
+
+        Measurement m = new Measurement(json);
+        Wavecal otherCal = new Wavecal(m.pixels);
+        otherCal.coeffs = m.wavecalCoeffs;
+        otherCal.excitationNM = m.excitationNM;
+
+        Measurement mOrig = m.copy();
+        originalRaws.Add(name, mOrig.raw);
+        originalDarks.Add(name, mOrig.dark);
+
+
+        if (PlatformUtil.transformerLoaded)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+        else
+        {
+            /*
+            Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+            */
+
+            library.Add(name, mOrig);
+        }
+
+        logger.info("finish loading library file from {0}", file.AbsoluteString);
+    }
+
 
     public async static Task<string> getBulkLibraryPath()
     {
@@ -617,7 +1510,33 @@ internal class PlatformUtil
 
     static bool writeable(string path)
     {
-        return false;
+        var f = new NSUrl(path);
+        logger.debug($"writeable: testing {path}");
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+
+        if (fileManager.FileExists(path))
+        {
+            logger.debug($"exists: {path}");
+        }
+        else
+        {
+            logger.debug($"calling Mkdirs({path})");
+
+            fileManager.CreateDirectory(f, createIntermediates: true, null, out var _);
+            if (!fileManager.FileExists(path))
+            {
+                logger.error($"writeable: Mkdirs failed to create {path}");
+                return false;
+            }
+        }
+
+        if (!fileManager.IsWritableFile(path))
+        {
+            logger.error($"writeable: can't write: {path}");
+            return false;
+        }
+
+        return true;
     }
 
 
