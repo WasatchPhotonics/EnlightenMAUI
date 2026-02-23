@@ -13,8 +13,6 @@ using NumSharp;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Telerik.Maui.Controls.Scheduler;
-using Telerik.Windows.Documents.Fixed.Model.Editing;
 namespace EnlightenMAUI.Platforms;
 
 internal class ModelInput
