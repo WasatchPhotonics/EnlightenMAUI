@@ -64,6 +64,13 @@
 	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
+	  <CodesignKey>Apple Development: Created via API (23YSR9HRAH)</CodesignKey>
+	  <CodesignProvision>VS: WildCard Development</CodesignProvision>
+	  <EnableMLUnsupportedPlatformTargetCheck>false</EnableMLUnsupportedPlatformTargetCheck>
+	  <NoBindingEmbedding>false</NoBindingEmbedding>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- App Icon -->
 
@@ -131,6 +138,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.3" />
 		<PackageReference Include="Microsoft.ML" Version="5.0.0" />
 		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.1" />
+		<PackageReference Include="Microsoft.ML.OnnxRuntime.Extensions.Dummy" Version="0.13.0" />
 		<PackageReference Include="Microsoft.ML.OnnxTransformer" Version="5.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Numpy" Version="3.11.1.35" />
@@ -195,6 +203,16 @@
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Processing\library\" />
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('..\EMAUIHelpers\library\Wasatch')">
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\ethanol.csv" Link="Processing\library\ethanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
 	</ItemGroup>
 
 	<ProjectExtensions><VisualStudio><UserProperties XamarinHotReloadDebuggerTimeoutExceptionEnlightenMAUIHideInfoBar="True" /></VisualStudio></ProjectExtensions>
