@@ -207,10 +207,20 @@
 
 	<ItemGroup>
 	  <Folder Include="Processing\library\" />
+	  <Folder Include="Processing\ml\" />
 	</ItemGroup>
 
 	<ItemGroup Condition="Exists('..\EMAUIHelpers\library\Wasatch')">
 	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\ethanol.csv" Link="Processing\library\ethanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('..\EMAUIHelpers\models')">
+	  <MauiAsset Include="..\EMAUIHelpers\models\nrd-d2-r53-model-12-opset18\background_model.onnx" Link="Processing\ml\background_model.onnx">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\models\nrd5-r3-model-17-opset18\background_model_light.onnx" Link="Processing\ml\background_model_light.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	</ItemGroup>
