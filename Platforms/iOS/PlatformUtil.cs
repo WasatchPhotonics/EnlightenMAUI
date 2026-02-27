@@ -174,7 +174,7 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath)
     {
         try
         {

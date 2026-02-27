@@ -1,6 +1,7 @@
 ﻿using Android;
 using Android.Content;
 using Android.Content.Res;
+using Android.Locations;
 using Android.Nfc;
 using Android.OS;
 using Android.Webkit;
@@ -17,6 +18,7 @@ using Microsoft.ML.Transforms.Onnx;
 using Newtonsoft.Json;
 using NumSharp;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -25,9 +27,8 @@ using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using AndrApp = Android.App;
 using AndrContent = Android.Content;
-using AndrOS = Android.OS;
 using AndrNet = Android.Net;
-using Android.Locations;
+using AndrOS = Android.OS;
 namespace EnlightenMAUI.Platforms; 
 
 
@@ -322,36 +323,37 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath)
     {
         try
         {
+            //
+            // To move to Assets, rewrite from here to line 364
+            //
+
+            AssetManager assets = Platform.AppContext.Assets;
+
+            string[] assetP = assets.List(root);
+
             string fullPath = null;
 
-            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            foreach (var cDir in cacheDirs)
-            {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                fullPath = recurseAndFindPath(cDir, correctionPath);
-                if (fullPath != null)
-                    break;
+            foreach (string path in assetP)            {
+                if (path == correctionPath)
+                    fullPath = Path.Join(root, path);
             }
 
             if (fullPath != null)
             {
-                loadCorrections(fullPath);
+                await loadCorrections(fullPath);
                 fullPath = null;
             }
 
             Regex extensionReg = new Regex(@".*\." + extension + @"$");
-            cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            List<string> fullPaths = null;
-            foreach (var cDir in cacheDirs)
+            List<string> fullPaths = new List<string>();
+            foreach (string path in assetP)
             {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                fullPaths = recurseAndFindPaths(cDir, extensionReg, true, new List<string>());
-                if (fullPaths != null && fullPaths.Count > 0)
-                    break;
+                if (extensionReg.IsMatch(path))
+                    fullPaths.Add(Path.Join(root, path));
             }
 
             if (fullPaths == null || fullPaths.Count == 0)
@@ -359,13 +361,50 @@ internal class PlatformUtil
 
             foreach (string path in fullPaths)
             {
-                bool loadSucceeded = false;
+                bool loadSucceeded = false; 
+                string targetFile = System.IO.Path.Combine(FileSystem.Current.AppDataDirectory, path.Split('/').Last());
+
+                if (!System.IO.File.Exists(targetFile))
+                {
+                    using FileStream outputStream = System.IO.File.OpenWrite(targetFile);
+
+                    using Stream fs = await FileSystem.Current.OpenAppPackageFileAsync(path);
+                    using BinaryWriter writer = new BinaryWriter(outputStream);
+                    using (BinaryReader reader = new BinaryReader(fs))
+                    {
+                        var bytesRead = 0;
+
+                        int bufferSize = 1024;
+                        byte[] bytes;
+                        var buffer = new byte[bufferSize];
+                        using (fs)
+                        {
+                            do
+                            {
+                                buffer = reader.ReadBytes(bufferSize);
+                                bytesRead = buffer.Count();
+                                writer.Write(buffer);
+                            }
+
+                            while (bytesRead > 0);
+
+                        }
+                    }
+
+                    writer.Flush();
+                    writer.Close();
+                    outputStream.Flush();
+                    outputStream.Close();
+                }
 
                 try
                 {
-                    var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
+                    var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>()); 
+                    //Stream s = await FileSystem.Current.OpenAppPackageFileAsync(path);
                     logger.debug("building pipeline");
-                    var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
+                    var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: targetFile, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
+                    //var pipeline = mlContext.Transforms.ApplyOnnxModel()
+                    //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelBytes: s, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
                     logger.debug("building transformer");
                     transformer = pipeline.Fit(data);
                     var transCope = transformer;
@@ -387,8 +426,13 @@ internal class PlatformUtil
                     try
                     {
                         var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<SimpleModelInput>());
+                        //Stream s = await FileSystem.Current.OpenAppPackageFileAsync(path);
                         logger.debug("building pipeline");
-                        var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+                        var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: targetFile, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
+                        //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
+                        //var pipeline = mlContext.Transforms.ApplyOnnxModel()
+                        //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelBytes: s, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
+                        OnnxTransformer onnxTransformer = new OnnxTransformer()
                         logger.debug("building transformer");
                         transformer = pipeline.Fit(data);
                         var transCope = transformer;
@@ -540,7 +584,7 @@ internal class PlatformUtil
         logger.info("start loading correction factors from {0}", file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
-        Stream s = System.IO.File.OpenRead(file);
+        Stream s = await FileSystem.Current.OpenAppPackageFileAsync(file);
         StreamReader sr = new StreamReader(s);
         string blob = await sr.ReadToEndAsync();
 
