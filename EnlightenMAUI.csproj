@@ -46,7 +46,8 @@
 		<PackageTags>wasatch;photonics;raman;spectrometer;ble</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-	</PropertyGroup>
+	  <UserSecretsId>8dd4882e-225f-460a-92d7-4dcb0d1c1f79</UserSecretsId>
+  </PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
@@ -133,6 +134,7 @@
 		<PackageReference Include="CSparse" Version="4.3.0" />
 		<PackageReference Include="LibUsbDotNet" Version="2.2.75" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.40" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.40" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.3" />

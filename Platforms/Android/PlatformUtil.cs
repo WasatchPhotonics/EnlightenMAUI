@@ -13,6 +13,7 @@ using Kotlin.Contracts;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
 using Microsoft.ML.Data;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Transforms.Onnx;
 using Newtonsoft.Json;
@@ -23,6 +24,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
+using Xamarin.Google.Crypto.Tink.Subtle;
 using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using AndrApp = Android.App;
@@ -101,6 +103,7 @@ internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
+    static InferenceSession session;
     static PredictionEngine<ModelInput, Prediction> engine;
     static PredictionEngine<SimpleModelInput, SimplePrediction> simpleEngine;
     static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
@@ -359,8 +362,12 @@ internal class PlatformUtil
             if (fullPaths == null || fullPaths.Count == 0)
                 return;
 
+            List<byte> complexBuffer = new List<byte>();
+            List<byte> simpleBuffer = new List<byte>();
+
             foreach (string path in fullPaths)
             {
+                List<byte> tempBuffer = new List<byte>();
                 bool loadSucceeded = false; 
                 string targetFile = System.IO.Path.Combine(FileSystem.Current.AppDataDirectory, path.Split('/').Last());
 
@@ -384,6 +391,8 @@ internal class PlatformUtil
                                 buffer = reader.ReadBytes(bufferSize);
                                 bytesRead = buffer.Count();
                                 writer.Write(buffer);
+                                tempBuffer.AddRange(buffer);
+                                logger.info("model file {0} read {1} bytes", path, bytesRead);
                             }
 
                             while (bytesRead > 0);
@@ -395,6 +404,30 @@ internal class PlatformUtil
                     writer.Close();
                     outputStream.Flush();
                     outputStream.Close();
+                }
+                else
+                {
+                    using Stream fs = await FileSystem.Current.OpenAppPackageFileAsync(path);
+
+                    using (BinaryReader reader = new BinaryReader(fs))
+                    {
+                        var bytesRead = 0;
+
+                        int bufferSize = 1024;
+                        byte[] bytes;
+                        var buffer = new byte[bufferSize];
+                        using (fs)
+                        {
+                            do
+                            {
+                                buffer = reader.ReadBytes(bufferSize);
+                                bytesRead = buffer.Count();
+                                tempBuffer.AddRange(buffer);
+                                logger.info("model file {0} read {1} bytes", path, tempBuffer.Count);
+                            }
+                            while (bytesRead > 0);
+                        }
+                    }
                 }
 
                 try
@@ -414,6 +447,7 @@ internal class PlatformUtil
 
                     logger.debug("onnx model load complete");
                     transformerLoaded = complexTransformerLoaded = loadSucceeded = true;
+                    complexBuffer = tempBuffer;
                 }
                 catch (Exception e2)
                 {
@@ -432,7 +466,6 @@ internal class PlatformUtil
                         //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
                         //var pipeline = mlContext.Transforms.ApplyOnnxModel()
                         //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelBytes: s, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
-                        OnnxTransformer onnxTransformer = new OnnxTransformer()
                         logger.debug("building transformer");
                         transformer = pipeline.Fit(data);
                         var transCope = transformer;
@@ -442,15 +475,27 @@ internal class PlatformUtil
 
                         logger.debug("onnx model load complete");
                         transformerLoaded = simpleTransformerLoaded = loadSucceeded = true;
+                        simpleBuffer = tempBuffer;
                     }
                     catch (Exception e3)
                     {
                         logger.info("onnx load failed with exception {0}", e3.Message);
                     }
                 }
-
-
             }
+
+            if (simpleBuffer.Count > 0)
+            {
+                try
+                {
+                    session = new Microsoft.ML.OnnxRuntime.InferenceSession(simpleBuffer.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    logger.info("onnx session load failed with exception {0}", ex.Message);
+                }
+            }
+
         }
         catch (Exception e)
         {
@@ -657,6 +702,24 @@ internal class PlatformUtil
                 logger.debug("making prediction");
                 p = simpleEngine.Predict(modelInput);
                 logger.debug("packing prediction");
+
+                var sessionInputs = new List<NamedOnnxValue>
+                {
+                    NamedOnnxValue.CreateFromTensor("serving_default_input_1:0", new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))
+                };
+
+                var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
+
+                var sessionOutput = session.Run(sessionInputs);
+
+                var sessionInput1 = new Dictionary<string, OrtValue>
+                {
+                    { "serving_default_input_1:0", inValue }
+                };
+
+                var runOptions = new RunOptions();
+                var sessionOutput2 = session.Run(runOptions, sessionInput1, session.OutputNames.ToArray());
+                var shape = sessionOutput2[0].GetTensorTypeAndShape();
 
                 //logger.logArray("transformed counts", p.spectrum);
 
