@@ -1,237 +1,212 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFrameworks>net10.0-android36.0;net10.0-ios</TargetFrameworks>
-		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
-		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
-
-		<!-- Note for MacCatalyst:
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android36.0;net10.0-ios</TargetFrameworks>
+    <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
+    <!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
+    <!-- Note for MacCatalyst:
 		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
 		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
 		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
 		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
-
-		<OutputType>Exe</OutputType>
-		<RootNamespace>EnlightenMAUI</RootNamespace>
-		<UseMaui>true</UseMaui>
-		<SingleProject>true</SingleProject>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>disable</Nullable>
-
-		<!-- Display name -->
-		<ApplicationTitle>EnlightenMAUI</ApplicationTitle>
-
-		<!-- App Identifier -->
-		<ApplicationId>com.wasatchphotonics.enlightenmaui</ApplicationId>
-
-		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
-
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-		<Title>EnlightenMobile</Title>
-		<Authors>mzieg</Authors>
-		<Company>Wasatch Photonics</Company>
-		<Description>Smartphone client for BLE-capable Wasatch Photonics spectrometers</Description>
-		<Copyright>2024</Copyright>
-		<PackageProjectUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</PackageProjectUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>
-		<PackageTags>wasatch;photonics;raman;spectrometer;ble</PackageTags>
-		<RepositoryType>git</RepositoryType>
-		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-	  <UserSecretsId>8dd4882e-225f-460a-92d7-4dcb0d1c1f79</UserSecretsId>
+    <!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
+    <OutputType>Exe</OutputType>
+    <RootNamespace>EnlightenMAUI</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <!-- Display name -->
+    <ApplicationTitle>EnlightenMAUI</ApplicationTitle>
+    <!-- App Identifier -->
+    <ApplicationId>com.wasatchphotonics.enlightenmaui</ApplicationId>
+    <!-- Versions -->
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+    <Title>EnlightenMobile</Title>
+    <Authors>mzieg</Authors>
+    <Company>Wasatch Photonics</Company>
+    <Description>Smartphone client for BLE-capable Wasatch Photonics spectrometers</Description>
+    <Copyright>2024</Copyright>
+    <PackageProjectUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>
+    <PackageTags>wasatch;photonics;raman;spectrometer;ble</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <UserSecretsId>8dd4882e-225f-460a-92d7-4dcb0d1c1f79</UserSecretsId>
   </PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
-	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.50</ApplicationDisplayVersion>
-	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
-	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
-	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
-	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.50</ApplicationDisplayVersion>
-	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
-	  <AndroidPackageFormat>apk</AndroidPackageFormat>
-	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
-	  <CodesignKey>Apple Development: Created via API (23YSR9HRAH)</CodesignKey>
-	  <CodesignProvision>VS: WildCard Development</CodesignProvision>
-	  <EnableMLUnsupportedPlatformTargetCheck>false</EnableMLUnsupportedPlatformTargetCheck>
-	  <NoBindingEmbedding>false</NoBindingEmbedding>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<!-- App Icon -->
-
-		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\AppIcon\appicon.svg" Color="#333" BaseSize="300, 300" />
-
-		<!-- Images -->
-		<MauiImage Include="Resources\Images\*" />
-		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
-
-		<!-- Custom Fonts -->
-		<MauiFont Include="Resources\Fonts\*" />
-
-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
-		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="appsettings.json" />
-	  <None Remove="libdpSTJE.so" />
-	  <None Remove="Platforms\Android\Resources\xml\device_filter.xml" />
-	  <None Remove="Stj.ProtectionSdk.so" />
-	  <None Remove="Resources\AppIcon\appicon.svg" />
-	  <None Remove="Resources\Images\apeture.svg" />
-	  <None Remove="Resources\Images\bulb_dark.svg" />
-	  <None Remove="Resources\Images\enlighten_logo.png" />
-	  <None Remove="Resources\Images\eraser.svg" />
-	  <None Remove="Resources\Images\eye.svg" />
-	  <None Remove="Resources\Images\ico_bluetooth.png" />
-	  <None Remove="Resources\Images\ico_clipboard.png" />
-	  <None Remove="Resources\Images\ico_gear.png" />
-	  <None Remove="Resources\Images\ico_info.png" />
-	  <None Remove="Resources\Images\ico_page.png" />
-	  <None Remove="Resources\Images\ico_spectra.png" />
-	  <None Remove="Resources\Images\ico_xs.png" />
-	  <None Remove="Resources\Images\laser.svg" />
-	  <None Remove="Resources\Images\triangle_down_underline.svg" />
-	  <None Remove="Resources\Images\ui_slider_knob.png" />
-	</ItemGroup>
-
-	<ItemGroup Condition="Exists('lib\arm64-v8a\libdpSTJE.so')">
-	  <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSTJE.so">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </AndroidNativeLibrary>
-	</ItemGroup>
-
-	<ItemGroup Condition="Exists('lib\arm64-v8a\Stj.ProtectionSdk.so')">
-	  <AndroidNativeLibrary Include="lib\arm64-v8a\Stj.ProtectionSdk.so">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </AndroidNativeLibrary>
-	</ItemGroup>
-
-	<ItemGroup Condition="Exists('appsettings.json')">
-	  <EmbeddedResource Include="appsettings.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiIcon Include="Resources\AppIcon\appicon.svg" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Accord.Statistics" Version="3.8.0" />
-		<PackageReference Include="CommunityToolkit.Maui" Version="14.0.0" />
-		<PackageReference Include="CommunityToolkit.Maui.Core" Version="14.0.0" />
-		<PackageReference Include="CSparse" Version="4.3.0" />
-		<PackageReference Include="LibUsbDotNet" Version="2.2.75" />
-		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
-		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.40" />
-		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.40" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.3" />
-		<PackageReference Include="Microsoft.ML" Version="5.0.0" />
-		<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.1" />
-		<PackageReference Include="Microsoft.ML.OnnxRuntime.Extensions.Dummy" Version="0.13.0" />
-		<PackageReference Include="Microsoft.ML.OnnxTransformer" Version="5.0.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="Numpy" Version="3.11.1.35" />
-		<PackageReference Include="NumSharp" Version="0.30.0" />
-		<PackageReference Include="Plugin.BLE" Version="3.2.0" />
-		<PackageReference Include="Telerik.UI.for.Maui" Version="13.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Reference Include="DeconvolutionMAUI">
-	    <HintPath>..\DeconvolutionMAUI\DeconvolutionMAUI\bin\Debug\net8.0-android\DeconvolutionMAUI.dll</HintPath>
-	  </Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Update="Pages\ClipboardPage.xaml.cs">
-	    <DependentUpon>ClipboardPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Pages\AboutPage.xaml.cs">
-	    <DependentUpon>AboutPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\DataPage.xaml.cs">
-	    <DependentUpon>DataPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\InfoPage.xaml.cs">
-	    <DependentUpon>InfoPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\DevicePage.xaml.cs">
-	    <DependentUpon>DevicePage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\ScopePage.xaml.cs">
-	    <DependentUpon>ScopePage.xaml</DependentUpon>
-	  </Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiXaml Update="Popups\AddToLibraryPopup.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Popups\OverlaysPopup.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Popups\SaveSpectrumPopup.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\DataPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\InfoPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\DevicePage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Update="CHANGELOG.md">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </None>
-	  <None Update="README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Processing\library\" />
-	  <Folder Include="Processing\ml\" />
-	</ItemGroup>
-
-	<ItemGroup Condition="Exists('..\EMAUIHelpers\library\Wasatch')">
-	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\ethanol.csv" Link="Processing\library\ethanol.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	</ItemGroup>
-
-	<ItemGroup Condition="Exists('..\EMAUIHelpers\models')">
-	  <MauiAsset Include="..\EMAUIHelpers\models\nrd-d2-r53-model-12-opset18\background_model.onnx" Link="Processing\ml\background_model.onnx">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	  <MauiAsset Include="..\EMAUIHelpers\models\nrd5-r3-model-17-opset18\background_model_light.onnx" Link="Processing\ml\background_model_light.onnx">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	</ItemGroup>
-
-	<ProjectExtensions><VisualStudio><UserProperties XamarinHotReloadDebuggerTimeoutExceptionEnlightenMAUIHideInfoBar="True" /></VisualStudio></ProjectExtensions>
-
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
+    <IsPublishable>False</IsPublishable>
+    <ApplicationDisplayVersion>0.9.50</ApplicationDisplayVersion>
+    <ApplicationTitle>EnlightenMobile</ApplicationTitle>
+    <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
+    <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
+    <IsPublishable>False</IsPublishable>
+    <ApplicationDisplayVersion>0.9.50</ApplicationDisplayVersion>
+    <ApplicationTitle>EnlightenMobile</ApplicationTitle>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
+    <CodesignKey>Apple Development: Created via API (23YSR9HRAH)</CodesignKey>
+    <CodesignProvision>VS: WildCard Development</CodesignProvision>
+    <EnableMLUnsupportedPlatformTargetCheck>false</EnableMLUnsupportedPlatformTargetCheck>
+    <NoBindingEmbedding>false</NoBindingEmbedding>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- App Icon -->
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\AppIcon\appicon.svg" Color="#333" BaseSize="300, 300" />
+    <!-- Images -->
+    <MauiImage Include="Resources\Images\*" />
+    <MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+    <!-- Custom Fonts -->
+    <MauiFont Include="Resources\Fonts\*" />
+    <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
+    <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="appsettings.json" />
+    <None Remove="libdpSTJE.so" />
+    <None Remove="Platforms\Android\Resources\xml\device_filter.xml" />
+    <None Remove="Stj.ProtectionSdk.so" />
+    <None Remove="Resources\AppIcon\appicon.svg" />
+    <None Remove="Resources\Images\apeture.svg" />
+    <None Remove="Resources\Images\bulb_dark.svg" />
+    <None Remove="Resources\Images\enlighten_logo.png" />
+    <None Remove="Resources\Images\eraser.svg" />
+    <None Remove="Resources\Images\eye.svg" />
+    <None Remove="Resources\Images\ico_bluetooth.png" />
+    <None Remove="Resources\Images\ico_clipboard.png" />
+    <None Remove="Resources\Images\ico_gear.png" />
+    <None Remove="Resources\Images\ico_info.png" />
+    <None Remove="Resources\Images\ico_page.png" />
+    <None Remove="Resources\Images\ico_spectra.png" />
+    <None Remove="Resources\Images\ico_xs.png" />
+    <None Remove="Resources\Images\laser.svg" />
+    <None Remove="Resources\Images\triangle_down_underline.svg" />
+    <None Remove="Resources\Images\ui_slider_knob.png" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('lib\arm64-v8a\libdpSTJE.so')">
+    <AndroidNativeLibrary Include="lib\arm64-v8a\libdpSTJE.so">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </AndroidNativeLibrary>
+  </ItemGroup>
+  <ItemGroup Condition="Exists('lib\arm64-v8a\Stj.ProtectionSdk.so')">
+    <AndroidNativeLibrary Include="lib\arm64-v8a\Stj.ProtectionSdk.so">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </AndroidNativeLibrary>
+  </ItemGroup>
+  <ItemGroup Condition="Exists('appsettings.json')">
+    <EmbeddedResource Include="appsettings.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Accord.Statistics" Version="3.8.0" />
+    <PackageReference Include="CommunityToolkit.Maui" Version="14.0.0" />
+    <PackageReference Include="CommunityToolkit.Maui.Core" Version="14.0.0" />
+    <PackageReference Include="CSparse" Version="4.3.0" />
+    <PackageReference Include="LibUsbDotNet" Version="2.2.75" />
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.40" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.40" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.3" />
+    <PackageReference Include="Microsoft.ML" Version="5.0.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Extensions.Dummy" Version="0.13.0" />
+    <PackageReference Include="Microsoft.ML.OnnxTransformer" Version="5.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Numpy" Version="3.11.1.35" />
+    <PackageReference Include="NumSharp" Version="0.30.0" />
+    <PackageReference Include="Plugin.BLE" Version="3.2.0" />
+    <PackageReference Include="Telerik.UI.for.Maui" Version="13.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="DeconvolutionMAUI">
+      <HintPath>..\DeconvolutionMAUI\DeconvolutionMAUI\bin\Debug\net8.0-android\DeconvolutionMAUI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Pages\ClipboardPage.xaml.cs">
+      <DependentUpon>ClipboardPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Pages\AboutPage.xaml.cs">
+      <DependentUpon>AboutPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\DataPage.xaml.cs">
+      <DependentUpon>DataPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\InfoPage.xaml.cs">
+      <DependentUpon>InfoPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\DevicePage.xaml.cs">
+      <DependentUpon>DevicePage.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\ScopePage.xaml.cs">
+      <DependentUpon>ScopePage.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <MauiXaml Update="Popups\AddToLibraryPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Popups\OverlaysPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Popups\SaveSpectrumPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\DataPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\InfoPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\DevicePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="CHANGELOG.md">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Processing\library\" />
+    <Folder Include="Processing\ml\" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('..\EMAUIHelpers\library\Wasatch')">
+    <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\ethanol.csv" Link="Processing\library\ethanol.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </MauiAsset>
+  </ItemGroup>
+  <ItemGroup Condition="Exists('..\EMAUIHelpers\models')">
+    <MauiAsset Include="..\EMAUIHelpers\models\nrd-d2-r53-model-12-opset18\background_model.onnx" Link="Processing\ml\background_model.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </MauiAsset>
+    <MauiAsset Include="..\EMAUIHelpers\models\nrd5-r3-model-17-opset18\background_model_light.onnx" Link="Processing\ml\background_model_light.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </MauiAsset>
+  </ItemGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties XamarinHotReloadDebuggerTimeoutExceptionEnlightenMAUIHideInfoBar="True" />
+    </VisualStudio>
+  </ProjectExtensions>
+  <Import Project="EnlightenMAUI.dotnet_reactor.targets" Condition="Exists('EnlightenMAUI.dotnet_reactor.targets')" />
 </Project>
