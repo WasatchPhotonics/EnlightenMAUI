@@ -1,0 +1,44 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(Agent_TempDirectory)\reactorlocation.props" Condition="Exists('$(Agent_TempDirectory)\reactorlocation.props') AND ('$(DOTNETREACTORROOT)' == '')" />
+
+  <PropertyGroup>
+    <Release_DotNetReactor_Active>true</Release_DotNetReactor_Active> 
+    <Release_DotNetReactor_MSBuildTarget>Compile</Release_DotNetReactor_MSBuildTarget>    
+	<Release_DotNetReactor_MSBuildConfiguration>Release</Release_DotNetReactor_MSBuildConfiguration>
+    <Release_DotNetReactor_OptionalParameters></Release_DotNetReactor_OptionalParameters>
+	<Release_DotNetReactor_ProjectFile>C:\dev\prod_software\EnlightenMAUI\emaui-reactor.nrproj</Release_DotNetReactor_ProjectFile>
+	<Release_DotNetReactor_TargetFile>&lt;AssemblyLocation&gt;\&lt;AssemblyFileName&gt;</Release_DotNetReactor_TargetFile>
+	
+	<Release_DotNetReactor_ProjectFile_Command Condition="'$(Release_DotNetReactor_ProjectFile)' != ''">-project &quot;$(Release_DotNetReactor_ProjectFile)&quot;</Release_DotNetReactor_ProjectFile_Command>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DotNetReactorRootEnv>$(DOTNET_REACTOR)</DotNetReactorRootEnv>
+    <DotNetReactorRootEnv Condition="'$(DotNetReactorRootEnv)' == ''">$(DOTNETREACTORROOT)</DotNetReactorRootEnv>
+  </PropertyGroup>
+
+  <Target Name="CheckDotNetReactorRoot">
+    <Error Condition="((('$(Release_DotNetReactor_Active)' == 'true') AND ('$(ConfigurationName)'=='$(Release_DotNetReactor_MSBuildConfiguration)'))) and ('$(DotNetReactorRootEnv)' == '')" Text="Neither DOTNET_REACTOR nor DOTNETREACTORROOT environment variable is set. Please install .NET Reactor or set one of them manually to continue. The variable must point to the .NET Reactor directory." />
+  </Target>
+
+  <PropertyGroup>
+    <DotNetReactorExe Condition="Exists('$(DotNetReactorRootEnv)\dotNET_Reactor.Console.exe')">$(DotNetReactorRootEnv)\dotNET_Reactor.Console.exe</DotNetReactorExe>
+    <DotNetReactorExe Condition="'$(DotNetReactorExe)' == '' AND Exists('$(DotNetReactorRootEnv)\dotNET_Reactor.Console')">$(DotNetReactorRootEnv)\dotNET_Reactor.Console</DotNetReactorExe>
+    <DotNetReactorExe Condition="'$(DotNetReactorExe)' == '' AND Exists('$(DotNetReactorRootEnv)\dotNET_Reactor.exe')">$(DotNetReactorRootEnv)\dotNET_Reactor.exe</DotNetReactorExe>
+    <DotNetReactorExe Condition="'$(DotNetReactorExe)' == '' AND Exists('$(DotNetReactorRootEnv)\dotNET_Reactor')">$(DotNetReactorRootEnv)\dotNET_Reactor</DotNetReactorExe>
+  </PropertyGroup>
+  
+  <Target Name="SetResolvedIntermediateOutputPath">
+	<PropertyGroup>
+		<ResolvedIntermediateOutputPath Condition="$([System.IO.Path]::IsPathRooted('$(IntermediateOutputPath)'))">$(IntermediateOutputPath)</ResolvedIntermediateOutputPath>
+		<ResolvedIntermediateOutputPath Condition="! $([System.IO.Path]::IsPathRooted('$(IntermediateOutputPath)'))">$(MSBuildProjectDirectory)\$(IntermediateOutputPath)</ResolvedIntermediateOutputPath>
+	</PropertyGroup>
+  </Target>
+
+  <Target Name="RunDotNetReactor_Release" DependsOnTargets="CheckDotNetReactorRoot;SetResolvedIntermediateOutputPath" AfterTargets="$(Release_DotNetReactor_MSBuildTarget)">
+    <Error Condition="(('$(Release_DotNetReactor_Active)' == 'true') AND ('$(ConfigurationName)' == '$(Release_DotNetReactor_MSBuildConfiguration)')) AND ('$(DotNetReactorExe)' == '')" Text="No dotNET_Reactor executable found in '$(DotNetReactorRootEnv)'." />
+
+    <Exec Command="&quot;$(DotNetReactorExe)&quot; -file &quot;$(ResolvedIntermediateOutputPath)$(TargetFileName)&quot; $(Release_DotNetReactor_ProjectFile_Command) $(Release_DotNetReactor_OptionalParameters) -targetfile &quot;$(Release_DotNetReactor_TargetFile)&quot;" Condition="'$(Release_DotNetReactor_Active)' == 'true' AND '$(ConfigurationName)' == '$(Release_DotNetReactor_MSBuildConfiguration)'" />
+  </Target>
+
+</Project>
