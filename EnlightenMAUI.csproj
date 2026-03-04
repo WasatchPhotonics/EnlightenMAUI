@@ -90,6 +90,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="appsettings.json" />
 	  <None Remove="libdpSTJE.so" />
 	  <None Remove="Platforms\Android\Resources\xml\device_filter.xml" />
 	  <None Remove="Stj.ProtectionSdk.so" />
@@ -121,6 +122,10 @@
 	  <AndroidNativeLibrary Include="lib\arm64-v8a\Stj.ProtectionSdk.so">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </AndroidNativeLibrary>
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('appsettings.json')">
+	  <EmbeddedResource Include="appsettings.json" />
 	</ItemGroup>
 
 	<ItemGroup>

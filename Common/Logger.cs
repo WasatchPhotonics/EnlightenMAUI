@@ -17,6 +17,7 @@ namespace EnlightenMAUI
         ////////////////////////////////////////////////////////////////////////
 
         static readonly Logger instance = new Logger();
+        public static string HELLO = "America";
 
         private StreamWriter outfile;
 
