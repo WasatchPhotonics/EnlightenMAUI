@@ -558,7 +558,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     
     private async Task<bool> doConnectOrDisconnectUSBAsync()
     {
-        bool ok = await PlatformUSB.doConnectOrDisconnectUSBAsync(spec, this);
+        bool ok = await PlatformUSB.doConnectOrDisconnectUSBAsync(spec, (pct) => showSpectrometerConnectionProgress(pct));
 
         if (ok)
         {

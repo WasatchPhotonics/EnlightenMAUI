@@ -61,6 +61,7 @@ internal class SimplePrediction
 
 }
 
+
 public static class StorageHelper
 {
     public const int RequestCode = 2296;

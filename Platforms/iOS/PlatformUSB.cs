@@ -116,7 +116,7 @@ namespace EnlightenMAUI.Platforms
             return usbDeviceList;
         }
 
-        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec, BluetoothViewModel bvm)
+        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec, Spectrometer.ConnectionProgressNotification del)
         {
             return false;
         }

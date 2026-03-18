@@ -353,7 +353,7 @@ namespace EnlightenMAUI.Platforms
         }
 
 
-        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec, BluetoothViewModel bvm)
+        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec, Spectrometer.ConnectionProgressNotification del)
         {
             Logger logger = Logger.getInstance();
             if (spec == null || (spec is BluetoothSpectrometer))
@@ -378,7 +378,7 @@ namespace EnlightenMAUI.Platforms
                         USBWrapper passthrough = new USBWrapper(udc, device);
                         USBSpectrometer usbSpectrometer = new USBSpectrometer(passthrough);
                         spec = usbSpectrometer;
-                        spec.showConnectionProgress += bvm.showSpectrometerConnectionProgress;
+                        spec.showConnectionProgress += del;
                         logger.info("about to init device");
                         bool ok = await (spec as USBSpectrometer).initAsync();
                         if (ok)
