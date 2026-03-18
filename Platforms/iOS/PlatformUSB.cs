@@ -1,4 +1,5 @@
 ﻿using EnlightenMAUI.Models;
+using EnlightenMAUI.ViewModels;
 using LibUsbDotNet;
 using EnlightenMAUI.Common;
 using System;
@@ -115,7 +116,7 @@ namespace EnlightenMAUI.Platforms
             return usbDeviceList;
         }
 
-        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec)
+        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec, BluetoothViewModel bvm)
         {
             return false;
         }

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Text;
 using static Android.Widget.GridLayout;
 using AndrApp = Android.App;
+using EnlightenMAUI.ViewModels;
 
 namespace EnlightenMAUI.Platforms
 {
@@ -352,7 +353,7 @@ namespace EnlightenMAUI.Platforms
         }
 
 
-        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec)
+        internal static async Task<bool> doConnectOrDisconnectUSBAsync(Spectrometer spec, BluetoothViewModel bvm)
         {
             Logger logger = Logger.getInstance();
             if (spec == null || (spec is BluetoothSpectrometer))
@@ -377,6 +378,7 @@ namespace EnlightenMAUI.Platforms
                         USBWrapper passthrough = new USBWrapper(udc, device);
                         USBSpectrometer usbSpectrometer = new USBSpectrometer(passthrough);
                         spec = usbSpectrometer;
+                        spec.showConnectionProgress += bvm.showSpectrometerConnectionProgress;
                         logger.info("about to init device");
                         bool ok = await (spec as USBSpectrometer).initAsync();
                         if (ok)
