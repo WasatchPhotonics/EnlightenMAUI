@@ -10,9 +10,9 @@ using Android.Hardware.Usb;
 
 namespace EnlightenMAUI
 {
-    [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density, ScreenOrientation = ScreenOrientation.Portrait)]
-    [IntentFilter(new[]{ "android.hardware.usb.action.USB_DEVICE_ATTACHED" })]
-    [MetaData("android.hardware.usb.action.USB_DEVICE_ATTACHED", Resource = "@xml/device_filter")]
+    [Activity(Theme = "@style/Maui.SplashTheme", LaunchMode = LaunchMode.SingleTask, MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density, ScreenOrientation = ScreenOrientation.Portrait)]
+    [IntentFilter([UsbManager.ActionUsbDeviceAttached])]
+    [MetaData(UsbManager.ActionUsbDeviceAttached, Resource = "@xml/device_filter")]
     public class MainActivity : MauiAppCompatActivity
     {
         public static int REQUEST_TREE = 85;
@@ -26,6 +26,17 @@ namespace EnlightenMAUI
             else if (Build.VERSION.SdkInt <= BuildVersionCodes.R && ActivityCompat.CheckSelfPermission(this, Manifest.Permission.Bluetooth) != Permission.Granted)
                 ActivityCompat.RequestPermissions(Platform.CurrentActivity, new string[] { Manifest.Permission.Bluetooth }, 102);
         }
+
+        protected override async void OnResume()
+        {
+            base.OnResume();
+        }
+
+        protected override void OnPause()
+        {
+            base.OnPause();
+        }
+
         protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
         {
             if (requestCode == StorageHelper.RequestCode)

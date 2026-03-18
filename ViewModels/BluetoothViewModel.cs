@@ -184,7 +184,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// Relay connection progress from the Spectrometer Model back to the 
     /// Bluetooth View.
     /// </summary>
-    private void showSpectrometerConnectionProgress(double perc) =>
+    internal void showSpectrometerConnectionProgress(double perc) =>
         connectionProgress = perc;
 
     public double connectionProgress
@@ -558,7 +558,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     
     private async Task<bool> doConnectOrDisconnectUSBAsync()
     {
-        bool ok = await PlatformUSB.doConnectOrDisconnectUSBAsync(spec);
+        bool ok = await PlatformUSB.doConnectOrDisconnectUSBAsync(spec, (pct) => showSpectrometerConnectionProgress(pct));
 
         if (ok)
         {
