@@ -721,10 +721,21 @@ internal class PlatformUtil
                 var runOptions = new RunOptions();
                 var sessionOutput2 = session.Run(runOptions, sessionInput1, session.OutputNames.ToArray());
                 var shape = sessionOutput2[0].GetTensorTypeAndShape();
+                //var shape = sessionOutput2[0].GetTensorDataAsSpan
+
+                int outputSize = p.spectrum.GetLength(0);
+
+                int outputSize2 = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
+                float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
+
+                double[] output2 = new double[outputSize2];
+                for (int i = 0; i < outputSize2; ++i)
+                {
+                    output2[i] = sessionData[i] * max;
+                }
 
                 //logger.logArray("transformed counts", p.spectrum);
 
-                int outputSize = p.spectrum.GetLength(0);
                 double[] output = new double[outputSize];
                 for (int i = 0; i < outputSize; ++i)
                 {
