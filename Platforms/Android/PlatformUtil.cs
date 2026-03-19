@@ -104,14 +104,12 @@ internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
-    static InferenceSession session;
-    static PredictionEngine<ModelInput, Prediction> engine;
-    static PredictionEngine<SimpleModelInput, SimplePrediction> simpleEngine;
+    static Dictionary<string, InferenceSession> correctionSessions = new Dictionary<string, InferenceSession>();
     static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
     static ITransformer transformer;
     public static bool transformerLoaded = false;
     public static bool simpleTransformerLoaded = false;
-    public static bool complexTransformerLoaded = false;
+    public static bool aggressiveTransformerLoaded = false;
     public static int REQUEST_TREE = 85;
 
     static string savePath;
@@ -363,133 +361,69 @@ internal class PlatformUtil
             if (fullPaths == null || fullPaths.Count == 0)
                 return;
 
-            List<byte> complexBuffer = new List<byte>();
+            List<byte> aggressiveBuffer = new List<byte>();
             List<byte> simpleBuffer = new List<byte>();
 
             foreach (string path in fullPaths)
             {
                 List<byte> tempBuffer = new List<byte>();
                 bool loadSucceeded = false; 
-                string targetFile = System.IO.Path.Combine(FileSystem.Current.AppDataDirectory, path.Split('/').Last());
 
-                if (!System.IO.File.Exists(targetFile))
+                using Stream fs = await FileSystem.Current.OpenAppPackageFileAsync(path);
+                using (BinaryReader reader = new BinaryReader(fs))
                 {
-                    using FileStream outputStream = System.IO.File.OpenWrite(targetFile);
+                    var bytesRead = 0;
 
-                    using Stream fs = await FileSystem.Current.OpenAppPackageFileAsync(path);
-                    using BinaryWriter writer = new BinaryWriter(outputStream);
-                    using (BinaryReader reader = new BinaryReader(fs))
+                    int bufferSize = 1024;
+                    byte[] bytes;
+                    var buffer = new byte[bufferSize];
+                    using (fs)
                     {
-                        var bytesRead = 0;
-
-                        int bufferSize = 1024;
-                        byte[] bytes;
-                        var buffer = new byte[bufferSize];
-                        using (fs)
+                        do
                         {
-                            do
-                            {
-                                buffer = reader.ReadBytes(bufferSize);
-                                bytesRead = buffer.Count();
-                                writer.Write(buffer);
-                                tempBuffer.AddRange(buffer);
-                                logger.info("model file {0} read {1} bytes", path, bytesRead);
-                            }
-
-                            while (bytesRead > 0);
-
+                            buffer = reader.ReadBytes(bufferSize);
+                            bytesRead = buffer.Count();
+                            tempBuffer.AddRange(buffer);
+                            logger.info("model file {0} read {1} bytes", path, bytesRead);
                         }
-                    }
 
-                    writer.Flush();
-                    writer.Close();
-                    outputStream.Flush();
-                    outputStream.Close();
-                }
-                else
-                {
-                    using Stream fs = await FileSystem.Current.OpenAppPackageFileAsync(path);
+                        while (bytesRead > 0);
 
-                    using (BinaryReader reader = new BinaryReader(fs))
-                    {
-                        var bytesRead = 0;
-
-                        int bufferSize = 1024;
-                        byte[] bytes;
-                        var buffer = new byte[bufferSize];
-                        using (fs)
-                        {
-                            do
-                            {
-                                buffer = reader.ReadBytes(bufferSize);
-                                bytesRead = buffer.Count();
-                                tempBuffer.AddRange(buffer);
-                                logger.info("model file {0} read {1} bytes", path, tempBuffer.Count);
-                            }
-                            while (bytesRead > 0);
-                        }
                     }
                 }
 
-                try
+                if (path.Contains("light") && tempBuffer.Count > 0)
                 {
-                    var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>()); 
-                    //Stream s = await FileSystem.Current.OpenAppPackageFileAsync(path);
-                    logger.debug("building pipeline");
-                    var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: targetFile, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
-                    //var pipeline = mlContext.Transforms.ApplyOnnxModel()
-                    //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelBytes: s, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
-                    logger.debug("building transformer");
-                    transformer = pipeline.Fit(data);
-                    var transCope = transformer;
-                    logger.debug("creating engine");
-                    engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
-                    var engCop = engine;
-
-                    logger.debug("onnx model load complete");
-                    transformerLoaded = complexTransformerLoaded = loadSucceeded = true;
-                    complexBuffer = tempBuffer;
+                    simpleBuffer = tempBuffer;
                 }
-                catch (Exception e2)
+                else if (tempBuffer.Count > 0)
                 {
-                    logger.info("onnx load failed with exception {0}", e2.Message);
+                    aggressiveBuffer = tempBuffer;
                 }
 
-                if (!loadSucceeded)
-                {
-
-                    try
-                    {
-                        var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<SimpleModelInput>());
-                        //Stream s = await FileSystem.Current.OpenAppPackageFileAsync(path);
-                        logger.debug("building pipeline");
-                        var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: targetFile, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
-                        //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
-                        //var pipeline = mlContext.Transforms.ApplyOnnxModel()
-                        //var pipeline = mlContext.Transforms.ApplyOnnxModel(modelBytes: s, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
-                        logger.debug("building transformer");
-                        transformer = pipeline.Fit(data);
-                        var transCope = transformer;
-                        logger.debug("creating engine");
-                        simpleEngine = mlContext.Model.CreatePredictionEngine<SimpleModelInput, SimplePrediction>(transformer);
-                        var engCop = engine;
-
-                        logger.debug("onnx model load complete");
-                        transformerLoaded = simpleTransformerLoaded = loadSucceeded = true;
-                        simpleBuffer = tempBuffer;
-                    }
-                    catch (Exception e3)
-                    {
-                        logger.info("onnx load failed with exception {0}", e3.Message);
-                    }
-                }
             }
 
             if (simpleBuffer.Count > 0)
             {
                 try
                 {
-                    session = new Microsoft.ML.OnnxRuntime.InferenceSession(simpleBuffer.ToArray());
+                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(simpleBuffer.ToArray());
+                    transformerLoaded = simpleTransformerLoaded = true;
+                    correctionSessions.Add("simple", session);
+                }
+                catch (Exception ex)
+                {
+                    logger.info("onnx session load failed with exception {0}", ex.Message);
+                }
+            }
+
+            if (aggressiveBuffer.Count > 0)
+            {
+                try
+                {
+                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(aggressiveBuffer.ToArray());
+                    transformerLoaded = aggressiveTransformerLoaded = true;
+                    correctionSessions.Add("aggressive", session);
                 }
                 catch (Exception ex)
                 {
@@ -698,48 +632,32 @@ internal class PlatformUtil
                 for (int i = 0; i < interpolatedCounts.Length; i++)
                     modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
-                SimplePrediction p = new SimplePrediction();
-
-                logger.debug("making prediction");
-                p = simpleEngine.Predict(modelInput);
-                logger.debug("packing prediction");
-
                 var sessionInputs = new List<NamedOnnxValue>
                 {
-                    NamedOnnxValue.CreateFromTensor("serving_default_input_1:0", new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))
+                    NamedOnnxValue.CreateFromTensor(correctionSessions["simple"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))
                 };
 
                 var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
 
-                var sessionOutput = session.Run(sessionInputs);
+                var sessionOutput = correctionSessions["simple"].Run(sessionInputs);
 
                 var sessionInput1 = new Dictionary<string, OrtValue>
                 {
-                    { "serving_default_input_1:0", inValue }
+                    { correctionSessions["simple"].InputNames[0], inValue }
                 };
 
                 var runOptions = new RunOptions();
-                var sessionOutput2 = session.Run(runOptions, sessionInput1, session.OutputNames.ToArray());
+                var sessionOutput2 = correctionSessions["simple"].Run(runOptions, sessionInput1, correctionSessions["simple"].OutputNames.ToArray());
                 var shape = sessionOutput2[0].GetTensorTypeAndShape();
                 //var shape = sessionOutput2[0].GetTensorDataAsSpan
 
-                int outputSize = p.spectrum.GetLength(0);
-
-                int outputSize2 = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
+                int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
                 float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
-
-                double[] output2 = new double[outputSize2];
-                for (int i = 0; i < outputSize2; ++i)
-                {
-                    output2[i] = sessionData[i] * max;
-                }
-
-                //logger.logArray("transformed counts", p.spectrum);
 
                 double[] output = new double[outputSize];
                 for (int i = 0; i < outputSize; ++i)
                 {
-                    output[i] = p.spectrum[i] * max;
+                    output[i] = sessionData[i] * max;
                 }
                 double min = output.Min();
                 for (int i = 0; i < outputSize; ++i)
@@ -759,29 +677,44 @@ internal class PlatformUtil
 
             else
             {
-                ////logger.logArray("interpolated wavenum", targetWavenum);
-                //logger.logArray("interpolated counts", interpolatedCounts);
-
                 ModelInput modelInput = new ModelInput();
                 modelInput.spectrum = new float[2376];
                 for (int i = 0; i < interpolatedCounts.Length; i++)
                     modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
-                Prediction p = new Prediction();
+                var sessionInputs = new List<NamedOnnxValue>
+                {
+                    NamedOnnxValue.CreateFromTensor(correctionSessions["aggressive"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))     
+                    //NamedOnnxValue.CreateFromTensor(correctionSessions["aggressive"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, correctionSessions["aggressive"].InputMetadata[correctionSessions["aggressive"].InputNames[0]].Dimensions))
 
-                logger.debug("making prediction");
-                p = engine.Predict(modelInput);
-                logger.debug("packing prediction");
+                };
 
+                var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
 
-                //logger.logArray("transformed counts", p.spectrum);
+                var sessionOutput = correctionSessions["aggressive"].Run(sessionInputs);
 
-                int outputSize = p.spectrum.GetLength(0);
+                var sessionInput1 = new Dictionary<string, OrtValue>
+                {
+                    { correctionSessions["aggressive"].InputNames[0], inValue }
+                };
+
+                var runOptions = new RunOptions();
+                var sessionOutput2 = correctionSessions["aggressive"].Run(runOptions, sessionInput1, correctionSessions["aggressive"].OutputNames.ToArray());
+                var shape = sessionOutput2[0].GetTensorTypeAndShape();
+                //var shape = sessionOutput2[0].GetTensorDataAsSpan
+
+                int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
+                float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
+
                 double[] output = new double[outputSize];
-                double min = p.spectrum.Min();
                 for (int i = 0; i < outputSize; ++i)
                 {
-                    output[i] = p.spectrum[i] - min; // * max;
+                    output[i] = sessionData[i] * max;
+                }
+                double min = output.Min();
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = output[i] - min; // * max;
                 }
 
                 //logger.logArray("rebased counts", output);
