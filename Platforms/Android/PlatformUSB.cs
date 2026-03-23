@@ -88,7 +88,7 @@ namespace EnlightenMAUI.Platforms
 
             int okI = await udc.ControlTransferAsync((UsbAddressing)DEVICE_TO_HOST, cmd[opcode], 0, wIndex, buf, bytesToRead, 100);
 
-            if (logger.debugEnabled())
+            if (logger.debugEnabled)
                 logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
 
             // extract just the bytes we really needed
@@ -106,7 +106,7 @@ namespace EnlightenMAUI.Platforms
 
             int okI = udc.ControlTransfer((UsbAddressing)DEVICE_TO_HOST, cmd[opcode], 0, wIndex, buf, bytesToRead, 100);
 
-            if (logger.debugEnabled())
+            if (logger.debugEnabled)
                 logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
 
             // extract just the bytes we really needed
@@ -174,7 +174,7 @@ namespace EnlightenMAUI.Platforms
                 return null;
             }
 
-            if (logger.debugEnabled())
+            if (logger.debugEnabled)
                 logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
                     opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
 

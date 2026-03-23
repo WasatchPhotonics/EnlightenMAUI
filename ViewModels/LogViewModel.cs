@@ -33,7 +33,7 @@ public class LogViewModel : INotifyPropertyChanged
         get => "Event Log";
     }
 
-    public string logText { get => logger.clippedHistory; }
+    public string logText { get => logger.display.ToString(); }
 
     public bool verbose 
     { 
