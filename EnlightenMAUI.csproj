@@ -232,6 +232,12 @@
 	  </MauiAsset>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\cyclohexane.csv" Link="Processing\library\cyclohexane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	</ItemGroup>
+
 	<ProjectExtensions><VisualStudio><UserProperties XamarinHotReloadDebuggerTimeoutExceptionEnlightenMAUIHideInfoBar="True" /></VisualStudio></ProjectExtensions>
 
 </Project>

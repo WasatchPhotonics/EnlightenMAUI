@@ -225,6 +225,7 @@ public class Measurement : INotifyPropertyChanged
     public double excitationNM { get; set; }
     public float[] wavecalCoeffs { get; set; }
     public double? laserPower { get; set; }
+    public string processingMethod { get; set; } = "Wavenumber Interpolation Only";
 
     ////////////////////////////////////////////////////////////////////////
     // Methods
@@ -655,6 +656,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Laser Wavelength, {0}", spec.eeprom.laserExcitationWavelengthNMFloat);
         sw.WriteLine("Timestamp, {0}", timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff"));
         sw.WriteLine("Library Used, {0}", libraryUsed);
+        sw.WriteLine("Processing Method, {0}", spec.measurement.processingMethod);
         if (spec.measurement.declaredScore.HasValue)
         {
             if (spec.measurement.declaredMatch.Length > 0)

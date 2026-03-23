@@ -182,10 +182,31 @@ namespace EnlightenMAUI
             debug($"{label} [len {a.Length}]: {s}");
         }
 
-        public void update() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(history)));
+        public void update()
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(history)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(clippedHistory)));
+        }
 
-        public StringBuilder history = new StringBuilder("Log data");
+        public StringBuilder history { get; set; } = new StringBuilder("Log data");
 
+        const int MAX_HISTORY = 10 * 1024; // 10KB
+
+        public string clippedHistory
+        {
+            get 
+            {
+                if (history.Length <= MAX_HISTORY)
+                    return history.ToString();
+                else
+                {
+                    var init = history.ToString();
+                    var temp1 = init.Skip(history.Length - MAX_HISTORY).SkipWhile((c) => c != '\n').Skip(1).TakeWhile((c) => true);
+                    var final = temp1.ToArray();
+                    return new string(final);
+                }
+            }
+        }
         ////////////////////////////////////////////////////////////////////////
         // Private methods
         ////////////////////////////////////////////////////////////////////////

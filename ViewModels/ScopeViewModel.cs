@@ -1095,7 +1095,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
+        if (PlatformUtil.transformerLoaded && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
         else
         {
@@ -1259,7 +1259,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         uint pixels = (uint)spec.measurement.postProcessed.Length;
         double[] intensities = spec.measurement.postProcessed;
 
-        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
+        bool usingRemovalAxis = (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
         try
         {

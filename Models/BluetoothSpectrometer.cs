@@ -1341,11 +1341,14 @@ public class BluetoothSpectrometer : Spectrometer
             measurement.rawDark = dark;
             measurement.dark = stretchedDark;
             measurement.postProcessed = smoothed;
+            measurement.processingMethod = "Noise and Background Removal";
         }
         else
         {
-            measurement.wavenumbers = wavenumbers;
-            measurement.postProcessed = spectrum;
+            double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
+            measurement.wavenumbers = staticWavenumbers;
+            measurement.postProcessed = newIntensities;
         }
 
         ////////////////////////////////////////////////////////////////////////
