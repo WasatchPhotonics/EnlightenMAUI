@@ -134,7 +134,7 @@
 
             </StackLayout>
 
-            <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" >
+            <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" IsVisible="Hidden" >
 
                 <Grid HorizontalOptions="Center" VerticalOptions="Start">
                     <Grid.RowDefinitions>
