@@ -29,6 +29,7 @@ namespace EnlightenMAUI.ViewModels
         public event ToastNotification notifyToast;
         Measurement lastMeas;
         SelectionPopupViewModel sublibraryViewModel = new SelectionPopupViewModel();
+        List<string> userSpectra = new List<string>();
 
         Logger logger = Logger.getInstance();
         public Library library;
