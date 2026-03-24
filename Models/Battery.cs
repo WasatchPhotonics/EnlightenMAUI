@@ -10,6 +10,8 @@ public class Battery
     uint raw;
     byte rawLevel;
     byte rawState;
+    sbyte batteryTemp;
+    sbyte chargerDieTemp;
     public bool initialized = false;
 
     // valid range should be (0, 100)
@@ -38,7 +40,7 @@ public class Battery
             return;
         }
 
-        if (response.Length != 3)
+        if (response.Length < 3)
         {
             logger.error("Battery: invalid response");
             return;
@@ -65,6 +67,13 @@ public class Battery
         initialized = true;
 
         logger.debug($"Battery.parse: {level}");
+
+        if (response.Length == 5)
+        {
+            batteryTemp = (sbyte)response[3];
+            chargerDieTemp = (sbyte)response[4];
+            logger.debug($"Battery.parse: battery temp = {batteryTemp}; charger die temp = {chargerDieTemp}");
+        }
     }
 
     public void parseAPI6(byte[] response)
