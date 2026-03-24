@@ -136,7 +136,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         // bind ScopePage Commands
         laserCmd = new Command(() => { _ = doLaser(); });
-        laserWarningCmd = new Command(() => { _ = advanceLaserWarning(); });
+        laserWarningCmd = new Command(() => { _ = armLaser(); });
         acquireCmd = new Command(() => { _ = doAcquireAsync(); });
         refreshCmd = new Command(() => { _ = doAcquireAsync(); });
         darkCmd = new Command(() => { _ = doDark(); });
@@ -622,29 +622,59 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             case 0:
                 laserWarningStep = 1;
-                laserWarningText = "Onboard Class 3B Laser";
+                //laserWarningText = "Onboard Class 3B Laser";
                 break;
             case 1: 
                 laserWarningStep = 2;
-                laserWarningText = "Avoid eye exposure";
+                //laserWarningText = "Avoid eye exposure";
                 break;
             case 2: 
                 laserWarningStep = 3;
-                laserWarningText = "Acknowledge to Arm Class 3B Laser";
+                //laserWarningText = "Acknowledge to Arm Class 3B Laser";
                 break;
             case 3: 
                 laserWarningStep = 4;
                 polyCorrectionStep = true;
                 //laserArmed = true;
-                laserWarningText = "WARNING: Laser Armed";
+                //laserWarningText = "WARNING: Laser Armed";
                 break;
             case 4:
                 laserWarningStep = 0;
                 laserArmed = false;
-                laserWarningText = "Click for Laser Warnings";
+                //laserWarningText = "Click for Laser Warnings";
                 break;
         }
         
+        return true;
+    }
+
+    public string PasswordEntry
+    {
+        get => _PasswordEntry;
+        set
+        {
+            _PasswordEntry = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PasswordEntry)));
+        }
+    }
+    string _PasswordEntry;
+
+    bool armLaser()
+    {
+        string expectedLaserPassword = spec.eeprom.serialNumber;
+        if (spec.eeprom.laserPassword != null && spec.eeprom.laserPassword.Length > 0)
+            expectedLaserPassword = spec.eeprom.laserPassword;
+
+        if (expectedLaserPassword == PasswordEntry)
+        {
+            laserWarningStep = 4;
+            polyCorrectionStep = true;
+        }
+        else
+        {
+            notifyToast?.Invoke("Laser password is incorrect. It's case-sensitive and equal to S/N by default");
+        }
+
         return true;
     }
 
@@ -662,7 +692,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningText)));
         }
     }
-    string _laserWarningText = "Acknowledge to Arm Class 3B Laser";
+    string _laserWarningText = "Enter Password to Arm Class 3B Laser";
 
     public Command confirmPSCmd { get; private set; }
     public Command denyPSCmd { get; private set; }
