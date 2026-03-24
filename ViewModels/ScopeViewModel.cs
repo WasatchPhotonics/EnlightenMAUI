@@ -129,7 +129,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            spec.laserWatchdogSec = 0;
+            // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
+            spec.laserWatchdogSec = 255;
             spec.laserWarningDelaySec = 0;
         }
 
@@ -382,7 +383,8 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         if (spec != null && spec.paired)
         {
-            spec.laserWatchdogSec = 0;
+            // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
+            spec.laserWatchdogSec = 255;
             spec.laserWarningDelaySec = 0;
         }
 
