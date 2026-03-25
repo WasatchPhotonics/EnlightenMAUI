@@ -158,7 +158,8 @@ namespace EnlightenMAUI.ViewModels
 
         public SettingsViewModel()
         {
-            laserWatchdogTimeoutSec = 0;
+            // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
+            laserWatchdogTimeoutSec = 254;
             laserWarningDelaySec = 0;
 
             if (spec == null || !spec.paired)

@@ -504,7 +504,8 @@ namespace EnlightenMAUI.ViewModels
 
             if (spec != null && spec.paired)
             {
-                spec.laserWatchdogSec = 0;
+                // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
+                spec.laserWatchdogSec = 254;
                 spec.laserWarningDelaySec = 0;
             }
 

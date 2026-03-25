@@ -22,12 +22,12 @@ public class EEPROM
     // private attributes
     /////////////////////////////////////////////////////////////////////////
 
-    internal const int MAX_PAGES = 8;
+    internal const int MAX_PAGES = 9;
     internal const int SUBPAGE_COUNT = 1;
     internal const int API6_SUBPAGE_COUNT = 4;
     internal const int PAGE_LENGTH = 64;
 
-    const byte FORMAT = 15;
+    const byte FORMAT = 18;
 
     Logger logger = Logger.getInstance();
 
@@ -138,6 +138,15 @@ public class EEPROM
     // Page 6
     /////////////////////////////////////////////////////////////////////////
 
+    /////////////////////////////////////////////////////////////////////////
+    // Page 7
+    /////////////////////////////////////////////////////////////////////////
+
+    /////////////////////////////////////////////////////////////////////////
+    // Page 8
+    /////////////////////////////////////////////////////////////////////////
+
+    public string laserPassword { get; set; }
 
     /////////////////////////////////////////////////////////////////////////
     // private methods
@@ -319,6 +328,11 @@ public class EEPROM
                 laserWarmupSec = pages[2][18];
             else
                 laserWarmupSec = 20;
+
+            if (format >= 18)
+                laserPassword = ParseData.toString(pages[8], 0, 16);
+            else
+                laserPassword = "";
         }
         catch (Exception ex)
         {
