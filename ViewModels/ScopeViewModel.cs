@@ -665,7 +665,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec.eeprom.laserPassword != null && spec.eeprom.laserPassword.Length > 0)
             expectedLaserPassword = spec.eeprom.laserPassword;
 
-        if (expectedLaserPassword == PasswordEntry.Trim())
+        if (PasswordEntry != null && expectedLaserPassword == PasswordEntry.Trim())
         {
             laserWarningStep = 4;
             polyCorrectionStep = true;
