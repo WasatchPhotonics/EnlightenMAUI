@@ -95,8 +95,60 @@
             </StackLayout>
 
             <!-- Command buttons -->
-            <StackLayout IsVisible="{Binding manualModeEnabled}" Grid.Row="2" Grid.Column="0" Margin="10, 0, 10, 10">
-                <FlexLayout Wrap="Wrap" AlignItems="Stretch"  VerticalOptions="Start" JustifyContent="SpaceBetween">
+
+            <Grid   HorizontalOptions="CenterAndExpand" 
+                    IsVisible="{Binding manualModeEnabled}" 
+                    Grid.Row="2" 
+                    Grid.Column="0" 
+                    Margin="10, 0, 10, 0">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <Entry  IsVisible="{Binding laserArmIncomplete}" 
+                        Margin="30,0,30,5" 
+                        MinimumWidthRequest="300" 
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3"
+                        FontSize="16"
+                        HorizontalOptions="Fill" 
+                        HorizontalTextAlignment="Center"
+                        Background="#333"
+                        TextColor="#eee"
+                        Text="{Binding PasswordEntry}"/>
+
+                <Button IsVisible="{Binding laserArmIncomplete}"
+                        Text="{Binding laserWarningText}"
+                        FontSize="14"
+                        Margin="20,0,20,10"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3"
+                        Grid.Row="1"
+                        Grid.RowSpan="2"
+                        HorizontalOptions="Fill"
+                        Command="{Binding laserWarningCmd}"
+                        BackgroundColor="{Binding laserWarningBackgroundColor}"
+                        MinimumWidthRequest="150"
+                        HeightRequest="80"
+                        LineBreakMode="WordWrap"
+                        ImageSource="Images/laser.svg"
+                        ContentLayout="Right, 3"/>
+
+                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
+                <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="0"/>
+                <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="2"/>
+
+                <FlexLayout IsVisible="{Binding laserArmed}" Wrap="Wrap" Grid.ColumnSpan="3" AlignItems="Stretch"  VerticalOptions="Start" JustifyContent="SpaceBetween">
 
                     <!-- Laser -->
                     <ImageButton    Margin="2" 
@@ -158,16 +210,17 @@
 
 
                 </FlexLayout>
-            </StackLayout>
+            </Grid>
 
             <!-- Command buttons -->
-            <Grid   HorizontalOptions="CenterAndExpand" 
+            <Grid   HorizontalOptions="Center" 
                     IsVisible="{Binding manualModeDisabled}" 
                     Grid.Row="2" 
                     Grid.Column="0" 
                     Margin="10, 0, 10, 0">
 
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -177,17 +230,32 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
+
+                <Entry  IsVisible="{Binding laserArmIncomplete}" 
+                        Margin="30,0,30,5" 
+                        MinimumWidthRequest="300" 
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3"
+                        FontSize="16"
+                        HorizontalOptions="Fill" 
+                        HorizontalTextAlignment="Center"
+                        Background="#333"
+                        TextColor="#eee"
+                        Text="{Binding PasswordEntry}"/>
+
                 <Button IsVisible="{Binding laserArmIncomplete}"
                         Text="{Binding laserWarningText}"
                         FontSize="14"
-                        Margin="10,0,5,5"
+                        Margin="20,0,20,10"
                         Grid.Column="0"
-                        Grid.ColumnSpan="2"
-                        HorizontalOptions="FillAndExpand"
+                        Grid.ColumnSpan="3"
+                        Grid.Row="1"
+                        Grid.RowSpan="2"
+                        HorizontalOptions="Fill"
                         Command="{Binding laserWarningCmd}"
                         BackgroundColor="{Binding laserWarningBackgroundColor}"
-                        MinimumWidthRequest="100"
+                        MinimumWidthRequest="150"
                         HeightRequest="80"
                         LineBreakMode="WordWrap"
                         ImageSource="Images/laser.svg"
@@ -239,9 +307,9 @@
                             WidthRequest="70"/>
                 </Border>
 
-                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
-                <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="0"/>
-                <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="2"/>
+                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Margin="5"/>
+                <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="2" Margin="10" Grid.Column="0"/>
+                <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="2" Margin="10" Grid.Column="2"/>
 
                 <StackLayout Margin="0,0,10,5"
                              Grid.Column="2"
