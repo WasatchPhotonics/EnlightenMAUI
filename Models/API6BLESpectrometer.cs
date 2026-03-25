@@ -57,6 +57,7 @@ public class API6BLESpectrometer : Spectrometer
         autoDarkEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
+        disconnectComplete.Invoke(this, this);
     }
 
     public override void reset()

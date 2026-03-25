@@ -94,6 +94,8 @@ public class BluetoothSpectrometer : Spectrometer
         autoRamanEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
+        if (disconnectComplete != null)
+            disconnectComplete.Invoke(this, this);
     }
 
     public override void reset()
@@ -1227,7 +1229,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public override double rssi
     {
-        get => bleDevice.rssi;
+        get => bleDevice == null ? -10 : bleDevice.rssi;
     }
 
     ////////////////////////////////////////////////////////////////////////

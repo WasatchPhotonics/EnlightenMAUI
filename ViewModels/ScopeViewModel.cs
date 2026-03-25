@@ -229,11 +229,20 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         if (spec != null && spec.paired)
         {
+            spec.disconnectComplete += ScopeViewMoldel_disconnectComplete;
             // spectrometer will not try to fire unless collection parameters are confirmed set here
             bool ok = await spec.initializeCollectionParams();
             if (ok)
                 spectrometerInitialized = true;
         }
+    }
+
+    private void ScopeViewMoldel_disconnectComplete(object sender, Spectrometer e)
+    {
+        laserWarningStep = 3;
+        polyCorrectionStep = false;
+        laserArmed = false;
+        spectrometerInitialized = false;
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -338,7 +347,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         refreshSpec();
     }
 
-    public void refreshSpec()
+    public async Task refreshSpec()
     {
         fullLibraryOverlayStatus.Clear();
         spec = BluetoothSpectrometer.getInstance();
@@ -355,9 +364,9 @@ public class ScopeViewModel : INotifyPropertyChanged
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
             });
-            libraryLoader.Wait();
+            await libraryLoader;
             library.LoadFinished += Library_LoadFinished;
-            Task.Run(() => findUserFiles());
+            await findUserFiles();
         }
 
         logger.debug("finished loading library in refresh");
@@ -392,7 +401,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         updateChart();
 
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
-            spec.updateBatteryAsync();
+            await spec.updateBatteryAsync();
+
+        initializeSpectrometer();
 
         if (spec != null && spec.paired)
             spec.autoRamanEnabled = true;
