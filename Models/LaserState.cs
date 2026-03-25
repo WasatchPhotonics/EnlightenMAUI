@@ -15,7 +15,11 @@ public class LaserState
     public LaserType type = LaserType.NORMAL;
     public LaserMode mode = LaserMode.MANUAL;
     public bool enabled;
-    public byte watchdogSec = 5;
+    public byte watchdogSec 
+    { 
+        get; 
+        set; 
+    } = 5;
     public ushort laserDelayMS { get; set; } = 0;
     public bool interlockClosed = false;
     public bool laserActive = false;

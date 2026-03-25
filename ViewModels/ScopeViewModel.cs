@@ -130,7 +130,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
         {
             // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
-            spec.laserWatchdogSec = 255;
+            spec.laserWatchdogSec = 254;
             spec.laserWarningDelaySec = 0;
         }
 
@@ -384,7 +384,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
         {
             // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
-            spec.laserWatchdogSec = 255;
+            spec.laserWatchdogSec = 254;
             spec.laserWarningDelaySec = 0;
         }
 
@@ -665,14 +665,14 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec.eeprom.laserPassword != null && spec.eeprom.laserPassword.Length > 0)
             expectedLaserPassword = spec.eeprom.laserPassword;
 
-        if (expectedLaserPassword == PasswordEntry)
+        if (expectedLaserPassword == PasswordEntry.Trim())
         {
             laserWarningStep = 4;
             polyCorrectionStep = true;
         }
         else
         {
-            notifyToast?.Invoke("Laser password is incorrect. It's case-sensitive and equal to S/N by default");
+            notifyToast?.Invoke("Password incorrect. It's case-sensitive and equal to S/N by default");
         }
 
         return true;
@@ -692,7 +692,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserWarningText)));
         }
     }
-    string _laserWarningText = "Enter Password to Arm Class 3B Laser";
+    string _laserWarningText = "Enter password then click to arm Class 3B laser";
 
     public Command confirmPSCmd { get; private set; }
     public Command denyPSCmd { get; private set; }
