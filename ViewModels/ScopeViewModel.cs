@@ -364,9 +364,8 @@ public class ScopeViewModel : INotifyPropertyChanged
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
             });
-            await libraryLoader;
             library.LoadFinished += Library_LoadFinished;
-            await findUserFiles();
+            findUserFiles();
         }
 
         logger.debug("finished loading library in refresh");
