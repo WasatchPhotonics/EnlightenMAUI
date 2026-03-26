@@ -238,15 +238,18 @@ public class BluetoothSpectrometer : Spectrometer
     internal override async Task<bool> initializeCollectionParams()
     {
         _nextIntegrationTimeMS = 400;
+        logger.debug("initializeCollectionParams: syncing integration time");
         await syncIntegrationTimeMSAsync(extendedTimeout: true); 
         NotifyPropertyChanged(nameof(integrationTimeMS));
         _nextGainDb = 8;
+        logger.debug("initializeCollectionParams: syncing gain");
         await syncGainDbAsync(extendedTimeout: true); 
         NotifyPropertyChanged(nameof(gainDb));
 
 
         if (eeprom.ROIVertRegionStart[0] > 0 && eeprom.ROIVertRegionStart[0] < eeprom.activePixelsVert)
         {
+            logger.debug("initializeCollectionParams: syncing roi vert start");
             _nextVerticalROIStartLine = eeprom.ROIVertRegionStart[0]; ;
             logger.debug($"Spectrometer.verticalROIStartLine -> {eeprom.ROIVertRegionStart[0]}");
 
@@ -258,6 +261,7 @@ public class BluetoothSpectrometer : Spectrometer
             if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
             {
                 logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+                return false;
             }
 
             await writeGenericCharacteristic(dataToSend);
@@ -270,6 +274,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (eeprom.ROIVertRegionEnd[0] > 0 && eeprom.ROIVertRegionEnd[0] < eeprom.activePixelsVert)
         {
+            logger.debug("initializeCollectionParams: syncing roi vert end");
             _nextVerticalROIStopLine = eeprom.ROIVertRegionEnd[0];
             logger.debug($"Spectrometer.verticalROIStopLine -> {eeprom.ROIVertRegionEnd[0]}");
 
@@ -281,6 +286,7 @@ public class BluetoothSpectrometer : Spectrometer
             if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
             {
                 logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+                return false;
             }
 
             await writeGenericCharacteristic(dataToSend);
@@ -291,6 +297,7 @@ public class BluetoothSpectrometer : Spectrometer
             NotifyPropertyChanged(nameof(verticalROIStopLine));
         }
 
+        logger.debug("initializeCollectionParams: syncing auto raman parameters");
         await syncAutoRamanParameters(extendedTimeout: true);
         if (eeprom.hasBattery)
             await updateBatteryAsync(extendedTimeout: true);
@@ -420,6 +427,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (!await sem.WaitAsync(extendedTimeout ? EXTENDED_SEM_TIMEOUT : SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+            return false;
         }
         waitingForGeneric = true;
         var ok = await writeGenericCharacteristic(request);
@@ -440,6 +448,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (!await sem.WaitAsync(extendedTimeout ? EXTENDED_SEM_TIMEOUT : SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+            return false;
         }
         waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
@@ -460,6 +469,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (!await sem.WaitAsync(extendedTimeout ? EXTENDED_SEM_TIMEOUT : SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+            return false;
         }
         waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
@@ -627,6 +637,7 @@ public class BluetoothSpectrometer : Spectrometer
                 if (!sem.Wait(SEM_TIMEOUT))
                 {
                     logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+                    return;
                 }
 
                 _ = writeGenericCharacteristic(dataToSend);
@@ -661,6 +672,7 @@ public class BluetoothSpectrometer : Spectrometer
                 if (!sem.Wait(SEM_TIMEOUT))
                 {
                     logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+                    return;
                 }
 
                 _ = writeGenericCharacteristic(dataToSend);
@@ -687,7 +699,13 @@ public class BluetoothSpectrometer : Spectrometer
         set
         {
             byte[] data = { 0x8a, value };
+            if (!sem.Wait(SEM_TIMEOUT))
+            {
+                logger.error("Spectrometer.laserWarningDelaySec.set: couldn't get semaphore");
+                return;
+            }
             _ = writeGenericCharacteristic(data);
+            sem.Release();
             _laserWarningDelaySec = value;
         }
     }
@@ -934,9 +952,11 @@ public class BluetoothSpectrometer : Spectrometer
             logger.error("Spectrometer.syncAutoRamanParameters: couldn't get semaphore");
             return false;
         }
+        logger.debug("Spectrometer.syncAutoRamanParameters: writing generic");
         var ok = await writeGenericCharacteristic(request);
-        sem.Release();
         logger.debug("Spectrometer.syncAutoRamanParameters: releasing semaphore");
+        sem.Release();
+        logger.debug("Spectrometer.syncAutoRamanParameters: released semaphore");
         if (ok)
         {
             await pauseAsync("syncAutoRamanParameters");
@@ -956,6 +976,7 @@ public class BluetoothSpectrometer : Spectrometer
             ok = true;
         }
 
+        logger.debug("Spectrometer.syncAutoRamanParameters: complete, returning {0}", ok);
         return ok;
     }
 

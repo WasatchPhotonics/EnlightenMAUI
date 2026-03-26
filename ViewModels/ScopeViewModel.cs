@@ -231,7 +231,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             spec.disconnectComplete += ScopeViewMoldel_disconnectComplete;
             // spectrometer will not try to fire unless collection parameters are confirmed set here
+            logger.debug("initialization routine started");
             bool ok = await spec.initializeCollectionParams();
+            logger.debug("initialization routine complete with success = {0}", ok);
             if (ok)
                 spectrometerInitialized = true;
         }
@@ -352,9 +354,13 @@ public class ScopeViewModel : INotifyPropertyChanged
         fullLibraryOverlayStatus.Clear();
         spec = BluetoothSpectrometer.getInstance();
         if (spec == null || !spec.paired)
+            spec = API9BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
+            spec = API6BLESpectrometer.getInstance();
+        if (spec == null || !spec.paired)
             spec = USBSpectrometer.getInstance();
 
-        logger.debug("refreshing from USB spec");
+        logger.debug("refreshing spec");
 
         if (spec != null && spec.paired)
         {
@@ -396,13 +402,18 @@ public class ScopeViewModel : INotifyPropertyChanged
             spec.laserWarningDelaySec = 0;
         }
 
-        logger.debug("SVM.ctor: updating chart");
+        logger.debug("spectrometer refresh: updating chart");
         updateChart();
+        logger.debug("spectrometer refresh: setup complete, refreshing battery");
 
         if (spec != null && spec.paired && spec.eeprom.hasBattery)
             await spec.updateBatteryAsync();
 
-        initializeSpectrometer();
+        logger.debug("spectrometer refresh: battery complete, finishing initialization");
+
+        await initializeSpectrometer();
+
+        logger.debug("spectrometer refresh: initialization in another thread");
 
         if (spec != null && spec.paired)
             spec.autoRamanEnabled = true;
@@ -419,7 +430,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         addCmd.ChangeCanExecute();
         clearCmd.ChangeCanExecute();
 
-        logger.debug("SVM.ctor: done");
+        logger.debug("spectrometer refresh: done");
     }
 
     private async void Library_LoadFinished(object sender, Library e)
