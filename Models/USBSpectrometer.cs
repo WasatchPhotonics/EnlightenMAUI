@@ -67,6 +67,7 @@ namespace EnlightenMAUI.Models
             usbWrapper.disconnect();
             paired = false;
             logger.info("closed usb device");
+            disconnectComplete.Invoke(this, this);
         }
 
         public async Task<bool> initAsync()

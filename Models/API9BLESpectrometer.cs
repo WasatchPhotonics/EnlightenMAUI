@@ -74,6 +74,7 @@ namespace EnlightenMAUI.Models
             autoRamanEnabled = false;
             reset();
             logger.debug("Spectrometer.disconnect: done");
+            disconnectComplete.Invoke(this, this);
         }
 
         public override void reset()

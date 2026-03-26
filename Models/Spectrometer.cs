@@ -64,6 +64,8 @@ namespace EnlightenMAUI.Models
         public delegate void AcquisitionProgressNotification(double perc);
         public event AcquisitionProgressNotification showAcquisitionProgress;
 
+        public EventHandler<Spectrometer> disconnectComplete;
+
         public abstract void disconnect();
 
         public abstract void reset();
@@ -614,7 +616,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxAverage = 1;
+        protected byte _maxAverage = 5;
 
         protected byte[] packAutoRamanParameters()
         {
