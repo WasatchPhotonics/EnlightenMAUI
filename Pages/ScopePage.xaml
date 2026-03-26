@@ -113,8 +113,9 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <Entry  IsVisible="{Binding laserArmIncomplete}" 
+                        IsEnabled="{Binding spectrometerInitialized}"
                         Margin="30,0,30,5" 
                         MinimumWidthRequest="300" 
                         Grid.Row="0"
@@ -129,6 +130,7 @@
 
                 <Button IsVisible="{Binding laserArmIncomplete}"
                         Text="{Binding laserWarningText}"
+                        IsEnabled="{Binding spectrometerInitialized}"
                         FontSize="14"
                         Margin="20,0,20,10"
                         Grid.Column="0"
@@ -232,6 +234,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Entry  IsVisible="{Binding laserArmIncomplete}" 
+                        IsEnabled="{Binding spectrometerInitialized}"
                         Margin="30,0,30,5" 
                         MinimumWidthRequest="300" 
                         Grid.Row="0"
@@ -245,6 +248,7 @@
                         Text="{Binding PasswordEntry}"/>
 
                 <Button IsVisible="{Binding laserArmIncomplete}"
+                        IsEnabled="{Binding spectrometerInitialized}"
                         Text="{Binding laserWarningText}"
                         FontSize="14"
                         Margin="20,0,20,10"
