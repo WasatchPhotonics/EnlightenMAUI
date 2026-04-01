@@ -238,6 +238,12 @@
 	  </MauiAsset>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\acetaminophen.csv" Link="Processing\library\acetaminophen.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	</ItemGroup>
+
 	<ProjectExtensions><VisualStudio><UserProperties XamarinHotReloadDebuggerTimeoutExceptionEnlightenMAUIHideInfoBar="True" /></VisualStudio></ProjectExtensions>
 
 </Project>
