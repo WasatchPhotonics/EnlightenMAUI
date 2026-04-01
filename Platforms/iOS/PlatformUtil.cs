@@ -372,6 +372,24 @@ internal class PlatformUtil
         }
     }
 
+    public static string getFileName(string name)
+    {
+        string[] parts = name.Split('.');
+        StringBuilder sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            if (sb.Length > 0 && part != parts.Last())
+                sb.Append('.');
+
+            if (part != parts.Last())
+                sb.Append(part);
+            else
+                break;
+        }
+
+        return sb.ToString();
+    }
+
     async static Task addUserFile(NSUrl file, Spectrometer spec, Dictionary<string, Measurement> dict)
     {
         await loadCSV(file, spec, dict);

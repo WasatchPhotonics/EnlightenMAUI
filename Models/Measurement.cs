@@ -594,7 +594,7 @@ public class Measurement : INotifyPropertyChanged
         logger.debug($"Measurement.saveAsync: creating {pathname}");
 
         UserLibrary ul = UserLibrary.getInstance();
-        ul.addSpectrum(this, filename);
+        ul.addSpectrum(this, PlatformUtil.getFileName(filename));
 
         using (StreamWriter sw = new StreamWriter(pathname))
         {

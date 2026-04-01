@@ -506,9 +506,47 @@ internal class PlatformUtil
         }
     }
 
+    static string getFileName(Java.IO.File file)
+    {
+        string name = file.Name;
+        string[] parts = name.Split('.');
+        StringBuilder sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            if (sb.Length > 0 && part != parts.Last())
+                sb.Append('.');
+
+            if (part != parts.Last())
+                sb.Append(part);
+            else
+                break;
+        }
+
+        return sb.ToString();
+    }
+
+    public static string getFileName(string name)
+    {
+        string temp = name.Split('/').Last();
+        string[] parts = temp.Split('.');
+        StringBuilder sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            if (sb.Length > 0 && part != parts.Last())
+                sb.Append('.');
+
+            if (part != parts.Last())
+                sb.Append(part);
+            else
+                break;
+        }
+
+        return sb.ToString();
+    }
+
     async static Task addUserFile(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)
     {
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
         await loadCSV(file, spec, dict);
     }
 
@@ -516,7 +554,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
@@ -1523,7 +1561,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
@@ -1608,7 +1646,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file);
 
-        string name = file.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
 
         SimpleCSVParser parser = new SimpleCSVParser();
@@ -1683,7 +1721,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
@@ -1742,7 +1780,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file);
 
-        string name = file.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file);
