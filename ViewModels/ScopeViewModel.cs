@@ -76,7 +76,6 @@ public class ScopeViewModel : INotifyPropertyChanged
     Settings settings;
 
     Logger logger = Logger.getInstance();
-    UserLibrary userLibrary = UserLibrary.getInstance();
     Library library;
     Task libraryLoader;
 
@@ -1763,6 +1762,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
             else
             {
+                spec.measurement.declaredMatch = null;
+                spec.measurement.declaredScore = null;
                 if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
                 {
                     ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());

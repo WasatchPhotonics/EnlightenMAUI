@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using NumSharp;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -614,6 +615,60 @@ internal class PlatformUtil
         catch (Exception ex)
         {
             logger.error("correction load failed with error {0}", ex.Message);
+        }
+    }
+
+    public static async Task<string> ZipFiles(string[] paths, string destination)
+    {
+        try
+        {
+            var f = new Java.IO.File(destination);
+            if (!f.Exists())
+                f.Mkdirs();
+
+            foreach (var path in paths)
+            {
+                string name = getFileName(path) + ".csv";
+                string fileDest = Path.Combine(destination, name);
+                System.IO.File.Copy(path, fileDest);
+            }
+            
+
+            FileStream fs = System.IO.File.OpenWrite(destination + ".zip");
+            await ZipFile.CreateFromDirectoryAsync(destination, fs);
+            fs.Flush();
+            fs.Close();
+            return destination + ".zip";
+            /*
+            BufferedInputStream origin = null;
+            Stream dest = System.IO.File.OpenHandle(destination);
+            ZipOutputStream zout = new ZipOutputStream(new BufferedOutputStream(dest));
+            byte[] data = new byte[1024];
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                
+                FileInputStream fi = new FileInputStream(paths[i]);
+                origin = new BufferedInputStream(fi, BUFFER);
+
+                ZipEntry entry = new ZipEntry(paths[i].substring(paths[i].lastIndexOf("/") + 1));
+                out.putNextEntry(entry);
+                int count;
+
+                while ((count = origin.read(data, 0, BUFFER)) != -1)
+                {
+                    out.write(data, 0, count);
+                }
+                origin.close();
+            }
+ 
+            out.close();
+            */
+        }
+        catch (Exception e)
+        {
+            return null;
+            //e.printStackTrace();
         }
     }
 

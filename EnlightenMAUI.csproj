@@ -185,6 +185,9 @@
 	  <MauiXaml Update="Popups\AddToLibraryPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Popups\ExportPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Popups\OverlaysPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

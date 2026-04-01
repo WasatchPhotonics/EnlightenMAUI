@@ -461,6 +461,10 @@ internal class PlatformUtil
             logger.error("correction load failed with error {0}", ex.Message);
         }
     }
+    public static async Task<string> ZipFiles(string[] paths, string destination)
+    {
+        return null;
+    }
 
     public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
     {

@@ -470,25 +470,110 @@ namespace EnlightenMAUI.ViewModels
             notifyToast?.Invoke($"Raman correction applied for future samples");
         }
 
+        SelectionPopupViewModel spvm;
         async Task ShareSpectrum()
         {
-            var ok = await spec.measurement.saveAsync();
-
-            if (ok)
+            List<string> entries = userLibrary.userSpectraKeys;
+            entries.Sort();
+            entries.Reverse();
+            List<SelectionMetadata> lib = new List<SelectionMetadata>();
+            foreach (var entry in entries)
             {
-                string savePath = Settings.getInstance().getSavePath();
-                string pathname = Path.Join(savePath, spec.measurement.filename);
-                try
+                SelectionMetadata sm = new SelectionMetadata(entry, entry == entries.First());
+                lib.Add(sm);
+            }
+
+            spvm = new SelectionPopupViewModel(lib);
+            spvm.exportName = $"{spec.eeprom.serialNumber}-{DateTime.Now.ToString("ddMMyy-HHmm")}";
+            ExportPopup ep = new ExportPopup(spvm);
+            spvm.triggerClose += (s, e) => ep.CloseAsync();
+            ep.Closed += ExportPopup_Closed;
+            await Shell.Current.ShowPopupAsync<OverlaysPopup>(ep);
+
+            if (false)
+            {
+                var ok = await spec.measurement.saveAsync();
+
+                if (ok)
                 {
-                    await Share.Default.RequestAsync(new ShareFileRequest
+                    string savePath = Settings.getInstance().getSavePath();
+                    string pathname = Path.Join(savePath, spec.measurement.filename);
+                    try
                     {
-                        Title = spec.measurement.filename + " " + matchString,
-                        File = new ShareFile(pathname)
-                    });
+                        await Share.Default.RequestAsync(new ShareFileRequest
+                        {
+                            Title = spec.measurement.filename + " " + matchString,
+                            File = new ShareFile(pathname)
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.error("Share failed with exception {0}", ex.Message);
+                    }
                 }
-                catch (Exception ex)
+            }
+        }
+
+        private async void ExportPopup_Closed(object sender, EventArgs e)
+        {
+            if (spvm.save.HasValue && spvm.save.Value)
+            {
+                logger.debug("export save triggered");
+                List<string> paths = new List<string>();
+                foreach (var entries in spvm.selections)
                 {
-                    logger.error("Share failed with exception {0}", ex.Message);
+                    if (entries.selected)
+                    {
+                        if (userLibrary.userSpectra.ContainsKey(entries.name))
+                            paths.Add(userLibrary.userSpectra[entries.name]);
+                    }
+                }
+
+                if (paths.Count > 0)
+                {
+                    string savePath = Settings.getInstance().getAutoSavePath();
+
+                    if (paths.Count == 1)
+                    {
+                        string pathname = Path.Join(savePath, paths[0] + ".csv");
+                        try
+                        {
+                            await Share.Default.RequestAsync(new ShareFileRequest
+                            {
+                                Title = savePath,
+                                File = new ShareFile(pathname)
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error("Share failed with exception {0}", ex.Message);
+                        }
+                    }
+                    else if (paths.Count > 1)
+                    {
+                        List<string> toShare = new List<string>();
+                        foreach (string path in paths)
+                        {
+                            toShare.Add(Path.Join(savePath, path + ".csv"));
+                        }
+
+                        string pathname = Path.Join(savePath, spvm.exportName);
+                        string share = await PlatformUtil.ZipFiles(toShare.ToArray(), pathname);
+                        try
+                        {
+                            await Share.Default.RequestAsync(new ShareFileRequest
+                            {
+                                Title = spvm.exportName,
+                                File = new ShareFile(share)
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error("Share failed with exception {0}", ex.Message);
+                        }
+                    }
+
+
                 }
             }
         }
