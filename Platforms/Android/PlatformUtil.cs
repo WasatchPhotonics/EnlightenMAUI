@@ -1345,7 +1345,7 @@ internal class PlatformUtil
         return compLibrary;
     }
 
-    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json", bool skipSearch = false)
     {
         if (useAssets)
         {
@@ -1387,33 +1387,43 @@ internal class PlatformUtil
         {
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
-            string[] rootPath = root.Split('/');
-            int depth = rootPath.Length;
 
-            foreach (var cDir in cacheDirs)
+            if (!skipSearch)
             {
-                libraryFolder = traverseDown(rootPath, cDir);
-                if (libraryFolder != null)
-                    break;
+                string[] rootPath = root.Split('/');
+                int depth = rootPath.Length;
 
+                foreach (var cDir in cacheDirs)
+                {
+                    libraryFolder = traverseDown(rootPath, cDir);
+                    if (libraryFolder != null)
+                        break;
+
+                }
+
+                if (libraryFolder == null)
+                {
+                    /*
+                    if (library.Count > 0)
+                        loadSucceeded = true;
+                    isLoading = false;
+                    InvokeLoadFinished();
+                    return;
+                    */
+                    return library;
+                }
             }
-
-            if (libraryFolder == null)
+            else
             {
-                /*
-                if (library.Count > 0)
-                    loadSucceeded = true;
-                isLoading = false;
-                InvokeLoadFinished();
-                return;
-                */
-                return library;
+                libraryFolder = new Java.IO.File(root);
             }
 
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");
 
             var libraryFiles = libraryFolder.ListFiles();
+            logger.debug("Found {0} files in user library folder {1}", libraryFiles.Length, libraryFolder.AbsolutePath);
+
 
             foreach (var libraryFile in libraryFiles)
             {
@@ -1432,7 +1442,7 @@ internal class PlatformUtil
                 {
                     try
                     {
-                        await loadCSV(libraryFile, originalRaws, library);
+                        await loadCSV(libraryFile, originalRaws, library, strictParse: skipSearch);
                     }
                     catch (Exception e)
                     {
@@ -1509,7 +1519,7 @@ internal class PlatformUtil
         return libraryFolder;
     }
 
-    static async Task loadCSV(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
+    static async Task loadCSV(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library, bool strictParse = false)
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
@@ -1518,13 +1528,16 @@ internal class PlatformUtil
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
         StreamReader sr = new StreamReader(s);
-        await parser.parseStream(s);
+        await parser.parseStream(s, strictParse);
 
         Measurement m = new Measurement();
         m.wavenumbers = parser.wavenumbers.ToArray();
         m.raw = parser.intensities.ToArray();
         m.excitationNM = 785;
-
+        m.timestamp = DateTime.ParseExact(parser.timestamp, "dd/MM/yyyy HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
+        m.declaredMatch = new string[] { parser.matches };
+        if (parser.score != null)
+            m.declaredScore = Double.Parse(parser.score);
 
 #if USE_DECON
             Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
@@ -1565,6 +1578,11 @@ internal class PlatformUtil
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
             updated.raw = newIntensities;
+            updated.excitationNM = m.excitationNM;
+            updated.timestamp = m.timestamp;
+            updated.declaredMatch = m.declaredMatch;
+            updated.declaredScore = m.declaredScore;
+
             //double airPLSLambda = 10000;
             //int airPLSMaxIter = 100;
             //double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
@@ -1572,6 +1590,8 @@ internal class PlatformUtil
             //Array.Copy(array, 0, shortened, roiStart, array.Length);
             //updated.raw = shortened;
             //updated.dark = null;
+
+            //logger.debug("adding {0} to library (timestamp {1})", name, )
 
             library.Add(name, updated);
 

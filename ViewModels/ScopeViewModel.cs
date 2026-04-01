@@ -76,6 +76,7 @@ public class ScopeViewModel : INotifyPropertyChanged
     Settings settings;
 
     Logger logger = Logger.getInstance();
+    UserLibrary userLibrary = UserLibrary.getInstance();
     Library library;
     Task libraryLoader;
 

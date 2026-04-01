@@ -32,6 +32,7 @@ namespace EnlightenMAUI.ViewModels
         List<string> userSpectra = new List<string>();
 
         Logger logger = Logger.getInstance();
+        UserLibrary userLibrary = UserLibrary.getInstance();
         public Library library;
         public Spectrometer spec;
         static AnalysisViewModel instance = null; 

@@ -30,7 +30,12 @@ namespace EnlightenMAUI.Models
         public List<double> wavenumbers = new List<double>();
         public List<double> intensities = new List<double>();
         public string name = null;
+        public string matches = null;
+        public string score = null;
+        public string timestamp = null;
         public ErrorTypes errorType = ErrorTypes.SUCCESS;
+        
+        bool strictHeaders = false;
         int linecount = 0;
         Logger logger = Logger.getInstance();
 
@@ -52,14 +57,29 @@ namespace EnlightenMAUI.Models
         {
             for (int i = 0; i < tok.Count; i++)
             {
-                string s = tok[i].ToLower();
-                if (s == "wavenumber")
+                string s = tok[i].ToLower().Trim();
+
+                if (strictHeaders)
                 {
-                    colWavenumber = i;
+                    if (s == "wavenumber")
+                    {
+                        colWavenumber = i;
+                    }
+                    else if (s == "spectrum")
+                    {
+                        colIntensity = i;
+                    }
                 }
-                else if (Regex.Match(s, "processed|spectrum|spectra|intensity").Success)
+                else
                 {
-                    colIntensity = i;
+                    if (s == "wavenumber")
+                    {
+                        colWavenumber = i;
+                    }
+                    else if (Regex.Match(s, "processed|spectrum|spectra|intensity").Success)
+                    {
+                        colIntensity = i;
+                    }
                 }
             }
         }
@@ -67,6 +87,9 @@ namespace EnlightenMAUI.Models
         void readValues(List<string> tok)
         {
             int len = tok.Count;
+            if (tok[0].Length == 0)
+                return;
+
             if ((len < colWavenumber + 1) || (len < colIntensity + 1)) { return; }
             if (VIGNETTE_COUNT > 0)
             {
@@ -97,8 +120,9 @@ namespace EnlightenMAUI.Models
             return await parseStream(stream);
         }
 
-        public async Task<bool> parseStream(Stream stream)
+        public async Task<bool> parseStream(Stream stream, bool strictHeaders = false)
         {
+            this.strictHeaders = strictHeaders;
             state = "READING_METADATA";
             string line;
             using (StreamReader sr = new StreamReader(stream))
@@ -138,6 +162,12 @@ namespace EnlightenMAUI.Models
 
                             if (key == "label")
                                 name = value;
+                            if (key == "compound matches" || key == "compound match")
+                                matches = value;
+                            if (key == "match score")
+                                score = value;
+                            if (key == "timestamp")
+                                timestamp = value;
                         }
                     }
                     else if (state == "READING_HEADER")

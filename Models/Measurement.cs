@@ -593,6 +593,9 @@ public class Measurement : INotifyPropertyChanged
         pathname = Path.Join(savePath, filename);
         logger.debug($"Measurement.saveAsync: creating {pathname}");
 
+        UserLibrary ul = UserLibrary.getInstance();
+        ul.addSpectrum(this, filename);
+
         using (StreamWriter sw = new StreamWriter(pathname))
         {
             writeMetadata(sw);
