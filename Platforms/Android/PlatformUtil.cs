@@ -384,7 +384,7 @@ internal class PlatformUtil
                             buffer = reader.ReadBytes(bufferSize);
                             bytesRead = buffer.Count();
                             tempBuffer.AddRange(buffer);
-                            logger.info("model file {0} read {1} bytes", path, bytesRead);
+                            //logger.info("model file {0} read {1} bytes", path, bytesRead);
                         }
 
                         while (bytesRead > 0);
