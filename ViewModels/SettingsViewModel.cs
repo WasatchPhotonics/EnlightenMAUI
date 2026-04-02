@@ -112,7 +112,7 @@ namespace EnlightenMAUI.ViewModels
         string _enteredPassword;
 
 
-        const string UNLOCK_PASSWORD = "photon";
+        const string UNLOCK_PASSWORD = "wasatch";
         public bool passwordCorrect
         {
             get => _passwordCorrect;

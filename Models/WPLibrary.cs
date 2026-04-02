@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Common = EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using System.Reflection.Metadata;
+using Telerik.Licensing.Json;
 
 #if USE_DECON
 using Deconvolution = DeconvolutionMAUI;
@@ -180,6 +181,180 @@ namespace EnlightenMAUI.Models
                         {
                             state = "READING_DATA";
                             readValues(tok);
+                        }
+                        else
+                        {
+                            readHeader(tok);
+                            state = "READING_DATA";
+                        }
+                    }
+                    else if (state == "READING_DATA")
+                    {
+                        readValues(tok);
+                    }
+                    else
+                    {
+                        errorType = ErrorTypes.INVALID_STATE;
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        public enum ErrorTypes { SUCCESS, NULL_STREAM, INVALID_STATE, NO_INTENSITIES };
+    }
+    
+    public class MultiCSVParser
+    {
+        int colWavenumber = 0;
+        Dictionary<string, int> entryCols = new Dictionary<string, int>();
+        string state;
+
+        public List<double> wavenumbers = new List<double>();
+        public Dictionary<string, List<double>> intensities = new Dictionary<string, List<double>>();
+        public string name = null;
+        public ErrorTypes errorType = ErrorTypes.SUCCESS;
+        int linecount = 0;
+        Logger logger = Logger.getInstance();
+
+        int finalCol = 0;
+
+        public MultiCSVParser()
+        {
+        }
+
+        private bool isNum(string line)
+        {
+            if (line.Length == 0)
+            {
+                return false;
+            }
+            char c = line[0];
+            return ('0' <= c && c <= '9') || c == '-';
+        }
+
+        private void readHeader(List<string> tok)
+        {
+            for (int i = 0; i < tok.Count; i++)
+            {
+                string s = tok[i].ToLower();
+                if (s == "wavenumber")
+                {
+                    colWavenumber = i;
+                }
+                else if (s != null && s.Length > 1)
+                {
+                    if (!entryCols.ContainsKey(s))
+                    {
+                        entryCols.Add(s, i);
+                        if (i > finalCol)
+                            finalCol = i;
+                    }
+                }
+            }
+        }
+
+        void readValues(List<string> tok)
+        {
+            int len = tok.Count;
+            if ((len < colWavenumber + 1) || (len < finalCol + 1)) { return; }
+
+            double wavenumber = Convert.ToDouble(tok[colWavenumber]);
+            bool wavenumberAdded = false;
+
+            foreach (string tag in entryCols.Keys)
+            {
+                if (!intensities.ContainsKey(tag))
+                    intensities.Add(tag, new List<double>());
+
+                if (!isNum(tok[entryCols[tag]]))
+                    continue;
+
+                if (!wavenumberAdded)
+                {
+                    wavenumbers.Add(wavenumber);
+                    wavenumberAdded = true;
+                }
+
+                double intensity = Convert.ToDouble(tok[entryCols[tag]]);
+
+                intensities[tag].Add(intensity);
+            }
+        }
+
+        public async Task<bool> parseFile(string pathname)
+        {
+            var assembly = IntrospectionExtensions.GetTypeInfo(typeof(SimpleCSVParser)).Assembly;
+            Stream stream = assembly.GetManifestResourceStream(pathname);
+            if (stream is null)
+            {
+                errorType = ErrorTypes.NULL_STREAM;
+                return false;
+            }
+
+            return await parseStream(stream);
+        }
+
+        public async Task<bool> parseStream(Stream stream)
+        {
+            state = "READING_METADATA";
+            string line;
+            using (StreamReader sr = new StreamReader(stream))
+            {
+                while ((line = await sr.ReadLineAsync()) != null)
+                {
+                    line.Trim();
+
+                    // some files have "CSV blanks" (lines of nothing but commas)
+                    if (Regex.Match(line, "^[, ]*$").Success)
+                    {
+                        line = "";
+                    }
+
+                    List<string> tok = line.Split(',').ToList();
+
+                    if (state == "READING_METADATA")
+                    {
+                        if (isNum(line))
+                        {
+                            // We found a digit, so either this file doesn't have metadata, 
+                            // or we're already past it.  Unfortunately, this probably means
+                            // we don't know what the field ordering is, so assume defaults.
+                            state = "READING_DATA";
+                            readValues(tok);
+                        }
+                        else if (line.Length == 0)
+                        {
+                            // we found a blank, so assume next row is header
+                            state = "READING_HEADER";
+                        }
+                        else if (tok.Count > 1)
+                        {
+                            // process metadata
+                            string key = tok[0].Trim().ToLower();
+                            string value = tok[1].Trim();
+
+                            if (key == "label")
+                                name = value;
+                        }
+                    }
+                    else if (state == "READING_HEADER")
+                    {
+                        if (line.Length == 0)
+                        {
+                            // skip extra blank
+                        }
+                        else if (isNum(line))
+                        {
+                            state = "READING_DATA";
+                            readValues(tok);
+                        }
+                        else if (line.Contains("Processed") && !line.Contains("Wavenumber"))
+                        {
+                            // the multi-spectrum format from Enlighten needs to skip a line after the "gap"
+                            // this helps identify if we're in that format
+                            continue;
                         }
                         else
                         {
@@ -388,6 +563,34 @@ namespace EnlightenMAUI.Models
             logger.debug("finished prepping data for decon");
         }
         
+        public async Task importLibrary(string path)
+        {
+            var data = await PlatformUtil.ImportLibrary(path);
+            
+            if (data != null && data.Count > 0)
+            {
+                foreach (string sample in data.Keys)
+                {
+                    if (!library.ContainsKey(sample))
+                    {
+                        await handleSampleImport(sample, data[sample].Item1, data[sample].Item2);
+                    }
+                }
+            }
+        }
+
+        public async Task handleSampleImport(string sample, List<double> wavenumbers, List<double> intensities)
+        {
+            Measurement m = new Measurement();
+            m.wavenumbers = wavenumbers.ToArray();
+            m.raw = intensities.ToArray();
+            m.excitationNM = 785;
+
+            addSampleToLibrary(sample, m);
+            m.filename = sample + ".csv";
+            await m.saveAsync(librarySave: true);
+        }
+
         public override async Task<Tuple<string,double>> findMatch(Measurement spectrum)
         {
             logger.debug("Library.findMatch: trying to match spectrum");

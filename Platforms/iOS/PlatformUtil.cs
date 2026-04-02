@@ -209,7 +209,7 @@ internal class PlatformUtil
                 fullPath = null;
             }
 
-            Regex extensionReg = new Regex(@".*\." + extension + @"$"); 
+            Regex extensionReg = new Regex(@".*\." + extension + @"$");
             cacheDirs = fileManager.GetDirectoryContent(
                 extPath,
                 null,
@@ -299,9 +299,9 @@ internal class PlatformUtil
 
         NSFileManager fileManager = NSFileManager.DefaultManager;
         NSUrl[] filePaths = fileManager.GetDirectoryContent(
-            path, 
-            null, 
-            NSDirectoryEnumerationOptions.SkipsHiddenFiles, 
+            path,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
             out var _);
 
         foreach (var filePath in filePaths)
@@ -1252,6 +1252,12 @@ internal class PlatformUtil
 
         return compLibrary;
     }
+
+    public static async Task<Dictionary<string, Tuple<List<double>, List<double>>>> ImportLibrary(string path)
+    {
+        return null;
+    }
+
     public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json", bool skipSearch = false)
     {
         //isLoading = true;

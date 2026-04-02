@@ -159,7 +159,7 @@
                             <Label Grid.Row="4" VerticalOptions="Center" Grid.Column="0" Text="Auto-Raman Mode" TextColor="#eee" />
 
                             <Switch Grid.Row="5" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding useBackgroundRemoval}" />
-                            <Label Grid.Row="5" VerticalOptions="Center" Grid.Column="0" Text="Background Removal" TextColor="#eee" />
+                            <Label Grid.Row="5" VerticalOptions="Center" Grid.Column="0" Text="DALAI" TextColor="#eee" />
 
                             <Switch Grid.Row="6" VerticalOptions="Center" Grid.Column="1" IsEnabled="{Binding advancedModeEnabled}" IsToggled="{Binding performMatch}" />
                             <Label Grid.Row="6" VerticalOptions="Center" Grid.Column="0" Text="Library Matching" TextColor="#eee" />

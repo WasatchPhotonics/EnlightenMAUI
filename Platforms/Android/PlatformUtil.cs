@@ -1438,6 +1438,27 @@ internal class PlatformUtil
         return compLibrary;
     }
 
+    public static async Task<Dictionary<string, Tuple<List<double>, List<double>>>> ImportLibrary(string path)
+    {
+        MultiCSVParser parser = new MultiCSVParser();
+        Stream s = System.IO.File.OpenRead(path);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Dictionary<string, Tuple<List<double>, List<double>>> data = new Dictionary<string, Tuple<List<double>, List<double>>>();
+
+        foreach (string tag in parser.intensities.Keys)
+        {
+            string compound = tag;
+            if (compound == "Processed")
+                compound = parser.name;
+
+            data.Add(compound, new Tuple<List<double>, List<double>>(parser.wavenumbers, parser.intensities[tag]));
+        }
+
+        return data;
+    }
+
     public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json", bool skipSearch = false)
     {
         if (useAssets)

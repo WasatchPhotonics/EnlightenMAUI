@@ -1,4 +1,5 @@
 ﻿using Accord.Statistics.Testing.Power;
+using Bumptech.Glide.Util;
 using CommunityToolkit.Maui.Extensions;
 using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
@@ -59,6 +60,7 @@ namespace EnlightenMAUI.ViewModels
                 spec = USBSpectrometer.getInstance();
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
+            importCmd = new Command(() => { _ = ImportLibrary(); });
             saveCmd = new Command(() => { _ = doSave(); });
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
@@ -105,6 +107,7 @@ namespace EnlightenMAUI.ViewModels
                 spec = USBSpectrometer.getInstance();
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
+            importCmd = new Command(() => { _ = ImportLibrary(); });
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
@@ -132,6 +135,7 @@ namespace EnlightenMAUI.ViewModels
         public Command addCmd { get; private set; }
         public Command saveCmd { get; private set; }
         public Command correctionCmd { get; private set; }
+        public Command importCmd { get; private set; }
         public Command retryCmd { get; private set; }
         public Command precisionCmd { get; private set; }
 
@@ -512,6 +516,37 @@ namespace EnlightenMAUI.ViewModels
                     }
                 }
             }
+        }
+
+        async Task ImportLibrary()
+        {
+            PickOptions po = new PickOptions();
+            var customFileType = new FilePickerFileType(
+                new Dictionary<DevicePlatform, IEnumerable<string>>
+                {
+                    { DevicePlatform.Android, new[] { "text/comma-separated-values" } } // MIME type
+                });
+            po.FileTypes = customFileType;
+            po.PickerTitle = "Select a Library File Exported from Enlighten";
+
+            try
+            {
+                var result = await FilePicker.Default.PickAsync(po);
+                if (result != null)
+                {
+                    logger.info("trying to import {0}", result.FullPath);
+                    if (library is WPLibrary)
+                    {
+                        (library as WPLibrary).importLibrary(result.FullPath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // The user canceled or something went wrong
+            }
+
+
         }
 
         private async void ExportPopup_Closed(object sender, EventArgs e)

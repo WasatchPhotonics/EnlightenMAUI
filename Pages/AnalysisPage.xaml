@@ -128,6 +128,8 @@
 
                 </StackLayout>
 
+                <Button Margin="10" IsVisible="{Binding spectrumCollected}" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Start" Text="Import Library" Command="{Binding importCmd}"/>
+                
                 <Button Margin="10" IsVisible="False" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Start" Text="Correct Wavenumbers to Standard" Command="{Binding correctionCmd}"/>
 
 
