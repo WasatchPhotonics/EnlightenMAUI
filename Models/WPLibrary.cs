@@ -24,12 +24,13 @@ namespace EnlightenMAUI.Models
     {
         int colWavenumber = 0;
         int colIntensity = 1;
-        int VIGNETTE_START = 3; // drop the first 3 pixels
+        public int vignetteStart = 3; // drop the first 3 pixels
         int VIGNETTE_COUNT = int.MaxValue; // For now don't vignette the end
         string state;
 
         public List<double> wavenumbers = new List<double>();
         public List<double> intensities = new List<double>();
+        public Dictionary<string, string> metadata = new Dictionary<string, string>();
         public string name = null;
         public string matches = null;
         public string score = null;
@@ -97,12 +98,14 @@ namespace EnlightenMAUI.Models
                 if (intensities.Count >= VIGNETTE_COUNT)
                     return;
 
-                if (linecount++ < VIGNETTE_START)
+                if (linecount++ < vignetteStart)
                     return;
             }
 
             double wavenumber = Convert.ToDouble(tok[colWavenumber]);
             double intensity = Convert.ToDouble(tok[colIntensity]);
+
+            //logger.info("parsed library values {0} : {1}", wavenumber, intensity);
 
             wavenumbers.Add(wavenumber);
             intensities.Add(intensity);
@@ -121,11 +124,15 @@ namespace EnlightenMAUI.Models
             return await parseStream(stream);
         }
 
-        public async Task<bool> parseStream(Stream stream, bool strictHeaders = false)
+        public async Task<bool> parseStream(Stream stream, bool strictHeaders = false, string tag = null)
         {
             this.strictHeaders = strictHeaders;
             state = "READING_METADATA";
             string line;
+
+            if (tag != null)
+                logger.info("starting read for {0}", tag);
+
             using (StreamReader sr = new StreamReader(stream))
             {
                 while ((line = await sr.ReadLineAsync()) != null)
@@ -142,6 +149,9 @@ namespace EnlightenMAUI.Models
 
                     if (state == "READING_METADATA")
                     {
+                        if (tag != null)
+                            logger.info("attempting metadata read for {0}", tag);
+
                         if (isNum(line))
                         {
                             // We found a digit, so either this file doesn't have metadata, 
@@ -161,6 +171,8 @@ namespace EnlightenMAUI.Models
                             string key = tok[0].Trim().ToLower();
                             string value = tok[1].Trim();
 
+                            metadata.Add(key, value);
+
                             if (key == "label")
                                 name = value;
                             if (key == "compound matches" || key == "compound match")
@@ -173,6 +185,8 @@ namespace EnlightenMAUI.Models
                     }
                     else if (state == "READING_HEADER")
                     {
+                        if (tag != null)
+                            logger.info("attempting header read for {0}", tag);
                         if (line.Length == 0)
                         {
                             // skip extra blank
@@ -186,6 +200,8 @@ namespace EnlightenMAUI.Models
                         {
                             readHeader(tok);
                             state = "READING_DATA";
+                            if (tag != null)
+                                logger.info("finished header read for {0}, col wn = {1}, col int = {2}", tag, colWavenumber, colIntensity);
                         }
                     }
                     else if (state == "READING_DATA")
@@ -199,6 +215,7 @@ namespace EnlightenMAUI.Models
                     }
                 }
             }
+            logger.info("finished full read for {0}", tag);
             return true;
         }
 
@@ -213,6 +230,8 @@ namespace EnlightenMAUI.Models
 
         public List<double> wavenumbers = new List<double>();
         public Dictionary<string, List<double>> intensities = new Dictionary<string, List<double>>();
+        public Dictionary<string, Dictionary<string, string>> metadata = new Dictionary<string, Dictionary<string, string>>();
+        public Dictionary<string, List<string>> unassignedMetadata = new Dictionary<string, List<string>>();
         public string name = null;
         public ErrorTypes errorType = ErrorTypes.SUCCESS;
         int linecount = 0;
@@ -236,6 +255,16 @@ namespace EnlightenMAUI.Models
 
         private void readHeader(List<string> tok)
         {
+            int totalSamples = 0;
+            for (int i = 0; i < tok.Count; i++)
+            {
+                string s = tok[i].ToLower();
+                if (s != "wavenumber" && s.Length > 1)
+                {
+                    ++totalSamples;
+                }
+            }
+
             for (int i = 0; i < tok.Count; i++)
             {
                 string s = tok[i].ToLower();
@@ -248,6 +277,20 @@ namespace EnlightenMAUI.Models
                     if (!entryCols.ContainsKey(s))
                     {
                         entryCols.Add(s, i);
+                        Dictionary<string, string> unitMetadata = new Dictionary<string, string>();
+
+                        foreach (string metaKey in unassignedMetadata.Keys)
+                        {
+                            if (unassignedMetadata[metaKey].Count == totalSamples)
+                                unitMetadata.Add(metaKey, unassignedMetadata[metaKey][entryCols.Count - 1]);
+                            else if (unassignedMetadata[metaKey].Count == 1)
+                                unitMetadata.Add(metaKey, unassignedMetadata[metaKey][0]);
+                            else
+                                unitMetadata.Add(metaKey, "");
+                        }
+
+                        metadata.Add(s, unitMetadata);
+
                         if (i > finalCol)
                             finalCol = i;
                     }
@@ -333,6 +376,17 @@ namespace EnlightenMAUI.Models
                         {
                             // process metadata
                             string key = tok[0].Trim().ToLower();
+
+                            List<string> metadatas = new List<string>();
+
+                            for (int j = 1; j < tok.Count; j++)
+                            {
+                                if (tok[j].Trim().Length > 0)
+                                    metadatas.Add(tok[j].Trim());
+                            }
+
+                            unassignedMetadata.Add(key, metadatas);
+
                             string value = tok[1].Trim();
 
                             if (key == "label")
@@ -573,13 +627,13 @@ namespace EnlightenMAUI.Models
                 {
                     if (!library.ContainsKey(sample))
                     {
-                        await handleSampleImport(sample, data[sample].Item1, data[sample].Item2);
+                        await handleSampleImport(sample, data[sample].data.Item1, data[sample].data.Item2, data[sample].metadata);
                     }
                 }
             }
         }
 
-        public async Task handleSampleImport(string sample, List<double> wavenumbers, List<double> intensities)
+        public async Task handleSampleImport(string sample, List<double> wavenumbers, List<double> intensities, Dictionary<string, string> metadata)
         {
             Measurement m = new Measurement();
             m.wavenumbers = wavenumbers.ToArray();
@@ -588,7 +642,7 @@ namespace EnlightenMAUI.Models
 
             addSampleToLibrary(sample, m);
             m.filename = sample + ".csv";
-            await m.saveAsync(librarySave: true);
+            await m.saveAsync(librarySave: true, forceWrite: true, forcedMetadata: metadata);
         }
 
         public override async Task<Tuple<string,double>> findMatch(Measurement spectrum)

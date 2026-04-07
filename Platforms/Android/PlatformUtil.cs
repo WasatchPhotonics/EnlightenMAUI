@@ -1,4 +1,5 @@
-﻿using Android;
+﻿using Accord.Math.Distances;
+using Android;
 using Android.Content;
 using Android.Content.Res;
 using Android.Locations;
@@ -26,6 +27,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
 using Xamarin.Google.Crypto.Tink.Subtle;
+using static Android.Provider.ContactsContract;
 using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using AndrApp = Android.App;
@@ -616,6 +618,25 @@ internal class PlatformUtil
         {
             logger.error("correction load failed with error {0}", ex.Message);
         }
+    }
+
+    public static async Task Unzip(string source, string destination)
+    {
+        await ZipFile.ExtractToDirectoryAsync(source, destination);
+    }
+
+    public static async Task<string> ZipFolder(string source, string destination)
+    {
+        var f = new Java.IO.File(source);
+        if (!f.Exists() || !f.IsDirectory)
+            return null;
+
+        FileStream fs = System.IO.File.OpenWrite(destination + ".zip");
+        await ZipFile.CreateFromDirectoryAsync(source, fs);
+        fs.Flush();
+        fs.Close();
+
+        return destination + ".zip";
     }
 
     public static async Task<string> ZipFiles(string[] paths, string destination)
@@ -1438,22 +1459,80 @@ internal class PlatformUtil
         return compLibrary;
     }
 
-    public static async Task<Dictionary<string, Tuple<List<double>, List<double>>>> ImportLibrary(string path)
+    public static async Task<Dictionary<string, AgnosticSimpleMeasurement>> ImportZip(string path)
     {
-        MultiCSVParser parser = new MultiCSVParser();
-        Stream s = System.IO.File.OpenRead(path);
-        StreamReader sr = new StreamReader(s);
-        await parser.parseStream(s);
+        Dictionary<string, AgnosticSimpleMeasurement> data = new Dictionary<string, AgnosticSimpleMeasurement>();
+        Regex csvReg = new Regex(@".*\.csv$");
 
-        Dictionary<string, Tuple<List<double>, List<double>>> data = new Dictionary<string, Tuple<List<double>, List<double>>>();
+        string unzipPath = PlatformUtil.getSavePath();
+        Java.IO.File initial = new Java.IO.File(path);
+        unzipPath = Path.Join(unzipPath, initial.Name.Split('.')[0]);
 
-        foreach (string tag in parser.intensities.Keys)
+        await Unzip(path,unzipPath);
+        Java.IO.File unzipped = new Java.IO.File(unzipPath);
+
+        if (unzipped.Exists())
         {
-            string compound = tag;
-            if (compound == "Processed")
-                compound = parser.name;
+            if (unzipped.IsDirectory)
+            {
+                Java.IO.File[] paths = unzipped.ListFiles();
+                if (paths != null)
+                {
+                    foreach (Java.IO.File file in paths)
+                    {
+                        if (csvReg.IsMatch(file.AbsolutePath))
+                        {
+                            SimpleCSVParser parser = new SimpleCSVParser();
+                            Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+                            StreamReader sr = new StreamReader(s);
+                            await parser.parseStream(s, tag: file.Name);
 
-            data.Add(compound, new Tuple<List<double>, List<double>>(parser.wavenumbers, parser.intensities[tag]));
+                            AgnosticSimpleMeasurement asm = new AgnosticSimpleMeasurement();
+                            asm.data = new Tuple<List<double>, List<double>>(parser.wavenumbers, parser.intensities);
+                            asm.metadata = parser.metadata;
+
+                            data.Add(file.Name.Split('.')[0], asm);
+                        }
+                    }
+                }
+            }
+        }
+
+        return data;
+    }
+
+
+    public static async Task<Dictionary<string, AgnosticSimpleMeasurement>> ImportLibrary(string path)
+    {
+        Regex csvReg = new Regex(@".*\.csv$");
+        Regex zipReg = new Regex(@".*\.zip$");
+
+        Dictionary<string, AgnosticSimpleMeasurement> data = new Dictionary<string, AgnosticSimpleMeasurement>();
+
+        if (csvReg.IsMatch(path))
+        {
+            MultiCSVParser parser = new MultiCSVParser();
+            Stream s = System.IO.File.OpenRead(path);
+            StreamReader sr = new StreamReader(s);
+            await parser.parseStream(s);
+
+            foreach (string tag in parser.intensities.Keys)
+            {
+                string compound = tag;
+                if (compound.ToLower() == "processed")
+                    compound = parser.name;
+
+                AgnosticSimpleMeasurement asm = new AgnosticSimpleMeasurement();
+                asm.data = new Tuple<List<double>, List<double>>(parser.wavenumbers, parser.intensities[tag]);
+                if (parser.metadata.ContainsKey(tag))
+                    asm.metadata = parser.metadata[tag];
+
+                data.Add(compound, asm);
+            }
+        }
+        else if (zipReg.IsMatch(path))
+        {
+            data = await ImportZip(path);
         }
 
         return data;
@@ -1642,14 +1721,28 @@ internal class PlatformUtil
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
         StreamReader sr = new StreamReader(s);
-        await parser.parseStream(s, strictParse);
+        await parser.parseStream(s, strictParse, tag: file.Name);
 
         Measurement m = new Measurement();
         m.wavenumbers = parser.wavenumbers.ToArray();
         m.raw = parser.intensities.ToArray();
         m.excitationNM = 785;
-        m.timestamp = DateTime.ParseExact(parser.timestamp, "dd/MM/yyyy HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
-        m.declaredMatch = new string[] { parser.matches };
+
+        if (parser.timestamp != null)
+        {
+            DateTime temp = DateTime.MinValue;
+            bool ok = DateTime.TryParseExact(parser.timestamp, "dd/MM/yyyy HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out temp);
+            if (ok)
+                m.timestamp = temp;
+            else
+            {
+                ok = DateTime.TryParseExact(parser.timestamp, "yyyy-MM-dd HH:mm:ss.ffffff", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out temp);
+                if (ok)
+                    m.timestamp = temp;
+            }
+        }
+        if (parser.matches != null)
+            m.declaredMatch = new string[] { parser.matches };
         if (parser.score != null)
             m.declaredScore = Double.Parse(parser.score);
 

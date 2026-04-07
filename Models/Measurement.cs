@@ -6,6 +6,12 @@ using System.Text;
 namespace EnlightenMAUI.Models;
 
 
+public class AgnosticSimpleMeasurement
+{
+    public Tuple<List<double>, List<double>> data;
+    public Dictionary<string, string> metadata;
+}
+
 public class spectrumJSON
 {
     public string id;
@@ -559,7 +565,7 @@ public class Measurement : INotifyPropertyChanged
     /// - support full ENLIGHTEN metadata
     /// - support SaveOptions (selectable output fields)
     /// </todo>
-    public async Task<bool> saveAsync(bool librarySave = false, bool autoSave = false)
+    public async Task<bool> saveAsync(bool librarySave = false, bool autoSave = false, bool forceWrite = false, Dictionary<string, string> forcedMetadata = null)
     {
         logger.debug("Measurement.saveAsync: starting");
 
@@ -584,7 +590,7 @@ public class Measurement : INotifyPropertyChanged
             return true;
         }
 
-        if (processed is null || raw is null || spec is null)
+        if ((processed is null || raw is null || spec is null) && !forceWrite)
         {
             logger.error("saveAsync: nothing to save");
             return false;
@@ -598,7 +604,10 @@ public class Measurement : INotifyPropertyChanged
 
         using (StreamWriter sw = new StreamWriter(pathname))
         {
-            writeMetadata(sw);
+            if (forcedMetadata != null)
+                writeMetadata(sw, forcedMetadata);
+            else if (spec != null)
+                writeMetadata(sw);
             sw.WriteLine();
             writeSpectra(sw, librarySave);
         }
@@ -683,7 +692,15 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("QR Scan, {0}", spec.qrValue);
         sw.WriteLine("Host Description, {0}", settings.hostDescription);
         if (location != null)
-            sw.WriteLine("Location, lat {0}, lon {1}", location.Latitude, location.Longitude);
+            sw.WriteLine("Location, lat {0} : lon {1}", location.Latitude, location.Longitude);
+    }
+
+    void writeMetadata(StreamWriter sw, Dictionary<string,string> metadata)
+    {
+        foreach (string key in metadata.Keys)
+        {
+            sw.WriteLine($"{key},{metadata[key]}");
+        }
     }
 
     string render(double[] a, int index, string format = "f2")

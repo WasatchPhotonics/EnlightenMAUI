@@ -1,5 +1,4 @@
 ﻿using Accord.Statistics.Testing.Power;
-using Bumptech.Glide.Util;
 using CommunityToolkit.Maui.Extensions;
 using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
@@ -61,6 +60,7 @@ namespace EnlightenMAUI.ViewModels
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             importCmd = new Command(() => { _ = ImportLibrary(); });
+            exportCmd = new Command(() => { _ = ExportLibrary(); });
             saveCmd = new Command(() => { _ = doSave(); });
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
@@ -108,6 +108,7 @@ namespace EnlightenMAUI.ViewModels
 
             shareCmd = new Command(() => { _ = ShareSpectrum(); });
             importCmd = new Command(() => { _ = ImportLibrary(); });
+            exportCmd = new Command(() => { _ = ExportLibrary(); });
             addCmd = new Command(() => { _ = doAdd(); });
             correctionCmd = new Command(() => { _ = changeCorrection(); });
             retryCmd = new Command(() => { _ = triggerReanalyze(); });
@@ -135,6 +136,7 @@ namespace EnlightenMAUI.ViewModels
         public Command addCmd { get; private set; }
         public Command saveCmd { get; private set; }
         public Command correctionCmd { get; private set; }
+        public Command exportCmd { get; private set; }
         public Command importCmd { get; private set; }
         public Command retryCmd { get; private set; }
         public Command precisionCmd { get; private set; }
@@ -524,7 +526,7 @@ namespace EnlightenMAUI.ViewModels
             var customFileType = new FilePickerFileType(
                 new Dictionary<DevicePlatform, IEnumerable<string>>
                 {
-                    { DevicePlatform.Android, new[] { "text/comma-separated-values" } } // MIME type
+                    { DevicePlatform.Android, new[] { "text/comma-separated-values", "application/zip" } } // MIME type
                 });
             po.FileTypes = customFileType;
             po.PickerTitle = "Select a Library File Exported from Enlighten";
@@ -548,6 +550,29 @@ namespace EnlightenMAUI.ViewModels
 
 
         }
+
+        async Task ExportLibrary()
+        {
+            string libPath = PlatformUtil.getUserLibraryPath();
+
+            string outPath = PlatformUtil.getSavePath();
+            outPath = Path.Join(outPath, $"user-library-{DateTime.Now.ToString("yyyyMMdd")}");
+
+            string share = await PlatformUtil.ZipFolder(libPath, outPath);
+            try
+            {
+                await Share.Default.RequestAsync(new ShareFileRequest
+                {
+                    Title = "User Library Export",
+                    File = new ShareFile(share)
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.error("Export failed with exception {0}", ex.Message);
+            }
+        }
+
 
         private async void ExportPopup_Closed(object sender, EventArgs e)
         {

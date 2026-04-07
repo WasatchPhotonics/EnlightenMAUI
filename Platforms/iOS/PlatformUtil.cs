@@ -11,6 +11,7 @@ using Microsoft.ML.Transforms.Onnx;
 //using Microsoft.ML.OnnxRuntime.
 using Newtonsoft.Json;
 using NumSharp;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -461,6 +462,12 @@ internal class PlatformUtil
             logger.error("correction load failed with error {0}", ex.Message);
         }
     }
+
+    public static async Task<string> ZipFolder(string source, string destination)
+    {
+        return null;
+    }
+
     public static async Task<string> ZipFiles(string[] paths, string destination)
     {
         return null;
@@ -1253,7 +1260,7 @@ internal class PlatformUtil
         return compLibrary;
     }
 
-    public static async Task<Dictionary<string, Tuple<List<double>, List<double>>>> ImportLibrary(string path)
+    public static async Task<Dictionary<string, AgnosticSimpleMeasurement>> ImportLibrary(string path)
     {
         return null;
     }
