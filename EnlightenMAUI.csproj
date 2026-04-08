@@ -220,12 +220,6 @@
 	  <Folder Include="Processing\ml\" />
 	</ItemGroup>
 
-	<ItemGroup Condition="Exists('..\EMAUIHelpers\library\Wasatch')">
-	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\ethanol.csv" Link="Processing\library\ethanol.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	</ItemGroup>
-
 	<ItemGroup Condition="Exists('..\EMAUIHelpers\models')">
 	  <MauiAsset Include="..\EMAUIHelpers\models\nrd-d2-r53-model-12-opset18\background_model.onnx" Link="Processing\ml\background_model.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -235,14 +229,245 @@
 	  </MauiAsset>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\cyclohexane.csv" Link="Processing\library\cyclohexane.csv">
+	<ItemGroup Condition="Exists('..\EMAUIHelpers\library\Wasatch')">
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\1-Butanol.csv" Link="Processing\library\1-Butanol.csv">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\acetaminophen.csv" Link="Processing\library\acetaminophen.csv">
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\1-Hexanol.csv" Link="Processing\library\1-Hexanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\1-Octen-3-ol.csv" Link="Processing\library\1-Octen-3-ol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\1-Pentanol.csv" Link="Processing\library\1-Pentanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\2-Aminobutane.csv" Link="Processing\library\2-Aminobutane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\2-Butanol.csv" Link="Processing\library\2-Butanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\2-Butanone.csv" Link="Processing\library\2-Butanone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\2-Methyl Propanol.csv" Link="Processing\library\2-Methyl Propanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\2-Propanol.csv" Link="Processing\library\2-Propanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\4-Acetylpyridine.csv" Link="Processing\library\4-Acetylpyridine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Acetaminophen.csv" Link="Processing\library\Acetaminophen.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Acetic Acid.csv" Link="Processing\library\Acetic Acid.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Acetone.csv" Link="Processing\library\Acetone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Acetonitrile.csv" Link="Processing\library\Acetonitrile.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Alanine.csv" Link="Processing\library\Alanine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Arginine.csv" Link="Processing\library\Arginine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Benzene.csv" Link="Processing\library\Benzene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Benzyl Alcohol.csv" Link="Processing\library\Benzyl Alcohol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Caffeine.csv" Link="Processing\library\Caffeine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Calcium Carbonate.csv" Link="Processing\library\Calcium Carbonate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Citric Acid Anhydrate.csv" Link="Processing\library\Citric Acid Anhydrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Citric Acid Monohydrate.csv" Link="Processing\library\Citric Acid Monohydrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Citric Acid.csv" Link="Processing\library\Citric Acid.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Coconate Ester.csv" Link="Processing\library\Coconate Ester.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Coconut Oil.csv" Link="Processing\library\Coconut Oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Coenzyme NAD.csv" Link="Processing\library\Coenzyme NAD.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Cyclohexane.csv" Link="Processing\library\Cyclohexane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Cyclohexanol.csv" Link="Processing\library\Cyclohexanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Dichloromethane.csv" Link="Processing\library\Dichloromethane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Diethyl Amine.csv" Link="Processing\library\Diethyl Amine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Diethylether.csv" Link="Processing\library\Diethylether.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Dimethylcarbonate.csv" Link="Processing\library\Dimethylcarbonate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Dimethylsulfoxide.csv" Link="Processing\library\Dimethylsulfoxide.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\EDTA.csv" Link="Processing\library\EDTA.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Ethanol.csv" Link="Processing\library\Ethanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Ethyl Acetate.csv" Link="Processing\library\Ethyl Acetate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Fructose.csv" Link="Processing\library\Fructose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Glucose.csv" Link="Processing\library\Glucose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Glycerol.csv" Link="Processing\library\Glycerol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Glycine.csv" Link="Processing\library\Glycine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Heptane.csv" Link="Processing\library\Heptane.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Hydrocortisone.csv" Link="Processing\library\Hydrocortisone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Ibuprofen.csv" Link="Processing\library\Ibuprofen.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Icaridin.csv" Link="Processing\library\Icaridin.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Isopropanol.csv" Link="Processing\library\Isopropanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\K2HPO4.csv" Link="Processing\library\K2HPO4.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Ketoprofen.csv" Link="Processing\library\Ketoprofen.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\KH2PO4.csv" Link="Processing\library\KH2PO4.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Lactic Acid.csv" Link="Processing\library\Lactic Acid.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Lactose.csv" Link="Processing\library\Lactose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Linseed Oil.csv" Link="Processing\library\Linseed Oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Melamine.csv" Link="Processing\library\Melamine.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Metamizole.csv" Link="Processing\library\Metamizole.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Methanol.csv" Link="Processing\library\Methanol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Methyl Ethyl Ketone.csv" Link="Processing\library\Methyl Ethyl Ketone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Methyl Isobutyl Ketone.csv" Link="Processing\library\Methyl Isobutyl Ketone.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Methyl Parabene.csv" Link="Processing\library\Methyl Parabene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Mineral Oil.csv" Link="Processing\library\Mineral Oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\n-Butyl Acetate.csv" Link="Processing\library\n-Butyl Acetate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\PET.csv" Link="Processing\library\PET.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Polyethylene Glycol.csv" Link="Processing\library\Polyethylene Glycol.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Polyethylene.csv" Link="Processing\library\Polyethylene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Polypropylene.csv" Link="Processing\library\Polypropylene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Polystyrene.csv" Link="Processing\library\Polystyrene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\PTFE.csv" Link="Processing\library\PTFE.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sesame Oil.csv" Link="Processing\library\Sesame Oil.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Silicon Carbide.csv" Link="Processing\library\Silicon Carbide.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Silicon.csv" Link="Processing\library\Silicon.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sodium Acetate.csv" Link="Processing\library\Sodium Acetate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sodium Bicarbonate.csv" Link="Processing\library\Sodium Bicarbonate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sodium Carbonate.csv" Link="Processing\library\Sodium Carbonate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sodium Hydrogen Citrate.csv" Link="Processing\library\Sodium Hydrogen Citrate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sodium Sulfate.csv" Link="Processing\library\Sodium Sulfate.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Sucrose.csv" Link="Processing\library\Sucrose.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\tert-Butyl Methyl Ether.csv" Link="Processing\library\tert-Butyl Methyl Ether.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Tetrahydrofuran.csv" Link="Processing\library\Tetrahydrofuran.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Thiamine HCl.csv" Link="Processing\library\Thiamine HCl.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Toluene.csv" Link="Processing\library\Toluene.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Urea.csv" Link="Processing\library\Urea.csv">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
+	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Vinylacetate.csv" Link="Processing\library\Vinylacetate.csv">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	</ItemGroup>
