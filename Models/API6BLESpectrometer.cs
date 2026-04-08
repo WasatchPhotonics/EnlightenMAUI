@@ -1,5 +1,4 @@
-﻿using Android.Renderscripts;
-using EnlightenMAUI.Common;
+﻿using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using Plugin.BLE.Abstractions.Contracts;
 using System.ComponentModel;
