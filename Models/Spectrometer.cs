@@ -35,7 +35,7 @@ namespace EnlightenMAUI.Models
         ////////////////////////////////////////////////////////////////////////
         // laserState
         ////////////////////////////////////////////////////////////////////////
-        protected LaserState laserState = new LaserState();
+        internal LaserState laserState = new LaserState();
 
         // software state
         public double[] wavelengths;
@@ -325,7 +325,7 @@ namespace EnlightenMAUI.Models
         }
         bool _useHorizontalROI = true;
 
-        public virtual byte laserWatchdogSec
+        public virtual ushort laserWatchdogSec
         {
             get => laserState.watchdogSec;
             set
@@ -391,6 +391,7 @@ namespace EnlightenMAUI.Models
         // until it didn't.  Now I call it BEFORE each acquisition, and that
         // seems to work better?
         internal abstract Task<bool> updateBatteryAsync(bool extendedTimeout = false);
+        internal abstract Task<bool> syncLaserStateAsync(bool readFirst = false);
         internal abstract Task<bool> initializeCollectionParams();
 
         ////////////////////////////////////////////////////////////////////////
