@@ -548,7 +548,7 @@ public class API6BLESpectrometer : Spectrometer
         }
     }
 
-    public override byte laserWatchdogSec
+    public override ushort laserWatchdogSec
     {
         get => laserState.watchdogSec;
         set
@@ -596,7 +596,7 @@ public class API6BLESpectrometer : Spectrometer
         }
     }
 
-    async Task<bool> syncLaserStateAsync()
+    internal override async Task<bool> syncLaserStateAsync(bool readFirst = false)
     {
         logger.debug("Spectrometer.syncLaserStateAsync: start");
         if (!laserSyncEnabled)
