@@ -15,7 +15,7 @@ public class LaserState
     public LaserType type = LaserType.NORMAL;
     public LaserMode mode = LaserMode.MANUAL;
     public bool enabled;
-    public byte watchdogSec 
+    public ushort watchdogSec 
     { 
         get; 
         set; 
@@ -23,6 +23,8 @@ public class LaserState
     public ushort laserDelayMS { get; set; } = 0;
     public bool interlockClosed = false;
     public bool laserActive = false;
+
+    public int payloadLength = 7;
 
     // While we're working out various timing and stabilization issues in FW,
     // we're just going to implment Raman Mode in SW.  However, the FW version
@@ -83,56 +85,46 @@ public class LaserState
     // override these is.
     public byte[] serialize()
     {
-        byte[] data = new byte[4];
-
-        data[1] = (byte)type;
-        data[0] = (byte)mode;
-        data[2] = (byte)(enabled ? 1 : 0);
-        data[3] = watchdogSec; 
-        //data[4] = 0;
-        //data[5] = 0;
-        //data[4] = (byte)((laserDelayMS >> 8) & 0xff);
-        //data[5] = (byte)( laserDelayMS       & 0xff);
-
-        if (mode == LaserMode.AUTO_DARK)
+        if (payloadLength == 8)
         {
-            if (SW_RAMAN_MODE)
-            {
-                // If we're in SW Raman Mode, tell the device we're in 
-                // Manual Mode
-                data[0] = (byte)LaserMode.MANUAL;
+            byte[] data = new byte[7];
+            data[1] = (byte)type;
+            data[0] = (byte)mode;
+            data[2] = (byte)(enabled ? 1 : 0);
+            data[3] = (byte)((watchdogSec >> 8) & 0xff);
+            data[4] = (byte)((watchdogSec) & 0xff);
+            data[5] = 0xff;
+            data[6] = 0xff;
 
-                // ignore laserDelayMS, as we'll do it in SW
-                //data[4] = 0;
-                //data[5] = 0;
-            }
-
-            // ignore laserDelayMS, as we'll do it in SW
-            //data[4] = 0;
-            //data[5] = 0;
-            
-            
-            /*
-            else
-            {
-                // If We're in HW Raman Mode, auto-enable the laser and 
-                // disable the watchdog
-                data[2] = 1; // laserEnable = true
-                data[3] = 0; // watchdogSec = 0
-            }
-            */
+            return data;
         }
+        else
+        {
+            byte[] data = new byte[4];
+            data[1] = (byte)type;
+            data[0] = (byte)mode;
+            data[2] = (byte)(enabled ? 1 : 0);
+            data[3] = (byte)watchdogSec;
 
-        return data;
+            if (mode == LaserMode.AUTO_DARK)
+            {
+                if (SW_RAMAN_MODE)
+                {
+                    data[0] = (byte)LaserMode.MANUAL;
+                }
+            }
+
+            return data;
+        }
     }
 
-    // Parse and validate a 6-byte payload received from Peripheral by Central.
+    // Parse and validate a 6-9 byte payload received from Peripheral by Central.
     //
     // If any part of the payload does not pass validation, the entire payload
     // is rejected and application state is unchanged.
-    public bool parse(byte[] data)
+    public bool parse(byte[] data, bool setValues = true)
     {
-        if (data.Length != 7)
+        if (data.Length < 7)
         {
             logger.error($"rejecting LaserState with invalid payload length {data.Length}");
             return false;
@@ -186,49 +178,107 @@ public class LaserState
             return false;
         }
 
-        ////////////////////////////////////////////////////////////////////
-        // Laser Watchdog
-        ////////////////////////////////////////////////////////////////////
+        ushort newWatchdog = 0;
+        ushort newLaserDelayMS = 0;
 
-        byte newWatchdog = 0;
-        value = data[3];
-        if (value < 0xff)
+        if (data.Length == 8)
         {
-            newWatchdog = value;
+            
+            ////////////////////////////////////////////////////////////////////
+            // Laser Watchdog
+            ////////////////////////////////////////////////////////////////////
+
+            newWatchdog = 0;
+            value = data[3];
+            if (value < 0xff)
+            {
+                newWatchdog = (ushort)((data[3] << 8) | data[4]);
+            }
+            else
+            {
+                logger.error($"rejecting LaserState with invalid LaserWatchdog 0x{value:x2}");
+                return false;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // Laser Delay
+            ////////////////////////////////////////////////////////////////////
+
+
+            newLaserDelayMS = (ushort)((data[5] << 8) | data[6]);
+
+            ////////////////////////////////////////////////////////////////////
+            // Bitmask
+            ////////////////////////////////////////////////////////////////////
+
+            if (setValues)
+            {
+                interlockClosed = (data[7] & (byte)BYTE_6_FLAGS.INTERLOCK_CLOSED) != 0;
+                laserActive = (data[7] & (byte)BYTE_6_FLAGS.LASER_ACTIVE) != 0;
+            }
+
+            if (!laserActive)
+                newEnabled = false;
+
+            ////////////////////////////////////////////////////////////////////
+            // all fields validated, accept new values
+            ////////////////////////////////////////////////////////////////////
         }
+
         else
         {
-            logger.error($"rejecting LaserState with invalid LaserWatchdog 0x{value:x2}");
-            return false;
+            ////////////////////////////////////////////////////////////////////
+            // Laser Watchdog
+            ////////////////////////////////////////////////////////////////////
+
+            newWatchdog = 0;
+            value = data[3];
+            if (value < 0xff)
+            {
+                newWatchdog = value;
+            }
+            else
+            {
+                logger.error($"rejecting LaserState with invalid LaserWatchdog 0x{value:x2}");
+                return false;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // Laser Delay
+            ////////////////////////////////////////////////////////////////////
+
+
+            newLaserDelayMS = (ushort)((data[4] << 8) | data[5]);
+
+            ////////////////////////////////////////////////////////////////////
+            // Bitmask
+            ////////////////////////////////////////////////////////////////////
+
+            if (setValues)
+            {
+                interlockClosed = (data[6] & (byte)BYTE_6_FLAGS.INTERLOCK_CLOSED) != 0;
+                laserActive = (data[6] & (byte)BYTE_6_FLAGS.LASER_ACTIVE) != 0;
+            }
+
+            if (!laserActive)
+                newEnabled = false;
+
+            ////////////////////////////////////////////////////////////////////
+            // all fields validated, accept new values
+            ////////////////////////////////////////////////////////////////////
         }
 
-        ////////////////////////////////////////////////////////////////////
-        // Laser Delay
-        ////////////////////////////////////////////////////////////////////
 
+        if (setValues)
+        {
+            type = newType;
+            enabled = newEnabled;
+            watchdogSec = newWatchdog;
+            laserDelayMS = newLaserDelayMS;
+        }
 
-        ushort newLaserDelayMS = (ushort)((data[4] << 8) | data[5]);
-
-        ////////////////////////////////////////////////////////////////////
-        // Bitmask
-        ////////////////////////////////////////////////////////////////////
-        
-        interlockClosed = (data[6] & (byte)BYTE_6_FLAGS.INTERLOCK_CLOSED) != 0;
-        laserActive = (data[6] & (byte)BYTE_6_FLAGS.LASER_ACTIVE) != 0;
-
-        if (!laserActive)
-            newEnabled = false;
-
-        ////////////////////////////////////////////////////////////////////
-        // all fields validated, accept new values
-        ////////////////////////////////////////////////////////////////////
-        type = newType;
-        enabled = newEnabled;
-        watchdogSec = newWatchdog;
-        laserDelayMS = newLaserDelayMS;
-
-        // if (!SW_RAMAN_MODE)
-        //     mode = newMode;
+        if (!setValues)
+            payloadLength = data.Length;
 
         dump();
 

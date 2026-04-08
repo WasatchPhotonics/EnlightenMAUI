@@ -6,6 +6,7 @@ using EnlightenMAUI.Platforms;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
 using EnlightenMAUI.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace EnlightenMAUI.Models;
 
@@ -1069,7 +1070,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    public override byte laserWatchdogSec
+    public override ushort laserWatchdogSec
     {
         get => laserState.watchdogSec;
         set
@@ -1117,7 +1118,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    async Task<bool> syncLaserStateAsync()
+    internal override async Task<bool> syncLaserStateAsync(bool readFirst = false)
     {
         logger.debug("Spectrometer.syncLaserStateAsync: start");
         if (!laserSyncEnabled)
@@ -1139,6 +1140,13 @@ public class BluetoothSpectrometer : Spectrometer
             return false;
         }
 
+        if (readFirst)
+        {
+            var readState = await characteristic.ReadAsync();
+            logger.hexdump(readState.data, "laser state read result: ");
+            laserState.parse(readState.data, setValues: false);
+        }
+
         byte[] request = laserState.serialize();
         logger.hexdump(request, "Spectrometer.syncLaserStateAsync: ");
 
@@ -1150,6 +1158,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         logger.debug("successfully wrote laserState");
         await pauseAsync("syncLaserStateAsync");
+
         return true;
     }
 

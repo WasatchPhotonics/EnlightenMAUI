@@ -127,13 +127,6 @@ public class ScopeViewModel : INotifyPropertyChanged
         spec.measurement.PropertyChanged += handleSpectrometerChange;
         Spectrometer.NewConnection += handleNewSpectrometer;
 
-        if (spec != null && spec.paired)
-        {
-            // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
-            spec.laserWatchdogSec = 254;
-            spec.laserWarningDelaySec = 0;
-        }
-
         // bind ScopePage Commands
         laserCmd = new Command(() => { _ = doLaser(); });
         laserWarningCmd = new Command(() => { _ = armLaser(); });
@@ -234,6 +227,20 @@ public class ScopeViewModel : INotifyPropertyChanged
             logger.debug("initialization routine started");
             bool ok = await spec.initializeCollectionParams();
             logger.debug("initialization routine complete with success = {0}", ok);
+            await spec.updateBatteryAsync();
+            await spec.syncLaserStateAsync(readFirst: true);
+
+            if (spec != null && spec.paired)
+            {
+                // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
+                if (spec.laserState.payloadLength < 8)
+                    spec.laserWatchdogSec = 254;
+                else
+                    spec.laserWatchdogSec = 300;
+
+                spec.laserWarningDelaySec = 0;
+            }
+
             if (ok)
                 spectrometerInitialized = true;
         }
@@ -398,7 +405,11 @@ public class ScopeViewModel : INotifyPropertyChanged
         if (spec != null && spec.paired)
         {
             // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
-            spec.laserWatchdogSec = 254;
+            if (spec.laserState.payloadLength < 8)
+                spec.laserWatchdogSec = 254;
+            else
+                spec.laserWatchdogSec = 300;
+
             spec.laserWarningDelaySec = 0;
         }
 

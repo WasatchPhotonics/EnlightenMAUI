@@ -330,7 +330,7 @@ namespace EnlightenMAUI.Models
             }
         }
 
-        public override byte laserWatchdogSec
+        public override ushort laserWatchdogSec
         {
             get => laserState.watchdogSec;
             set
@@ -484,6 +484,10 @@ namespace EnlightenMAUI.Models
             //throw new NotImplementedException();
         }
 
+        internal override async Task<bool> syncLaserStateAsync(bool readFirst = false)
+        {
+            return true;
+        }
 
         public override async Task<bool> takeOneAveragedAsync()
         {
