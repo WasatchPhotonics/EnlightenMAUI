@@ -845,7 +845,7 @@ public class API6BLESpectrometer : Spectrometer
             stretchedDark = new double[smoothed.Length];
             measurement.dark = stretchedDark;
             measurement.postProcessed = smoothed;
-            measurement.processingMethod = "Noise and Background Removal";
+            measurement.processingMethod = PlatformUtil.modelName;
         }
         else
         {
@@ -853,7 +853,8 @@ public class API6BLESpectrometer : Spectrometer
             double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
             measurement.wavenumbers = staticWavenumbers;
             measurement.postProcessed = newIntensities;
-        }
+			measurement.processingMethod = "";
+		}
 
         ////////////////////////////////////////////////////////////////////////
         // Store Measurement

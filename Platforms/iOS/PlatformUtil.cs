@@ -80,6 +80,8 @@ internal class PlatformUtil
     static string configurationPath;
     static string autoSavePath;
 
+    public static string modelName = "";
+
     public static void RequestSelectLogFolder()
     {
 

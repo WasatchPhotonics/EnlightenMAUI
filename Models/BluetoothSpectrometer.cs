@@ -1373,7 +1373,7 @@ public class BluetoothSpectrometer : Spectrometer
             measurement.rawDark = dark;
             measurement.dark = stretchedDark;
             measurement.postProcessed = smoothed;
-            measurement.processingMethod = "Noise and Background Removal";
+            measurement.processingMethod = PlatformUtil.modelName;
         }
         else
         {
@@ -1381,6 +1381,7 @@ public class BluetoothSpectrometer : Spectrometer
             double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
             measurement.wavenumbers = staticWavenumbers;
             measurement.postProcessed = newIntensities;
+            measurement.processingMethod = "";
         }
 
         ////////////////////////////////////////////////////////////////////////

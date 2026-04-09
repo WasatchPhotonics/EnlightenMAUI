@@ -120,6 +120,8 @@ internal class PlatformUtil
     static string configurationPath;
     static string autoSavePath;
 
+    public static string modelName = "";
+
     public static void RequestSelectLogFolder()
     {
         var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
@@ -398,6 +400,7 @@ internal class PlatformUtil
                 if (path.Contains("light") && tempBuffer.Count > 0)
                 {
                     simpleBuffer = tempBuffer;
+                    modelName = getFileName(path);
                 }
                 else if (tempBuffer.Count > 0)
                 {
