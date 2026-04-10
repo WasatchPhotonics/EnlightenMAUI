@@ -1179,7 +1179,7 @@ namespace EnlightenMAUI.Models
                 logger.debug("current RSSI {0}", rssi);
                 NotifyPropertyChanged("rssi");
                 await Task.Delay(500);
-                if (rssi < -90)
+                if (rssi < -105)
                 {
                     ++badSignalCount;
 

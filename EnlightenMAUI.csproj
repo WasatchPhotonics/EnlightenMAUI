@@ -51,7 +51,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.57</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.58</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <DefineConstants>$(DefineConstants);USE_DECON</DefineConstants>
 	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
@@ -59,7 +59,7 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-android34.0|AnyCPU'">
 	  <IsPublishable>False</IsPublishable>
-	  <ApplicationDisplayVersion>0.9.57</ApplicationDisplayVersion>
+	  <ApplicationDisplayVersion>0.9.58</ApplicationDisplayVersion>
 	  <ApplicationTitle>EnlightenMobile</ApplicationTitle>
 	  <AndroidPackageFormat>apk</AndroidPackageFormat>
 	  <AndroidStoreUncompressedFileExtensions>.so</AndroidStoreUncompressedFileExtensions>
