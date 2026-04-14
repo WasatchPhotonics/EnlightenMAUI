@@ -20,7 +20,7 @@ public class BLEDevice : INotifyPropertyChanged
     public event PropertyChangedEventHandler PropertyChanged;
 
     /// <summary>
-    /// This is where we master whether the app is paired with a Bluetooth device or not.
+    /// This is where we master whether the app is paired with a Bluetooth® LE device or not.
     /// </summary>
     ///
     /// <remarks>
@@ -77,7 +77,7 @@ public class BLEDevice : INotifyPropertyChanged
 
     // This is the little hex string displayed under the device name in the
     // BluetoothView allowing you to distinguish between multiple WP-SiG
-    // devices in Bluetooth range.  Bizarrely, the value won't match in
+    // devices in Bluetooth® LE range.  Bizarrely, the value won't match in
     // content or format between iOS and Android :-(
     //
     // On iOS, this gives a 128-bit device UUID, e.g. fd7b9fca-3615-da68-03f2-6557e29e2be4

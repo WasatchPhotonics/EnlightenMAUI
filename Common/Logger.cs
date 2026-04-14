@@ -188,7 +188,7 @@ namespace EnlightenMAUI
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(display)));
         }
 
-        const int MAX_DISPLAY = 3 * 1024; // 10KB
+        const int MAX_DISPLAY = 3 * 1024; // 3KB
 
         public StringBuilder history { get; set; } = new StringBuilder("Log data");
         public StringBuilder display { get; set; } = new StringBuilder("");
