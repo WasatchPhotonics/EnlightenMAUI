@@ -10,8 +10,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using static Android.Provider.ContactsContract.CommonDataKinds;
-using static Android.Telephony.CarrierConfigManager;
 
 namespace EnlightenMAUI.Models
 {
@@ -37,7 +35,7 @@ namespace EnlightenMAUI.Models
         ////////////////////////////////////////////////////////////////////////
         // laserState
         ////////////////////////////////////////////////////////////////////////
-        protected LaserState laserState = new LaserState();
+        internal LaserState laserState = new LaserState();
 
         // software state
         public double[] wavelengths;
@@ -65,6 +63,8 @@ namespace EnlightenMAUI.Models
 
         public delegate void AcquisitionProgressNotification(double perc);
         public event AcquisitionProgressNotification showAcquisitionProgress;
+
+        public EventHandler<Spectrometer> disconnectComplete;
 
         public abstract void disconnect();
 
@@ -325,7 +325,7 @@ namespace EnlightenMAUI.Models
         }
         bool _useHorizontalROI = true;
 
-        public virtual byte laserWatchdogSec
+        public virtual ushort laserWatchdogSec
         {
             get => laserState.watchdogSec;
             set
@@ -391,6 +391,7 @@ namespace EnlightenMAUI.Models
         // until it didn't.  Now I call it BEFORE each acquisition, and that
         // seems to work better?
         internal abstract Task<bool> updateBatteryAsync(bool extendedTimeout = false);
+        internal abstract Task<bool> syncLaserStateAsync(bool readFirst = false);
         internal abstract Task<bool> initializeCollectionParams();
 
         ////////////////////////////////////////////////////////////////////////
@@ -427,7 +428,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _startIntTimeMS = 50;
+        protected ushort _startIntTimeMS = 200;
 
         public virtual byte startGainDb
         {
@@ -514,7 +515,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _autoRamanMaxGainDb = 12;
+        protected byte _autoRamanMaxGainDb = 30;
 
         public virtual ushort targetCounts
         {
@@ -529,7 +530,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _targetCounts = 10000;
+        protected ushort _targetCounts = 35000;
         
         public virtual ushort minCounts
         {
@@ -544,7 +545,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _minCounts = 8000;
+        protected ushort _minCounts = 20000;
 
         public virtual ushort maxCounts
         {
@@ -559,7 +560,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _maxCounts = 12000;
+        protected ushort _maxCounts = 50000;
         
         public virtual byte maxFactor
         {
@@ -616,7 +617,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxAverage = 1;
+        protected byte _maxAverage = 5;
 
         protected byte[] packAutoRamanParameters()
         {

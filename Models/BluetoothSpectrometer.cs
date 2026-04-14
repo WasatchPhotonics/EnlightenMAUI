@@ -3,12 +3,10 @@ using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using static Android.Widget.GridLayout;
-using Java.Util.Functions;
 using Plugin.BLE.Abstractions.EventArgs;
 using System.Diagnostics;
-using Xamarin.Google.Crypto.Tink.Prf;
 using EnlightenMAUI.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace EnlightenMAUI.Models;
 
@@ -97,6 +95,8 @@ public class BluetoothSpectrometer : Spectrometer
         autoRamanEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
+        if (disconnectComplete != null)
+            disconnectComplete.Invoke(this, this);
     }
 
     public override void reset()
@@ -239,15 +239,18 @@ public class BluetoothSpectrometer : Spectrometer
     internal override async Task<bool> initializeCollectionParams()
     {
         _nextIntegrationTimeMS = 400;
+        logger.debug("initializeCollectionParams: syncing integration time");
         await syncIntegrationTimeMSAsync(extendedTimeout: true); 
         NotifyPropertyChanged(nameof(integrationTimeMS));
         _nextGainDb = 8;
+        logger.debug("initializeCollectionParams: syncing gain");
         await syncGainDbAsync(extendedTimeout: true); 
         NotifyPropertyChanged(nameof(gainDb));
 
 
         if (eeprom.ROIVertRegionStart[0] > 0 && eeprom.ROIVertRegionStart[0] < eeprom.activePixelsVert)
         {
+            logger.debug("initializeCollectionParams: syncing roi vert start");
             _nextVerticalROIStartLine = eeprom.ROIVertRegionStart[0]; ;
             logger.debug($"Spectrometer.verticalROIStartLine -> {eeprom.ROIVertRegionStart[0]}");
 
@@ -259,6 +262,7 @@ public class BluetoothSpectrometer : Spectrometer
             if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
             {
                 logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+                return false;
             }
 
             await writeGenericCharacteristic(dataToSend);
@@ -271,6 +275,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         if (eeprom.ROIVertRegionEnd[0] > 0 && eeprom.ROIVertRegionEnd[0] < eeprom.activePixelsVert)
         {
+            logger.debug("initializeCollectionParams: syncing roi vert end");
             _nextVerticalROIStopLine = eeprom.ROIVertRegionEnd[0];
             logger.debug($"Spectrometer.verticalROIStopLine -> {eeprom.ROIVertRegionEnd[0]}");
 
@@ -282,6 +287,7 @@ public class BluetoothSpectrometer : Spectrometer
             if (!sem.Wait(EXTENDED_SEM_TIMEOUT))
             {
                 logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+                return false;
             }
 
             await writeGenericCharacteristic(dataToSend);
@@ -292,6 +298,7 @@ public class BluetoothSpectrometer : Spectrometer
             NotifyPropertyChanged(nameof(verticalROIStopLine));
         }
 
+        logger.debug("initializeCollectionParams: syncing auto raman parameters");
         await syncAutoRamanParameters(extendedTimeout: true);
         if (eeprom.hasBattery)
             await updateBatteryAsync(extendedTimeout: true);
@@ -421,6 +428,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (!await sem.WaitAsync(extendedTimeout ? EXTENDED_SEM_TIMEOUT : SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+            return false;
         }
         waitingForGeneric = true;
         var ok = await writeGenericCharacteristic(request);
@@ -441,6 +449,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (!await sem.WaitAsync(extendedTimeout ? EXTENDED_SEM_TIMEOUT : SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+            return false;
         }
         waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
@@ -461,6 +470,7 @@ public class BluetoothSpectrometer : Spectrometer
         if (!await sem.WaitAsync(extendedTimeout ? EXTENDED_SEM_TIMEOUT : SEM_TIMEOUT))
         {
             logger.error("Spectrometer.getIntegrationTime: couldn't get semaphore");
+            return false;
         }
         waitingForGeneric = true;
         ok = await writeGenericCharacteristic(request);
@@ -628,6 +638,7 @@ public class BluetoothSpectrometer : Spectrometer
                 if (!sem.Wait(SEM_TIMEOUT))
                 {
                     logger.error("Spectrometer.verticalROIStartLine.set: couldn't get semaphore");
+                    return;
                 }
 
                 _ = writeGenericCharacteristic(dataToSend);
@@ -662,6 +673,7 @@ public class BluetoothSpectrometer : Spectrometer
                 if (!sem.Wait(SEM_TIMEOUT))
                 {
                     logger.error("Spectrometer.verticalROIStopLine.set: couldn't get semaphore");
+                    return;
                 }
 
                 _ = writeGenericCharacteristic(dataToSend);
@@ -688,7 +700,13 @@ public class BluetoothSpectrometer : Spectrometer
         set
         {
             byte[] data = { 0x8a, value };
+            if (!sem.Wait(SEM_TIMEOUT))
+            {
+                logger.error("Spectrometer.laserWarningDelaySec.set: couldn't get semaphore");
+                return;
+            }
             _ = writeGenericCharacteristic(data);
+            sem.Release();
             _laserWarningDelaySec = value;
         }
     }
@@ -935,9 +953,11 @@ public class BluetoothSpectrometer : Spectrometer
             logger.error("Spectrometer.syncAutoRamanParameters: couldn't get semaphore");
             return false;
         }
+        logger.debug("Spectrometer.syncAutoRamanParameters: writing generic");
         var ok = await writeGenericCharacteristic(request);
-        sem.Release();
         logger.debug("Spectrometer.syncAutoRamanParameters: releasing semaphore");
+        sem.Release();
+        logger.debug("Spectrometer.syncAutoRamanParameters: released semaphore");
         if (ok)
         {
             await pauseAsync("syncAutoRamanParameters");
@@ -957,6 +977,7 @@ public class BluetoothSpectrometer : Spectrometer
             ok = true;
         }
 
+        logger.debug("Spectrometer.syncAutoRamanParameters: complete, returning {0}", ok);
         return ok;
     }
 
@@ -1049,7 +1070,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    public override byte laserWatchdogSec
+    public override ushort laserWatchdogSec
     {
         get => laserState.watchdogSec;
         set
@@ -1097,7 +1118,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
-    async Task<bool> syncLaserStateAsync()
+    internal override async Task<bool> syncLaserStateAsync(bool readFirst = false)
     {
         logger.debug("Spectrometer.syncLaserStateAsync: start");
         if (!laserSyncEnabled)
@@ -1119,6 +1140,13 @@ public class BluetoothSpectrometer : Spectrometer
             return false;
         }
 
+        if (readFirst)
+        {
+            var readState = await characteristic.ReadAsync();
+            logger.hexdump(readState.data, "laser state read result: ");
+            laserState.parse(readState.data, setValues: false);
+        }
+
         byte[] request = laserState.serialize();
         logger.hexdump(request, "Spectrometer.syncLaserStateAsync: ");
 
@@ -1130,6 +1158,7 @@ public class BluetoothSpectrometer : Spectrometer
 
         logger.debug("successfully wrote laserState");
         await pauseAsync("syncLaserStateAsync");
+
         return true;
     }
 
@@ -1230,7 +1259,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public override double rssi
     {
-        get => bleDevice.rssi;
+        get => bleDevice == null ? -10 : bleDevice.rssi;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -1472,7 +1501,10 @@ public class BluetoothSpectrometer : Spectrometer
             await Task.Delay(33);
 
             if (totalPixelsRead == totalPixelsToRead)
+            {
+                logger.debug("collection finished in {0} ms", sw.ElapsedMilliseconds);
                 return true;
+            }
             else if (collectionErrorDetected)
                 return false;
         }

@@ -1,35 +1,20 @@
-﻿using Android;
-using Android.Content;
-using Android.Content.Res;
-using Android.Nfc;
-using Android.OS;
-using Android.Webkit;
-using AndroidX.AppCompat.Widget;
+﻿using CommunityToolkit.Maui.Core.Primitives;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Models;
-using Java.IO;
-using Kotlin.Contracts;
+using Foundation;
+using Intents;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Transforms.Onnx;
+//using Microsoft.ML.OnnxRuntime.
 using Newtonsoft.Json;
 using NumSharp;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Telerik.Maui.Controls.Scheduler;
-using static Android.Widget.GridLayout;
-using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
-using AndrApp = Android.App;
-using AndrContent = Android.Content;
-using AndrOS = Android.OS;
-using AndrNet = Android.Net;
-using Android.Locations;
-namespace EnlightenMAUI.Platforms; 
-
+namespace EnlightenMAUI.Platforms;
 
 internal class ModelInput
 {
@@ -61,54 +46,33 @@ internal class SimplePrediction
 
 }
 
-
 public static class StorageHelper
 {
-    public const int RequestCode = 2296;
-    private static TaskCompletionSource<bool>? GetPermissionTask { get; set; }
-
     public static async Task<bool> GetManageAllFilesPermission()
     {
-        if (!AndrOS.Environment.IsExternalStorageManager)
-        {
-            try
-            {
-                AndrNet.Uri uri = AndrNet.Uri.Parse("package:" + Platform.CurrentActivity.ApplicationInfo.PackageName);
-
-                GetPermissionTask = new();
-                Intent intent = new(global::Android.Provider.Settings.ActionManageAppAllFilesAccessPermission, uri);
-                Platform.CurrentActivity.StartActivityForResult(intent, RequestCode);
-            }
-            catch (Exception ex)
-            {
-                // Handle Exception
-            }
-
-            return await GetPermissionTask.Task;
-        }
-
-        else
-            return true;
+        return false;
     }
 
     public static void OnActivityResult()
     {
-        GetPermissionTask?.SetResult(AndrOS.Environment.IsExternalStorageManager);
+        //GetPermissionTask?.SetResult(AndrOS.Environment.IsExternalStorageManager);
     }
 }
 
 internal class PlatformUtil
 {
-    static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
     static PredictionEngine<ModelInput, Prediction> engine;
     static PredictionEngine<SimpleModelInput, SimplePrediction> simpleEngine;
-    static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
     static ITransformer transformer;
+
+    static Logger logger = Logger.getInstance();
     public static bool transformerLoaded = false;
     public static bool simpleTransformerLoaded = false;
     public static bool complexTransformerLoaded = false;
     public static int REQUEST_TREE = 85;
+    static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
+
 
     static string savePath;
     static string userLibraryPath;
@@ -117,120 +81,38 @@ internal class PlatformUtil
 
     public static void RequestSelectLogFolder()
     {
-        var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-        var intent = new AndrContent.Intent(AndrContent.Intent.ActionOpenDocumentTree);
-        intent.AddFlags(AndrContent.ActivityFlags.GrantReadUriPermission |
-                        AndrContent.ActivityFlags.GrantWriteUriPermission |
-                        AndrContent.ActivityFlags.GrantPersistableUriPermission |
-                        AndrContent.ActivityFlags.GrantPrefixUriPermission);
-        current_activity.StartActivityForResult(intent, REQUEST_TREE);
+
     }
 
     public static void OpenLogFileForWriting(string file_name, string file_contents)
     {
-        var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
 
-        List<UriPermission> permissions = current_activity.ContentResolver.PersistedUriPermissions.ToList();
-        if (permissions != null && permissions.Count > 0)
-        {
-            //DocumentFile log_folder = DocumentFile.FromTreeUri(current_activity, permissions[0].Uri);
-            //DocumentFile log_file = log_folder.CreateFile(MimeTypeMap.Singleton.GetMimeTypeFromExtension("csv"), file_name);
-            //ParcelFileDescriptor pfd = current_activity.ContentResolver.OpenFileDescriptor(log_file.Uri, "w");
-            //FileOutputStream file_output_stream = new FileOutputStream(pfd.FileDescriptor);
-            //file_output_stream.Write(Encoding.UTF8.GetBytes(file_contents));
-            //file_output_stream.Close();
-        }
     }
 
     public static bool HasFolderBeenSelectedAndPermissionsGiven()
     {
-        var current_activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
-
-        List<UriPermission> permissions = current_activity.ContentResolver.PersistedUriPermissions.ToList();
-        return (permissions != null && permissions.Count > 0);
+        return false;
     }
 
-
-    public static void recursePath(Java.IO.File directory)
+    public static string recurseAndFindPath(NSUrl directory, string name)
     {
-        if (directory.IsDirectory)
+        if (directory.HasDirectoryPath)
         {
-            Java.IO.File[] paths = directory.ListFiles();
-            if (paths != null)
-            {
-                foreach (Java.IO.File path in paths)
-                {
-                    logger.info("going deeper down {0}", path.AbsolutePath);
-                    recursePath(path);
-                }
-            }
-        }
-        else
-        {
-            logger.info("found endpoint at {0}", directory.AbsolutePath);
-            //Java.IO. directory.AbsolutePath
-            if (System.IO.File.Exists(directory.AbsolutePath))
-            {
-                using Stream inputStream = System.IO.File.OpenRead(directory.AbsolutePath);
-                StreamReader sr = new StreamReader(inputStream);
-                string blob = sr.ReadToEnd();
 
-            }
-
-        }
-    }
-
-    public static string recursePathAndOpen(Java.IO.File directory, string name)
-    {
-        if (directory.IsDirectory)
-        {
-            Java.IO.File[] paths = directory.ListFiles();
+            NSFileManager fileManager = NSFileManager.DefaultManager;
+            NSUrl[] paths = fileManager.GetDirectoryContent(
+                directory,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
 
             string finalBlob = null;
 
             if (paths != null)
             {
-                foreach (Java.IO.File path in paths)
+                foreach (NSUrl path in paths)
                 {
-                    logger.info("going deeper down {0}", path.AbsolutePath);
-                    string tempBlob = recursePathAndOpen(path, name);
-                    if (tempBlob != null && finalBlob == null)
-                        finalBlob = tempBlob;
-                }
-
-                return finalBlob;
-            }
-
-            return null;
-        }
-        else
-        {
-            logger.info("found endpoint at {0}", directory.AbsolutePath);
-            //Java.IO. directory.AbsolutePath
-            if (System.IO.File.Exists(directory.AbsolutePath) && directory.AbsolutePath.Split('/').Last() == name)
-            {
-                using Stream inputStream = System.IO.File.OpenRead(directory.AbsolutePath);
-                StreamReader sr = new StreamReader(inputStream);
-                string blob = sr.ReadToEnd();
-                return blob;
-            }
-
-            return null;
-        }
-    }
-    public static string recurseAndFindPath(Java.IO.File directory, string name)
-    {
-        if (directory.IsDirectory)
-        {
-            Java.IO.File[] paths = directory.ListFiles();
-
-            string finalBlob = null;
-
-            if (paths != null)
-            {
-                foreach (Java.IO.File path in paths)
-                {
-                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    logger.info("going deeper down {0}", path.AbsoluteString);
                     string tempBlob = recurseAndFindPath(path, name);
                     if (tempBlob != null && finalBlob == null)
                         finalBlob = tempBlob;
@@ -243,64 +125,33 @@ internal class PlatformUtil
         }
         else
         {
-            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            logger.info("found endpoint at {0}", directory.AbsoluteString);
             //Java.IO. directory.AbsolutePath
-            if (System.IO.File.Exists(directory.AbsolutePath) && directory.AbsolutePath.Split('/').Last() == name)
+            if (System.IO.File.Exists(directory.AbsoluteString) && directory.LastPathComponent == name)
             {
-                return directory.AbsolutePath;
+                return directory.AbsoluteString;
             }
 
             return null;
         }
     }
-    
-    public static string recurseAndFindPath(Java.IO.File directory, Regex regex)
-    {
-        if (directory.IsDirectory)
-        {
-            Java.IO.File[] paths = directory.ListFiles();
 
-            string finalBlob = null;
+    public static List<string> recurseAndFindPaths(NSUrl directory, Regex regex, bool isPrime, List<string> findsSoFar)
+    {
+        if (directory.HasDirectoryPath)
+        {
+            NSFileManager fileManager = NSFileManager.DefaultManager;
+            NSUrl[] paths = fileManager.GetDirectoryContent(
+                directory,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
 
             if (paths != null)
             {
-                foreach (Java.IO.File path in paths)
+                foreach (NSUrl path in paths)
                 {
-                    logger.info("going deeper down {0}", path.AbsolutePath);
-                    string tempBlob = recurseAndFindPath(path, regex);
-                    if (tempBlob != null && finalBlob == null)
-                        finalBlob = tempBlob;
-                }
-
-                return finalBlob;
-            }
-
-            return null;
-        }
-        else
-        {
-            logger.info("found endpoint at {0}", directory.AbsolutePath);
-            //Java.IO. directory.AbsolutePath
-            if (System.IO.File.Exists(directory.AbsolutePath) && regex.IsMatch(directory.AbsolutePath.Split('/').Last()))
-            {
-                return directory.AbsolutePath;
-            }
-
-            return null;
-        }
-    }
-    
-    public static List<string> recurseAndFindPaths(Java.IO.File directory, Regex regex, bool isPrime, List<string> findsSoFar)
-    {
-        if (directory.IsDirectory)
-        {
-            Java.IO.File[] paths = directory.ListFiles();
-
-            if (paths != null)
-            {
-                foreach (Java.IO.File path in paths)
-                {
-                    logger.info("going deeper down {0}", path.AbsolutePath);
+                    logger.info("going deeper down {0}", path.AbsoluteString);
                     recurseAndFindPaths(path, regex, false, findsSoFar);
                 }
             }
@@ -312,11 +163,11 @@ internal class PlatformUtil
         }
         else
         {
-            logger.info("found endpoint at {0}", directory.AbsolutePath);
+            logger.info("found endpoint at {0}", directory.AbsoluteString);
             //Java.IO. directory.AbsolutePath
-            if (System.IO.File.Exists(directory.AbsolutePath) && regex.IsMatch(directory.AbsolutePath.Split('/').Last()))
+            if (System.IO.File.Exists(directory.AbsoluteString) && regex.IsMatch(directory.LastPathComponent))
             {
-                findsSoFar.Add(directory.AbsolutePath);
+                findsSoFar.Add(directory.AbsoluteString);
             }
 
             return null;
@@ -329,10 +180,24 @@ internal class PlatformUtil
         {
             string fullPath = null;
 
-            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            NSUrl extPath = NSFileManager.DefaultManager.GetUrl(
+                NSSearchPathDirectory.DocumentDirectory,
+                NSSearchPathDomain.User,
+                new NSUrl("folder", true),
+                true,
+                out var _);
+            NSUrl libraryFolder = null;
+
+            NSFileManager fileManager = NSFileManager.DefaultManager;
+            NSUrl[] cacheDirs = fileManager.GetDirectoryContent(
+                extPath,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+
             foreach (var cDir in cacheDirs)
             {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                logger.debug("recursing down dir {0}", cDir.AbsoluteString);
                 fullPath = recurseAndFindPath(cDir, correctionPath);
                 if (fullPath != null)
                     break;
@@ -344,12 +209,16 @@ internal class PlatformUtil
                 fullPath = null;
             }
 
-            Regex extensionReg = new Regex(@".*\." + extension + @"$");
-            cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            Regex extensionReg = new Regex(@".*\." + extension + @"$"); 
+            cacheDirs = fileManager.GetDirectoryContent(
+                extPath,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
             List<string> fullPaths = null;
             foreach (var cDir in cacheDirs)
             {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
+                logger.debug("recursing down dir {0}", cDir.AbsoluteString);
                 fullPaths = recurseAndFindPaths(cDir, extensionReg, true, new List<string>());
                 if (fullPaths != null && fullPaths.Count > 0)
                     break;
@@ -415,42 +284,55 @@ internal class PlatformUtil
         }
     }
 
-
-
     public static async Task<Dictionary<string, Measurement>> findUserFiles(Spectrometer spec)
     {
-        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-        Java.IO.File libraryFolder = null;
-
+        //var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
         Dictionary<string, Measurement> temp = new Dictionary<string, Measurement>();
 
-        foreach (var cDir in cacheDirs)
+        NSUrl path = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+        NSUrl libraryFolder = null;
+
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        NSUrl[] filePaths = fileManager.GetDirectoryContent(
+            path, 
+            null, 
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles, 
+            out var _);
+
+        foreach (var filePath in filePaths)
         {
-            var subs = await cDir.ListFilesAsync();
-            foreach (var sub in subs)
+
+            if (filePath.LastPathComponent == "Documents")
             {
-                if (sub.AbsolutePath.Split('/').Last() == "Documents")
-                {
-                    libraryFolder = sub;
-                    break;
-                }
+                libraryFolder = filePath;
+                break;
             }
+
         }
 
         if (libraryFolder == null)
             return null;
 
-        Regex csvReg = new Regex(@".*\.csv$");
 
-        var libraryFiles = libraryFolder.ListFiles();
+        Regex csvReg = new Regex(@".*\.csv$");
+        NSUrl[] libraryFiles = fileManager.GetDirectoryContent(
+            libraryFolder,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
 
         foreach (var libraryFile in libraryFiles)
         {
-            if (libraryFile.IsDirectory)
+            if (libraryFile.HasDirectoryPath)
             {
                 await findUserFilesDeeper(libraryFile, spec, temp);
             }
-            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+            else if (csvReg.IsMatch(libraryFile.AbsoluteString))
             {
                 try
                 {
@@ -458,21 +340,28 @@ internal class PlatformUtil
                 }
                 catch (Exception e)
                 {
-                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsoluteString, e.Message);
                 }
             }
         }
 
+
+
         return temp;
     }
 
-    async static Task findUserFilesDeeper(Java.IO.File folder, Spectrometer spec, Dictionary<string, Measurement> dict)
+    async static Task findUserFilesDeeper(NSUrl folder, Spectrometer spec, Dictionary<string, Measurement> dict)
     {
-        var libraryFiles = folder.ListFiles();
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        var libraryFiles = fileManager.GetDirectoryContent(
+            folder,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
 
         foreach (var libraryFile in libraryFiles)
         {
-            if (libraryFile.IsDirectory)
+            if (libraryFile.HasDirectoryPath)
             {
                 await findUserFilesDeeper(libraryFile, spec, dict);
             }
@@ -483,20 +372,19 @@ internal class PlatformUtil
         }
     }
 
-    async static Task addUserFile(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)
+    async static Task addUserFile(NSUrl file, Spectrometer spec, Dictionary<string, Measurement> dict)
     {
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
         await loadCSV(file, spec, dict);
     }
 
-    async static Task loadCSV(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)
+    async static Task loadCSV(NSUrl file, Spectrometer spec, Dictionary<string, Measurement> dict)
     {
-        logger.info("start loading library file from {0}", file.AbsolutePath);
+        logger.info("start loading library file from {0}", file.AbsoluteString);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = file.LastPathComponent.Split('.').First();
 
         SimpleCSVParser parser = new SimpleCSVParser();
-        Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+        Stream s = System.IO.File.OpenRead(file.AbsoluteString);
         StreamReader sr = new StreamReader(s);
         await parser.parseStream(s);
 
@@ -533,7 +421,7 @@ internal class PlatformUtil
             dict.Add(name, updated);
         }
 
-        logger.info("finish loading library file from {0}", file.AbsolutePath);
+        logger.info("finish loading library file from {0}", file.AbsoluteString);
     }
 
     static async Task loadCorrections(string file)
@@ -695,7 +583,7 @@ internal class PlatformUtil
         }
 
         double avgPixelFWHM = fwhm / wavenumberPerPixel.Average();
-        int padPixels = (int)Math.Ceiling(padWidth *  avgPixelFWHM);
+        int padPixels = (int)Math.Ceiling(padWidth * avgPixelFWHM);
 
         double[] wavenumberPerPixelPadded = new double[wavenumberPerPixel.Length + 2 * padPixels];
         for (int i = 0; i < padPixels; ++i)
@@ -703,14 +591,14 @@ internal class PlatformUtil
             wavenumberPerPixelPadded[i] = wavenumberPerPixel.First();
             wavenumberPerPixelPadded[wavenumberPerPixelPadded.Length - 1 - i] = wavenumberPerPixel.Last();
         }
-        
+
         for (int i = 0; i < wavenumberPerPixel.Length; ++i)
         {
             wavenumberPerPixelPadded[i + padPixels] = wavenumberPerPixel[i];
         }
 
         double[] pixelFWHM = new double[wavenumberPerPixelPadded.Length];
-        for(int i = 0;i < pixelFWHM.Length;++i)
+        for (int i = 0; i < pixelFWHM.Length; ++i)
         {
             pixelFWHM[i] = fwhm / wavenumberPerPixelPadded[i];
         }
@@ -930,7 +818,7 @@ internal class PlatformUtil
             logger.info("row {0} construction ended", row);
 
             double sum = resolutionSpectrum.Sum();
-            for (int i = 0;i < resolutionSpectrum.Length; ++i) 
+            for (int i = 0; i < resolutionSpectrum.Length; ++i)
                 resolutionSpectrum[i] = resolutionSpectrum[i] / sum;
 
             npResH.SetData(resolutionSpectrum, [rowN]);
@@ -1165,8 +1053,7 @@ internal class PlatformUtil
     }
     public static string getLibraryPath()
     {
-        var docDir = AndrApp.Application.Context.GetExternalFilesDir(AndrOS.Environment.DirectoryDocuments);
-        return Path.Join(docDir.Path, "MatchingLibrary");
+        return null;
     }
 
     // logger:  /storage/emulated/0/Android/data/com.wasatchphotonics.enlightenmaui/files/Documents/2024-04-30/enlighten-20240430-154219-290237-WP-01647.csv
@@ -1179,7 +1066,13 @@ internal class PlatformUtil
             return savePath;
         }
 
-        var docDir = AndrApp.Application.Context.GetExternalFilesDir(AndrOS.Environment.DirectoryDocuments);
+        NSUrl docDir = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
         var today = DateTime.Now.ToString("yyyy-MM-dd");
         var todayDir = Path.Join(docDir.Path, today);
 
@@ -1201,7 +1094,13 @@ internal class PlatformUtil
             return userLibraryPath;
         }
 
-        var docDir = AndrApp.Application.Context.GetExternalFilesDir(null);
+        NSUrl docDir = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
         var today = DateTime.Now.ToString("yyyy-MM-dd");
         var userLibDir = Path.Join(docDir.Path, "User Library");
 
@@ -1223,17 +1122,30 @@ internal class PlatformUtil
             return configurationPath;
         }
 
-        var docDir = AndrApp.Application.Context.GetExternalFilesDir(null).AbsolutePath;
+        NSUrl docDir = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
 
-        if (!writeable(docDir))
+        if (!writeable(docDir.AbsoluteString))
         {
             logger.error($"getuserLibraryPath: unable to write userLibDir {docDir}");
             return null;
         }
 
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
-        return configurationPath = docDir + "/configuration.json";
+        return configurationPath = Path.Join(docDir.AbsoluteString, "configuration.json");
     }
+
+    /*
+     * 
+     * TO-DO: figure out permission for "higher level" auto save. Requires permissions on Android, and likely requires the same on iOS. For now, just save to the app's document directory, 
+     * which is accessible via iTunes file sharing and the Files app.
+     * 
+     */
+
 
     public static string getAutoSavePath(bool highLevelAutoSave)
     {
@@ -1245,14 +1157,16 @@ internal class PlatformUtil
 
         var docDir = getSavePath();
 
+        /*
         if (highLevelAutoSave)
         {
             string temp = Path.Join("/storage/emulated/0", "EnlightenSpectra");
-            if (writeable(temp)) 
+            if (writeable(temp))
                 docDir = temp;
             else
                 docDir = "/storage/emulated/0/Documents";
         }
+        */
 
         var today = DateTime.Now.ToString("yyyy-MM-dd");
         var todayDir = Path.Join(docDir, today);
@@ -1265,26 +1179,49 @@ internal class PlatformUtil
 
         return autoSavePath = todayDir;
     }
-
     public static List<string> getSubLibraries()
     {
         List<string> compLibrary = new List<string>();
 
-        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+        NSUrl extPath = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+        NSUrl libraryFolder = null;
+
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        NSUrl[] cacheDirs = fileManager.GetDirectoryContent(
+            extPath,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
+
         foreach (var cDir in cacheDirs)
         {
-            var subs = cDir.ListFiles();
+            var subs = fileManager.GetDirectoryContent(
+                cDir,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+
             foreach (var sub in subs)
             {
-                if (sub.AbsolutePath.Split('/').Last() == "library")
+                if (sub.LastPathComponent == "library")
                 {
-                    if (sub.IsDirectory)
+                    if (sub.HasDirectoryPath)
                     {
-                        var subLibs = sub.ListFiles();
+                        var subLibs = fileManager.GetDirectoryContent(
+                            sub,
+                            null,
+                            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                            out var _);
+
                         foreach (var subLib in subLibs)
                         {
-                            if (subLib.IsDirectory && !compLibrary.Contains(subLib.AbsolutePath.Split('/').Last()))
-                                compLibrary.Add(subLib.AbsolutePath.Split('/').Last());
+                            if (subLib.HasDirectoryPath && !compLibrary.Contains(subLib.LastPathComponent))
+                                compLibrary.Add(subLib.LastPathComponent);
                         }
                     }
                 }
@@ -1293,12 +1230,24 @@ internal class PlatformUtil
 
         return compLibrary;
     }
-
     public async static Task<Dictionary<string, Measurement>> loadFiles(string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
     {
         //isLoading = true;
-        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-        Java.IO.File libraryFolder = null;
+        NSUrl extPath = NSFileManager.DefaultManager.GetUrl(
+            NSSearchPathDirectory.DocumentDirectory,
+            NSSearchPathDomain.User,
+            new NSUrl("folder", true),
+            true,
+            out var _);
+
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        NSUrl[] cacheDirs = fileManager.GetDirectoryContent(
+            extPath,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+            out var _);
+
+        NSUrl libraryFolder = null;
         string[] rootPath = root.Split('/');
         int depth = rootPath.Length;
 
@@ -1325,11 +1274,15 @@ internal class PlatformUtil
         Regex csvReg = new Regex(@".*\.csv$");
         Regex jsonReg = new Regex(@".*\.json$");
 
-        var libraryFiles = libraryFolder.ListFiles();
+        var libraryFiles = fileManager.GetDirectoryContent(
+                libraryFolder,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
 
         foreach (var libraryFile in libraryFiles)
         {
-            if (jsonReg.IsMatch(libraryFile.AbsolutePath))
+            if (jsonReg.IsMatch(libraryFile.AbsoluteString))
             {
                 try
                 {
@@ -1337,10 +1290,10 @@ internal class PlatformUtil
                 }
                 catch (Exception e)
                 {
-                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsoluteString, e.Message);
                 }
             }
-            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+            else if (csvReg.IsMatch(libraryFile.AbsoluteString))
             {
                 try
                 {
@@ -1348,7 +1301,7 @@ internal class PlatformUtil
                 }
                 catch (Exception e)
                 {
-                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsoluteString, e.Message);
                 }
             }
         }
@@ -1381,35 +1334,20 @@ internal class PlatformUtil
         logger.debug("finished prepping data for decon");
         return library;
     }
-    public async static Task<string> getBulkLibraryPath()
+
+    static NSUrl traverseDown(string[] rootPath, NSUrl dir)
     {
-        string finalFullPath = "";
-
-        var dir = Platform.AppContext.GetExternalFilesDir(null);
-
-        Java.IO.File[] paths = await dir.ListFilesAsync();
-        foreach (Java.IO.File path in paths)
-        {
-            string file = path.AbsolutePath.Split('/').Last();
-
-            if (file != null && file.Length > 0)
-            {
-                string fullPath = dir + "/" + file;
-                if (file.Split('.').Last().ToLower() == "idex")
-                    finalFullPath = fullPath;
-            }
-        }
-
-        return finalFullPath;
-    }
-    static Java.IO.File traverseDown(string[] rootPath, Java.IO.File dir)
-    {
-        var subs = dir.ListFiles();
-        Java.IO.File libraryFolder = null;
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+        var subs = fileManager.GetDirectoryContent(
+                dir,
+                null,
+                NSDirectoryEnumerationOptions.SkipsHiddenFiles,
+                out var _);
+        NSUrl libraryFolder = null;
 
         foreach (var sub in subs)
         {
-            if (sub.AbsolutePath.Split('/').Last() == rootPath[0])
+            if (sub.LastPathComponent == rootPath[0])
             {
                 if (rootPath.Length == 1)
                 {
@@ -1417,7 +1355,7 @@ internal class PlatformUtil
                     break;
                 }
 
-                else if (sub.IsDirectory)
+                else if (sub.HasDirectoryPath)
                 {
                     string[] shortenedPath = new string[rootPath.Length - 1];
                     Array.Copy(rootPath, 1, shortenedPath, 0, rootPath.Length - 1);
@@ -1429,14 +1367,14 @@ internal class PlatformUtil
         return libraryFolder;
     }
 
-    static async Task loadCSV(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
+    static async Task loadCSV(NSUrl file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
     {
-        logger.info("start loading library file from {0}", file.AbsolutePath);
+        logger.info("start loading library file from {0}", file.AbsoluteString);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = file.LastPathComponent.Split('.').First();
 
         SimpleCSVParser parser = new SimpleCSVParser();
-        Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+        Stream s = System.IO.File.OpenRead(file.AbsoluteString);
         StreamReader sr = new StreamReader(s);
         await parser.parseStream(s);
 
@@ -1501,16 +1439,16 @@ internal class PlatformUtil
 #endif
         }
 
-        logger.info("finish loading library file from {0}", file.AbsolutePath);
+        logger.info("finish loading library file from {0}", file.AbsoluteString);
     }
-    static async Task loadJSON(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, Dictionary<string, Measurement> library)
+    static async Task loadJSON(NSUrl file, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, Dictionary<string, Measurement> library)
     {
-        logger.info("start loading library file from {0}", file.AbsolutePath);
+        logger.info("start loading library file from {0}", file.AbsoluteString);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = file.LastPathComponent.Split('.').First();
 
         SimpleCSVParser parser = new SimpleCSVParser();
-        Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+        Stream s = System.IO.File.OpenRead(file.AbsoluteString);
         StreamReader sr = new StreamReader(s);
         string blob = await sr.ReadToEndAsync();
 
@@ -1560,30 +1498,38 @@ internal class PlatformUtil
             library.Add(name, mOrig);
         }
 
-        logger.info("finish loading library file from {0}", file.AbsolutePath);
+        logger.info("finish loading library file from {0}", file.AbsoluteString);
     }
 
 
+    public async static Task<string> getBulkLibraryPath()
+    {
+        return null;
+    }
+
     static bool writeable(string path)
     {
-        var f = new Java.IO.File(path);
+        var f = new NSUrl(path);
         logger.debug($"writeable: testing {path}");
-        if (f.Exists())
+        NSFileManager fileManager = NSFileManager.DefaultManager;
+
+        if (fileManager.FileExists(path))
         {
             logger.debug($"exists: {path}");
         }
         else
         {
             logger.debug($"calling Mkdirs({path})");
-            f.Mkdirs();
-            if (!f.Exists())
+
+            fileManager.CreateDirectory(f, createIntermediates: true, null, out var _);
+            if (!fileManager.FileExists(path))
             {
                 logger.error($"writeable: Mkdirs failed to create {path}");
                 return false;
             }
         }
 
-        if (!f.CanWrite())
+        if (!fileManager.IsWritableFile(path))
         {
             logger.error($"writeable: can't write: {path}");
             return false;
@@ -1592,5 +1538,6 @@ internal class PlatformUtil
         return true;
     }
 
-    // static public void writeFile(string pathname, string contents) { File.WriteAllText(pathname, contents); }
+
 }
+

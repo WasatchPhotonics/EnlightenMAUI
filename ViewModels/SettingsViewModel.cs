@@ -5,7 +5,6 @@ using EnlightenMAUI.Models;
 using EnlightenMAUI.Popups;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
-using Telerik.Windows.Documents.Spreadsheet.History;
 using System.Runtime.CompilerServices;
 using EnlightenMAUI.Platforms;
 using WPProduction.Utils;
@@ -159,7 +158,12 @@ namespace EnlightenMAUI.ViewModels
 
         public SettingsViewModel()
         {
-            laserWatchdogTimeoutSec = 0;
+            // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
+            if (spec.laserState.payloadLength < 8)
+                laserWatchdogTimeoutSec = 254;
+            else
+                laserWatchdogTimeoutSec = 300;
+
             laserWarningDelaySec = 0;
 
             if (spec == null || !spec.paired)
@@ -522,9 +526,9 @@ namespace EnlightenMAUI.ViewModels
         // Advanced Features
         ////////////////////////////////////////////////////////////////////////
 
-        public byte laserWatchdogTimeoutSec
+        public ushort laserWatchdogTimeoutSec
         {
-            get => spec != null ? spec.laserWatchdogSec : (byte)0;
+            get => spec != null ? spec.laserWatchdogSec : (ushort)0;
             set
             {
                 if (spec != null && spec.paired)

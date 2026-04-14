@@ -12,13 +12,8 @@ using EnlightenMAUI.Common;
 //using Android.Hardware.Usb;
 //using Android.Content;
 using LibUsbDotNet.Main;
-using Android.Content;
-using Android.Hardware.Usb;
-using Android.App;
-using Android.Nfc;
-using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui;
-using Xamarin.Google.Crypto.Tink.Subtle;
+using EnlightenMAUI.Platforms;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -30,7 +25,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     public ObservableCollection<BLEDevice> bleDeviceList { get; private set; }
     public ObservableCollection<USBViewDevice> usbDeviceList { get; private set; }
     BLEDevice bleDevice;
-    Android.Hardware.Usb.UsbDevice acc;
     //Task libraryTester;
 
     public Command scanCmd { get; }
@@ -67,10 +61,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
     }
 };*/
         
-    
-
-    PendingIntent usbIntent;
-
     IService service;
 
     Dictionary<string, Guid> guidByName = new Dictionary<string, Guid>();
@@ -194,7 +184,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     /// Relay connection progress from the Spectrometer Model back to the 
     /// Bluetooth View.
     /// </summary>
-    private void showSpectrometerConnectionProgress(double perc) =>
+    internal void showSpectrometerConnectionProgress(double perc) =>
         connectionProgress = perc;
 
     public double connectionProgress
@@ -430,104 +420,13 @@ public class BluetoothViewModel : INotifyPropertyChanged
     
     private async Task<bool> doUSBScanAsync()
     {
-        /*
-        //UsbManager manager = ContextWrapper.
-        Context con = Android.App.Application.Context;
-        UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
-
-        foreach (UsbDevice acc in manager.DeviceList.Values)
-        {
-            //acc.
-            acc.
-
-        }
-        */
         logger.info("Looking for usb devices via Android services");
-        try
-        {
-            Context con = Android.App.Application.Context;
-            UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
+        List<USBViewDevice> temp = await PlatformUSB.doUSBScanAsync();
+        usbDeviceList.Clear();
+        foreach (USBViewDevice device in temp) 
+            usbDeviceList.Add(device);
 
-            var features = con.PackageManager.GetSystemAvailableFeatures();
-            foreach ( var feature in features ) 
-            {
-                logger.info("{0} feature available", feature.Name);
-            }
-
-            if (manager.DeviceList.Count == 0)
-            {
-                logger.info("No USB devices found");
-            }
-
-            foreach (Android.Hardware.Usb.UsbDevice acc in manager.DeviceList.Values)
-            {
-                this.acc = acc;
-
-                String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
-                    acc.VendorId,
-                    acc.ProductId,
-                    acc.Version,
-                    acc.DeviceName);
-
-                logger.info("found usb device {0}", desc);
-
-                if (acc.VendorId == 0x24aa)
-                {
-                    USBViewDevice uvd = new USBViewDevice(acc.DeviceName, acc.VendorId.ToString("x4"), acc.ProductId.ToString("x4"));
-                    usbDeviceList.Add(uvd);
-
-                    usbIntent = PendingIntent.GetBroadcast(con, 0, new Intent(ACTION_USB_PERMISSION), PendingIntentFlags.Immutable);
-                     
-                    //LibUsbDotNet.UsbDevice usbDevice = LibUsbDotNet.UsbDevice.OpenUsbDevice(d => d.Pid == acc.ProductId);
-                    manager.RequestPermission(acc, usbIntent);
-                    
-                }
-
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.info("USB grab failed with error {0}", ex.Message);
-        }
-
-        /*
-        try
-        {
-            UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
-            if (deviceRegistries == null)
-            {
-                logger.info("No USB devices found");
-            }
-            else if (deviceRegistries.Count == 0)
-            {
-                logger.info("No USB devices found");
-            }
-
-            else
-            {
-                foreach (UsbRegistry usbRegistry in deviceRegistries)
-                {
-                    String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
-                        usbRegistry.Vid,
-                        usbRegistry.Pid,
-                        (ushort)usbRegistry.Rev,
-                        usbRegistry[SPDRP.DeviceDesc]);
-
-                    logger.info("attempting to open {0}", desc);
-
-                    USBViewDevice uvd = new USBViewDevice("Test", usbRegistry.Vid.ToString("x4"), usbRegistry.Pid.ToString("x4"));
-                    usbDeviceList.Add(uvd);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.info("USB grab failed with error {0}", ex.Message);
-        }
-        */
-
-        return true;
-        
+        return true;        
     }
 
     async Task<bool> _requestPermissionsAsync()
@@ -659,90 +558,31 @@ public class BluetoothViewModel : INotifyPropertyChanged
     
     private async Task<bool> doConnectOrDisconnectUSBAsync()
     {
-        if (spec == null || (spec is BluetoothSpectrometer))
+        bool ok = await PlatformUSB.doConnectOrDisconnectUSBAsync(spec, (pct) => showSpectrometerConnectionProgress(pct));
+
+        if (ok)
         {
-            try
+            logger.info("BVM.doConnectOrDisconnectUSBAsync: successfully connected to USB device");
+            spec = USBSpectrometer.getInstance();
+            logger.info("BVM.doConnectOrDisconnectUSBAsync: spec is valid {0}, spec is paired {1}", spec != null, spec != null && spec.paired);
+            spec.paired = true;
+
+            if (spec != null && spec.paired)
             {
-                buttonConnectEnabled = false;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
-                Context con = Android.App.Application.Context;
-                UsbManager manager = (UsbManager)con.GetSystemService(Context.UsbService);
-                connectionProgress = 0.025;
-                int interfaces = acc.InterfaceCount;
-                connectionProgress = 0.05;
-
-                logger.info("usb device has {0} interfaces", interfaces);
-                for (int i = 0; i < interfaces; i++)
-                {
-                    logger.info("interface {0} has {1} endpoints", i, acc.GetInterface(i).EndpointCount);
-                }
-                connectionProgress = 0.075;
-
-                UsbDeviceConnection udc = manager.OpenDevice(acc);
-                connectionProgress = 0.1;
-                logger.info("device has {0} configurations", acc.ConfigurationCount);
-                if (udc != null)
-                {
-                    logger.info("successfully opened device");
-                    USBSpectrometer usbSpectrometer = new USBSpectrometer(udc, acc);
-                    connectionProgress = 0.125;
-                    spec = usbSpectrometer;
-                    spec.showConnectionProgress += showSpectrometerConnectionProgress;
-
-                    connectionProgress = 0.15;
-                    bool ok = await (spec as USBSpectrometer).initAsync();
-                    if (ok)
-                    {
-                        logger.debug("invoking new connection");
-                        if (Spectrometer.NewConnection != null)
-                            Spectrometer.NewConnection.Invoke(this, spec);
-                    }
-                    logger.debug("init complete setting instance and paired");
-                    USBSpectrometer.setInstance(usbSpectrometer);
-                    USBViewDevice.paired = true;
-                    connectionProgress = 1;
-                    buttonConnectEnabled = true;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
-                    Settings.getInstance().spec = spec;
-                    await Shell.Current.GoToAsync("//ScopePage");
-                    connectionProgress = 0;
-                    return ok;
-                }
-                else
-                {
-                    logger.info("failed to open device");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.error("USB connect failed with exception {0}", ex.Message);
-                return false;
-            }
-
-        }
-        else
-        {
-            logger.info("already initialized as usb spec, reconnecting");
-
-            try
-            {
-                if ((spec as USBSpectrometer).paired)
-                    spec.disconnect();
-                else
-                {
-                    (spec as USBSpectrometer).connect();
+                logger.debug("invoking new connection");
+                if (Spectrometer.NewConnection != null)
                     Spectrometer.NewConnection.Invoke(this, spec);
-                    return await (spec as USBSpectrometer).initAsync();
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                logger.error("USB toggle failed with exception {0}", ex.Message);
-                return false;
+                connectionProgress = 1;
+                buttonConnectEnabled = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
+                Settings.getInstance().spec = spec;
+                await Shell.Current.GoToAsync("//ScopePage");
+                connectionProgress = 0;
+                return ok;
             }
         }
+
+        return ok;
     }
 
     async Task<bool> doDisconnectAsync(bool isBluetooth)
@@ -1202,7 +1042,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
         // ignore anything that doesn't have "WP" or "SiG" in the name
         var nameLC = device.Name.ToLower();
-        if (!nameLC.Contains("wp") && !nameLC.Contains("sig"))
+        if (!nameLC.Contains("wp") && !nameLC.Contains("sig") && !nameLC.Contains("v2"))
         {
             if (!ignoredNames.Contains(device.Name))
             {
@@ -1270,6 +1110,6 @@ public class BluetoothViewModel : INotifyPropertyChanged
         buttonConnectEnabled = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
 
-        logger.debug($"BVM.selectBLEDevice: done");
+        logger.debug($"BVM.selectUSBDevice: done");
     }
 }

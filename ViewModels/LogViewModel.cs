@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using System.ComponentModel;
-using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.ViewModels;
 

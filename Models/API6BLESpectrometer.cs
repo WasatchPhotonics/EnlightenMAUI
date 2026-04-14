@@ -3,8 +3,6 @@ using Plugin.BLE.Abstractions.Contracts;
 
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using static Android.Widget.GridLayout;
-using Java.Util.Functions;
 
 namespace EnlightenMAUI.Models;
 
@@ -59,6 +57,7 @@ public class API6BLESpectrometer : Spectrometer
         autoDarkEnabled = false;
         reset();
         logger.debug("Spectrometer.disconnect: done");
+        disconnectComplete.Invoke(this, this);
     }
 
     public override void reset()
@@ -550,7 +549,7 @@ public class API6BLESpectrometer : Spectrometer
         }
     }
 
-    public override byte laserWatchdogSec
+    public override ushort laserWatchdogSec
     {
         get => laserState.watchdogSec;
         set
@@ -598,7 +597,7 @@ public class API6BLESpectrometer : Spectrometer
         }
     }
 
-    async Task<bool> syncLaserStateAsync()
+    internal override async Task<bool> syncLaserStateAsync(bool readFirst = false)
     {
         logger.debug("Spectrometer.syncLaserStateAsync: start");
         if (!laserSyncEnabled)
