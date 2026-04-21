@@ -12,9 +12,18 @@
         <local:ViewModels.SettingsViewModel/>
     </ContentPage.BindingContext>
 
+    <ContentPage.Resources>
+        <Style TargetType="telerik:RadTextInput" x:Key="TextInputStyle">
+            <Setter Property="TextColor" Value="#eee" />
+        </Style>
+        <Style x:Key="NumericInputStyle" TargetType="telerik:RadNumericInput">
+            <Setter Property="TextInputStyle" Value="{StaticResource TextInputStyle}" />
+        </Style>
+    </ContentPage.Resources>
+
     <Grid>
         <StackLayout IsVisible="{Binding passwordIncorrect}" Orientation="Vertical" Margin="10, 0, 10, 0" HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand">
-            <Label Text="Password" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+            <Label Text="Password" TextColor="#eee" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
             <Entry IsPassword="True" 
                    FontSize="16" 
                    HorizontalOptions="Center" 
@@ -44,6 +53,7 @@
                             <Label Text="Integration Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                             <telerik:RadNumericInput x:Name="integrationTime" 
                                                  Value="{Binding integrationTimeMS}" 
+                                                     Style="{StaticResource NumericInputStyle}"
                                                  Minimum="1" Maximum="5000"
                                                  HorizontalOptions="EndAndExpand"/>
                         </StackLayout>
@@ -53,6 +63,7 @@
                             <Label Text="Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                             <telerik:RadNumericInput x:Name="gainDb" 
                                                  Value="{Binding gainDb}" 
+                                                     Style="{StaticResource NumericInputStyle}"
                                                  StringFormat="{}{0:f1}"
                                                  Minimum="0" Maximum="30" Step="0.1"
                                                  HorizontalOptions="EndAndExpand">
@@ -66,11 +77,6 @@
                                         <Setter Property="BackgroundColor" Value="#fff"/>
                                     </Style>
                                 </telerik:RadNumericInput.DecreaseButtonStyle>
-                                <telerik:RadNumericInput.TextInputStyle>
-                                    <Style TargetType="telerik:RadNumericInput">
-                                        <Setter Property="BackgroundColor"  Value="#fff"/>
-                                    </Style>
-                                </telerik:RadNumericInput.TextInputStyle>
                             </telerik:RadNumericInput>
                         </StackLayout>
 
@@ -79,6 +85,7 @@
                             <Label Text="Scan Averaging" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
                             <telerik:RadNumericInput x:Name="scansToAverage" 
                                                  Value="{Binding scansToAverage}" 
+                                                     Style="{StaticResource NumericInputStyle}"
                                                  Minimum="1" Maximum="100"
                                                  HorizontalOptions="EndAndExpand">
                                 <telerik:RadNumericInput.IncreaseButtonStyle>
@@ -172,6 +179,7 @@
                                                      Grid.Row="8"
                                                      Value="{Binding matchThreshold}" 
                                                      IsEnabled="{Binding advancedModeEnabled}"
+                                                     Style="{StaticResource NumericInputStyle}"
                                                      StringFormat="{}{0:f2}"
                                                      Minimum="0" Maximum="1" Step="0.1"
                                                      HorizontalOptions="End">      
@@ -191,6 +199,7 @@
                             <telerik:RadNumericInput x:Name="snrThresh" 
                                                      Grid.Row="9"
                                                      Value="{Binding snrThreshold}" 
+                                                     Style="{StaticResource NumericInputStyle}"
                                                      IsEnabled="{Binding advancedModeEnabled}"
                                                      Minimum="0" Maximum="500" Step="1"
                                                      HorizontalOptions="End">      

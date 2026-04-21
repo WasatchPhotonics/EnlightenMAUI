@@ -20,36 +20,36 @@
             <!-- Page header -->
             <Image Source="enlighten_logo.png" WidthRequest="300"/>
 
-            <Label FontSize="Large" Text="{Binding serialNumber}"/>
-            <Label FontSize="Large" Text="{Binding fullModelName}"/>
+            <Label FontSize="Large" TextColor="#eee" Text="{Binding serialNumber}"/>
+            <Label FontSize="Large" TextColor="#eee" Text="{Binding fullModelName}"/>
 
             <!-- BLE Device Info -->
-            <Label FontSize="Large" Text="BLE Device Info"/>
+            <Label FontSize="Large" TextColor="#eee" Text="BLE Device Info"/>
 
             <StackLayout Margin="10, 0, 10, 0">
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="Device Name"/>
-                    <Label Text="{Binding deviceName}"/>
+                    <Label Text="Device Name" TextColor="#eee"/>
+                    <Label Text="{Binding deviceName}" TextColor="#eee"/>
                 </FlexLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="Manufacturer Name"/>
-                    <Label Text="{Binding manufacturerName}"/>
+                    <Label Text="Manufacturer Name" TextColor="#eee"/>
+                    <Label Text="{Binding manufacturerName}" TextColor="#eee"/>
                 </FlexLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="BLE FW Revision"/>
-                    <Label Text="{Binding softwareRevision}"/>
+                    <Label Text="BLE FW Revision" TextColor="#eee"/>
+                    <Label Text="{Binding softwareRevision}" TextColor="#eee"/>
                 </FlexLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="Firmware Revision"/>
-                    <Label Text="{Binding firmwareRevision}"/>
+                    <Label Text="Firmware Revision" TextColor="#eee"/>
+                    <Label Text="{Binding firmwareRevision}" TextColor="#eee"/>
                 </FlexLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="STM FW Revision"/>
-                    <Label Text="{Binding hardwareRevision}"/>
+                    <Label Text="STM FW Revision" TextColor="#eee"/>
+                    <Label Text="{Binding hardwareRevision}" TextColor="#eee"/>
                 </FlexLayout>
             </StackLayout>
 
-            <Label Text="EEPROM" FontSize="Large" Margin="0, 10, 0, 0"/>
+            <Label Text="EEPROM" TextColor="#eee" FontSize="Large" Margin="0, 10, 0, 0"/>
 
             <!-- Scrolling ListView of EEPROM (name, value) tuples -->
             <ListView ItemsSource="{Binding eepromFields}" BackgroundColor="#333" SeparatorColor="#555"  Margin="10, 0, 10, 0"> 

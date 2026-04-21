@@ -133,6 +133,7 @@
                     HorizontalOptions="Fill" 
                     HorizontalTextAlignment="Center"
                     Background="#333"
+                        PlaceholderColor="#EEE"
                     TextColor="#eee"
                     Text="{Binding PasswordEntry}"/>
 
@@ -154,7 +155,7 @@
                     ImageSource="Images/laser.svg"
                     ContentLayout="Right, 3"/>
 
-                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
+                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" TextColor="#eee" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
                 <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="0"/>
                 <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="2"/>
 
@@ -326,8 +327,8 @@
                            IsVisible="{Binding batteryCriticalForCollection}"/>
 
                 </Grid>
-                
-                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Margin="5"/>
+
+                <Label Text="Perform PS Standard Correction?" TextColor="#eee" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Margin="5"/>
                 <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="2" Margin="10" Grid.Column="0"/>
                 <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="2" Margin="10" Grid.Column="2"/>
 
