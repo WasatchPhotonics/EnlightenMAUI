@@ -47,7 +47,7 @@ public partial class BluetoothPage : ContentPage
             logger.debug("BluetoothPage.onAppearingAsync: prompting");
             var confirmed = await DisplayAlert(
                 "Bluetooth",
-                "ENLIGHTEN requires Bluetooth to communicate with the spectrometer. Turn it on automatically?",
+                "ENLIGHTEN requires Bluetooth® LE to communicate with the spectrometer. Turn it on automatically?",
                 "Yes",
                 "No");
             if (confirmed)
