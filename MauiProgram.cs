@@ -6,6 +6,11 @@ using Microsoft.Extensions.Logging;
 using EnlightenMAUI.Models;
 using System.Reflection;
 using Telerik.Maui.Controls.Compatibility;
+using Android.Content.Res;
+
+#if ANDROID
+using AndroidX.AppCompat.Widget;
+#endif
 
 namespace EnlightenMAUI;
 
@@ -69,7 +74,16 @@ public static class MauiProgram
         Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("MyCustomization", (handler, view) =>
         {
 #if ANDROID
-            handler.PlatformView.BorderStyle = Android.Graphics.Color.White;
+            //handler.PlatformView.BorderStyle = Android.Graphics.Color.White;
+            var pv = handler.PlatformView;
+            if (pv is AppCompatEditText editText)
+            {
+                editText.Background?.Mutate();
+                var color = new Android.Graphics.Color(0x27, 0xc0, 0xa1);
+                var hintColor = new Android.Graphics.Color(0xBB, 0xBB, 0xBB);
+                editText.BackgroundTintList = ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+                //editText.SetHintTextColor(hintColor);
+            }
 #endif
         });
         */

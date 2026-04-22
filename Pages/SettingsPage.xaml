@@ -49,7 +49,6 @@
 
     <Grid>
         <StackLayout IsVisible="{Binding passwordIncorrect}" Orientation="Vertical" Margin="10, 0, 10, 0" HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand">
-            <Label Text="Password" TextColor="#eee" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
             <Entry IsPassword="True" 
                    FontSize="16" 
                    HorizontalOptions="Center" 
@@ -57,7 +56,10 @@
                    TextColor="#eee"
                    VerticalOptions="Center" 
                    Text="{Binding enteredPassword}"
-                   WidthRequest="150" />
+                   Placeholder="Settings Password"
+                    PlaceholderColor="#999"
+                   HorizontalTextAlignment="Center"
+                   WidthRequest="200" />
         </StackLayout>
 
         <ScrollView IsVisible="{Binding passwordCorrect}" Margin="10, 0, 10, 0">

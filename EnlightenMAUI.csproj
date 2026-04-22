@@ -92,6 +92,8 @@
 	<ItemGroup>
 	  <None Remove="appsettings.json" />
 	  <None Remove="libdpSTJE.so" />
+	  <None Remove="Platforms\Android\Resources\values-night\styles.xml" />
+	  <None Remove="Platforms\Android\Resources\values\styles.xml" />
 	  <None Remove="Platforms\Android\Resources\xml\device_filter.xml" />
 	  <None Remove="Stj.ProtectionSdk.so" />
 	  <None Remove="Resources\AppIcon\appicon.svg" />

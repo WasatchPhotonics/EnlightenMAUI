@@ -133,7 +133,8 @@
                     HorizontalOptions="Fill" 
                     HorizontalTextAlignment="Center"
                     Background="#333"
-                    PlaceholderColor="#EEE"
+                   Placeholder="Laser Password"
+                    PlaceholderColor="#999"
                     TextColor="#eee"
                     Text="{Binding PasswordEntry}"/>
 
@@ -253,6 +254,8 @@
                     HorizontalOptions="Fill" 
                     HorizontalTextAlignment="Center"
                     Background="#333"
+                   Placeholder="Laser Password"
+                    PlaceholderColor="#999"
                     TextColor="#eee"
                     Text="{Binding PasswordEntry}"/>
 
