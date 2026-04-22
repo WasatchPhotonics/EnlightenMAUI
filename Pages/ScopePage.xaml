@@ -133,7 +133,7 @@
                     HorizontalOptions="Fill" 
                     HorizontalTextAlignment="Center"
                     Background="#333"
-                        PlaceholderColor="#EEE"
+                    PlaceholderColor="#EEE"
                     TextColor="#eee"
                     Text="{Binding PasswordEntry}"/>
 
