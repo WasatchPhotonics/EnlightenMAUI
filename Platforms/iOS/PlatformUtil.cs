@@ -174,7 +174,7 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath)
     {
         try
         {
@@ -1230,7 +1230,7 @@ internal class PlatformUtil
 
         return compLibrary;
     }
-    public async static Task<Dictionary<string, Measurement>> loadFiles(string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
     {
         //isLoading = true;
         NSUrl extPath = NSFileManager.DefaultManager.GetUrl(

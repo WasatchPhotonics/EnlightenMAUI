@@ -1,6 +1,7 @@
 ﻿using Android;
 using Android.Content;
 using Android.Content.Res;
+using Android.Locations;
 using Android.Nfc;
 using Android.OS;
 using Android.Webkit;
@@ -12,22 +13,24 @@ using Kotlin.Contracts;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
 using Microsoft.ML.Data;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Transforms.Onnx;
 using Newtonsoft.Json;
 using NumSharp;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
+using Xamarin.Google.Crypto.Tink.Subtle;
 using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using AndrApp = Android.App;
 using AndrContent = Android.Content;
-using AndrOS = Android.OS;
 using AndrNet = Android.Net;
-using Android.Locations;
+using AndrOS = Android.OS;
 namespace EnlightenMAUI.Platforms; 
 
 
@@ -101,13 +104,12 @@ internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
-    static PredictionEngine<ModelInput, Prediction> engine;
-    static PredictionEngine<SimpleModelInput, SimplePrediction> simpleEngine;
+    static Dictionary<string, InferenceSession> correctionSessions = new Dictionary<string, InferenceSession>();
     static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
     static ITransformer transformer;
     public static bool transformerLoaded = false;
     public static bool simpleTransformerLoaded = false;
-    public static bool complexTransformerLoaded = false;
+    public static bool aggressiveTransformerLoaded = false;
     public static int REQUEST_TREE = 85;
 
     static string savePath;
@@ -323,91 +325,112 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath)
     {
         try
         {
+            //
+            // To move to Assets, rewrite from here to line 364
+            //
+
+            AssetManager assets = Platform.AppContext.Assets;
+
+            string[] assetP = assets.List(root);
+
             string fullPath = null;
 
-            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            foreach (var cDir in cacheDirs)
-            {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                fullPath = recurseAndFindPath(cDir, correctionPath);
-                if (fullPath != null)
-                    break;
+            foreach (string path in assetP)            {
+                if (path == correctionPath)
+                    fullPath = Path.Join(root, path);
             }
 
             if (fullPath != null)
             {
-                loadCorrections(fullPath);
+                await loadCorrections(fullPath);
                 fullPath = null;
             }
 
             Regex extensionReg = new Regex(@".*\." + extension + @"$");
-            cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-            List<string> fullPaths = null;
-            foreach (var cDir in cacheDirs)
+            List<string> fullPaths = new List<string>();
+            foreach (string path in assetP)
             {
-                logger.debug("recursing down dir {0}", cDir.AbsolutePath);
-                fullPaths = recurseAndFindPaths(cDir, extensionReg, true, new List<string>());
-                if (fullPaths != null && fullPaths.Count > 0)
-                    break;
+                if (extensionReg.IsMatch(path))
+                    fullPaths.Add(Path.Join(root, path));
             }
 
             if (fullPaths == null || fullPaths.Count == 0)
                 return;
 
+            List<byte> aggressiveBuffer = new List<byte>();
+            List<byte> simpleBuffer = new List<byte>();
+
             foreach (string path in fullPaths)
             {
-                bool loadSucceeded = false;
+                List<byte> tempBuffer = new List<byte>();
+                bool loadSucceeded = false; 
 
-                try
+                using Stream fs = await FileSystem.Current.OpenAppPackageFileAsync(path);
+                using (BinaryReader reader = new BinaryReader(fs))
                 {
-                    var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<ModelInput>());
-                    logger.debug("building pipeline");
-                    var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall_1:0" }, inputColumnNames: new[] { "serving_default_input_layer:0" });
-                    logger.debug("building transformer");
-                    transformer = pipeline.Fit(data);
-                    var transCope = transformer;
-                    logger.debug("creating engine");
-                    engine = mlContext.Model.CreatePredictionEngine<ModelInput, Prediction>(transformer);
-                    var engCop = engine;
+                    var bytesRead = 0;
 
-                    logger.debug("onnx model load complete");
-                    transformerLoaded = complexTransformerLoaded = loadSucceeded = true;
-                }
-                catch (Exception e2)
-                {
-                    logger.info("onnx load failed with exception {0}", e2.Message);
-                }
-
-                if (!loadSucceeded)
-                {
-
-                    try
+                    int bufferSize = 1024;
+                    byte[] bytes;
+                    var buffer = new byte[bufferSize];
+                    using (fs)
                     {
-                        var data = mlContext.Data.LoadFromEnumerable(Enumerable.Empty<SimpleModelInput>());
-                        logger.debug("building pipeline");
-                        var pipeline = mlContext.Transforms.ApplyOnnxModel(modelFile: path, outputColumnNames: new[] { "StatefulPartitionedCall:0" }, inputColumnNames: new[] { "serving_default_input_1:0" });
-                        logger.debug("building transformer");
-                        transformer = pipeline.Fit(data);
-                        var transCope = transformer;
-                        logger.debug("creating engine");
-                        simpleEngine = mlContext.Model.CreatePredictionEngine<SimpleModelInput, SimplePrediction>(transformer);
-                        var engCop = engine;
+                        do
+                        {
+                            buffer = reader.ReadBytes(bufferSize);
+                            bytesRead = buffer.Count();
+                            tempBuffer.AddRange(buffer);
+                            //logger.info("model file {0} read {1} bytes", path, bytesRead);
+                        }
 
-                        logger.debug("onnx model load complete");
-                        transformerLoaded = simpleTransformerLoaded = loadSucceeded = true;
-                    }
-                    catch (Exception e3)
-                    {
-                        logger.info("onnx load failed with exception {0}", e3.Message);
+                        while (bytesRead > 0);
+
                     }
                 }
 
+                if (path.Contains("light") && tempBuffer.Count > 0)
+                {
+                    simpleBuffer = tempBuffer;
+                }
+                else if (tempBuffer.Count > 0)
+                {
+                    aggressiveBuffer = tempBuffer;
+                }
 
             }
+
+            if (simpleBuffer.Count > 0)
+            {
+                try
+                {
+                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(simpleBuffer.ToArray());
+                    transformerLoaded = simpleTransformerLoaded = true;
+                    correctionSessions.Add("simple", session);
+                }
+                catch (Exception ex)
+                {
+                    logger.info("onnx session load failed with exception {0}", ex.Message);
+                }
+            }
+
+            if (aggressiveBuffer.Count > 0)
+            {
+                try
+                {
+                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(aggressiveBuffer.ToArray());
+                    transformerLoaded = aggressiveTransformerLoaded = true;
+                    correctionSessions.Add("aggressive", session);
+                }
+                catch (Exception ex)
+                {
+                    logger.info("onnx session load failed with exception {0}", ex.Message);
+                }
+            }
+
         }
         catch (Exception e)
         {
@@ -541,7 +564,7 @@ internal class PlatformUtil
         logger.info("start loading correction factors from {0}", file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
-        Stream s = System.IO.File.OpenRead(file);
+        Stream s = await FileSystem.Current.OpenAppPackageFileAsync(file);
         StreamReader sr = new StreamReader(s);
         string blob = await sr.ReadToEndAsync();
 
@@ -609,19 +632,32 @@ internal class PlatformUtil
                 for (int i = 0; i < interpolatedCounts.Length; i++)
                     modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
-                SimplePrediction p = new SimplePrediction();
+                var sessionInputs = new List<NamedOnnxValue>
+                {
+                    NamedOnnxValue.CreateFromTensor(correctionSessions["simple"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))
+                };
 
-                logger.debug("making prediction");
-                p = simpleEngine.Predict(modelInput);
-                logger.debug("packing prediction");
+                var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
 
-                //logger.logArray("transformed counts", p.spectrum);
+                var sessionOutput = correctionSessions["simple"].Run(sessionInputs);
 
-                int outputSize = p.spectrum.GetLength(0);
+                var sessionInput1 = new Dictionary<string, OrtValue>
+                {
+                    { correctionSessions["simple"].InputNames[0], inValue }
+                };
+
+                var runOptions = new RunOptions();
+                var sessionOutput2 = correctionSessions["simple"].Run(runOptions, sessionInput1, correctionSessions["simple"].OutputNames.ToArray());
+                var shape = sessionOutput2[0].GetTensorTypeAndShape();
+                //var shape = sessionOutput2[0].GetTensorDataAsSpan
+
+                int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
+                float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
+
                 double[] output = new double[outputSize];
                 for (int i = 0; i < outputSize; ++i)
                 {
-                    output[i] = p.spectrum[i] * max;
+                    output[i] = sessionData[i] * max;
                 }
                 double min = output.Min();
                 for (int i = 0; i < outputSize; ++i)
@@ -641,29 +677,44 @@ internal class PlatformUtil
 
             else
             {
-                ////logger.logArray("interpolated wavenum", targetWavenum);
-                //logger.logArray("interpolated counts", interpolatedCounts);
-
                 ModelInput modelInput = new ModelInput();
                 modelInput.spectrum = new float[2376];
                 for (int i = 0; i < interpolatedCounts.Length; i++)
                     modelInput.spectrum[i] = (float)interpolatedCounts[i];
 
-                Prediction p = new Prediction();
+                var sessionInputs = new List<NamedOnnxValue>
+                {
+                    NamedOnnxValue.CreateFromTensor(correctionSessions["aggressive"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))     
+                    //NamedOnnxValue.CreateFromTensor(correctionSessions["aggressive"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, correctionSessions["aggressive"].InputMetadata[correctionSessions["aggressive"].InputNames[0]].Dimensions))
 
-                logger.debug("making prediction");
-                p = engine.Predict(modelInput);
-                logger.debug("packing prediction");
+                };
 
+                var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
 
-                //logger.logArray("transformed counts", p.spectrum);
+                var sessionOutput = correctionSessions["aggressive"].Run(sessionInputs);
 
-                int outputSize = p.spectrum.GetLength(0);
+                var sessionInput1 = new Dictionary<string, OrtValue>
+                {
+                    { correctionSessions["aggressive"].InputNames[0], inValue }
+                };
+
+                var runOptions = new RunOptions();
+                var sessionOutput2 = correctionSessions["aggressive"].Run(runOptions, sessionInput1, correctionSessions["aggressive"].OutputNames.ToArray());
+                var shape = sessionOutput2[0].GetTensorTypeAndShape();
+                //var shape = sessionOutput2[0].GetTensorDataAsSpan
+
+                int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
+                float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
+
                 double[] output = new double[outputSize];
-                double min = p.spectrum.Min();
                 for (int i = 0; i < outputSize; ++i)
                 {
-                    output[i] = p.spectrum[i] - min; // * max;
+                    output[i] = sessionData[i] * max;
+                }
+                double min = output.Min();
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = output[i] - min; // * max;
                 }
 
                 //logger.logArray("rebased counts", output);
@@ -1294,76 +1345,105 @@ internal class PlatformUtil
         return compLibrary;
     }
 
-    public async static Task<Dictionary<string, Measurement>> loadFiles(string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
     {
-        //isLoading = true;
-        var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
-        Java.IO.File libraryFolder = null;
-        string[] rootPath = root.Split('/');
-        int depth = rootPath.Length;
-
-        foreach (var cDir in cacheDirs)
+        if (useAssets)
         {
-            libraryFolder = traverseDown(rootPath, cDir);
-            if (libraryFolder != null)
-                break;
+            AssetManager assets = Platform.AppContext.Assets;
 
-        }
+            string[] assetP = assets.List(root);
 
-        if (libraryFolder == null)
-        {
-            /*
-            if (library.Count > 0)
-                loadSucceeded = true;
-            isLoading = false;
-            InvokeLoadFinished();
-            return;
-            */
-            return library;
-        }
+            Regex csvReg = new Regex(@".*\.csv$");
+            Regex jsonReg = new Regex(@".*\.json$");
 
-        Regex csvReg = new Regex(@".*\.csv$");
-        Regex jsonReg = new Regex(@".*\.json$");
 
-        var libraryFiles = libraryFolder.ListFiles();
-
-        foreach (var libraryFile in libraryFiles)
-        {
-            if (jsonReg.IsMatch(libraryFile.AbsolutePath))
+            foreach (string path in assetP)
             {
-                try
+                if (jsonReg.IsMatch(path))
                 {
-                    await loadJSON(libraryFile, originalRaws, originalDarks, library);
+                    try
+                    {
+                        await loadJSON(root + "/" + path, originalRaws, originalDarks, library);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.debug("loading {0} failed with exception {1}", path, e.Message);
+                    }
                 }
-                catch (Exception e)
+                else if (csvReg.IsMatch(path))
                 {
-                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
-                }
-            }
-            else if (csvReg.IsMatch(libraryFile.AbsolutePath))
-            {
-                try
-                {
-                    await loadCSV(libraryFile, originalRaws, library);
-                }
-                catch (Exception e)
-                {
-                    logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                    try
+                    {
+                        await loadCSV(root + "/" + path, originalRaws, library);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.debug("loading {0} failed with exception {1}", path, e.Message);
+                    }
                 }
             }
         }
+        else
+        {
+            var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
+            Java.IO.File libraryFolder = null;
+            string[] rootPath = root.Split('/');
+            int depth = rootPath.Length;
 
-        /*
-        if (library.Count > 0)
-            loadSucceeded = true;
-        isLoading = false;
+            foreach (var cDir in cacheDirs)
+            {
+                libraryFolder = traverseDown(rootPath, cDir);
+                if (libraryFolder != null)
+                    break;
+
+            }
+
+            if (libraryFolder == null)
+            {
+                /*
+                if (library.Count > 0)
+                    loadSucceeded = true;
+                isLoading = false;
+                InvokeLoadFinished();
+                return;
+                */
+                return library;
+            }
+
+            Regex csvReg = new Regex(@".*\.csv$");
+            Regex jsonReg = new Regex(@".*\.json$");
+
+            var libraryFiles = libraryFolder.ListFiles();
+
+            foreach (var libraryFile in libraryFiles)
+            {
+                if (jsonReg.IsMatch(libraryFile.AbsolutePath))
+                {
+                    try
+                    {
+                        await loadJSON(libraryFile, originalRaws, originalDarks, library);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                    }
+                }
+                else if (csvReg.IsMatch(libraryFile.AbsolutePath))
+                {
+                    try
+                    {
+                        await loadCSV(libraryFile, originalRaws, library);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.debug("loading {0} failed with exception {1}", libraryFile.AbsolutePath, e.Message);
+                    }
+                }
+            }
+        }
+
         logger.debug("finished loading library files");
-        if (root != "User Library")
-            tag = root.Split('/').Last();
 
-        InvokeLoadFinished();
-        logger.debug("prepping data for decon");
-        */
 
         if (doDecon)
         {
@@ -1503,6 +1583,82 @@ internal class PlatformUtil
 
         logger.info("finish loading library file from {0}", file.AbsolutePath);
     }
+
+    static async Task loadCSV(string file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
+    {
+        logger.info("start loading library file from {0}", file);
+
+        string name = file.Split('/').Last().Split('.').First();
+
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = await FileSystem.Current.OpenAppPackageFileAsync(file); //System.IO.File.OpenRead(file);
+        StreamReader sr = new StreamReader(s);
+        await parser.parseStream(s);
+
+        Measurement m = new Measurement();
+        m.wavenumbers = parser.wavenumbers.ToArray();
+        m.raw = parser.intensities.ToArray();
+        m.excitationNM = 785;
+
+
+#if USE_DECON
+            Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
+#endif
+
+        Measurement mOrig = m.copy();
+        originalRaws.Add(name, mOrig.raw);
+
+        /*
+        double[] smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+        while (smoothedSpec == null || smoothedSpec.Length == 0)
+        {
+            smoothedSpec = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed);
+            await Task.Delay(50);
+        }
+        */
+
+        if (false)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+
+        else
+        {
+            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
+
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = newIntensities;
+            //double airPLSLambda = 10000;
+            //int airPLSMaxIter = 100;
+            //double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            //double[] shortened = new double[updated.processed.Length];
+            //Array.Copy(array, 0, shortened, roiStart, array.Length);
+            //updated.raw = shortened;
+            //updated.dark = null;
+
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(updated.wavenumbers), new List<double>(updated.processed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+
+        logger.info("finish loading library file from {0}", file);
+    }
     static async Task loadJSON(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, Dictionary<string, Measurement> library)
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
@@ -1561,6 +1717,65 @@ internal class PlatformUtil
         }
 
         logger.info("finish loading library file from {0}", file.AbsolutePath);
+    }
+    static async Task loadJSON(string file, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, Dictionary<string, Measurement> library)
+    {
+        logger.info("start loading library file from {0}", file);
+
+        string name = file.Split('/').Last().Split('.').First();
+
+        SimpleCSVParser parser = new SimpleCSVParser();
+        Stream s = System.IO.File.OpenRead(file);
+        StreamReader sr = new StreamReader(s);
+        string blob = await sr.ReadToEndAsync();
+
+        spectrumJSON json = JsonConvert.DeserializeObject<spectrumJSON>(blob);
+        if (json.tag != null && json.tag.Length > 0)
+        {
+            name = json.tag;
+        }
+
+        Measurement m = new Measurement(json);
+        Wavecal otherCal = new Wavecal(m.pixels);
+        otherCal.coeffs = m.wavecalCoeffs;
+        otherCal.excitationNM = m.excitationNM;
+
+        Measurement mOrig = m.copy();
+        originalRaws.Add(name, mOrig.raw);
+        originalDarks.Add(name, mOrig.dark);
+
+
+        if (PlatformUtil.transformerLoaded)
+        {
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            Measurement updated = new Measurement();
+            updated.wavenumbers = wavenumbers;
+            updated.raw = smoothed;
+            library.Add(name, updated);
+
+#if USE_DECON
+                Deconvolution.Spectrum upSpec = new Deconvolution.Spectrum(new List<double>(wavenumbers), new List<double>(smoothed));
+                deconvolutionLibrary.library.Add(name, upSpec);
+#endif
+        }
+        else
+        {
+            /*
+            Measurement updated = wavecal.crossMapIntensityWavenumber(otherCal, m);
+            double airPLSLambda = 10000;
+            int airPLSMaxIter = 100;
+            double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
+            double[] shortened = new double[updated.processed.Length];
+            Array.Copy(array, 0, shortened, roiStart, array.Length);
+            updated.raw = shortened;
+            updated.dark = null;
+            */
+
+            library.Add(name, mOrig);
+        }
+
+        logger.info("finish loading library file from {0}", file);
     }
 
 

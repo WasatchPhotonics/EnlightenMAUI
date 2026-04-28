@@ -17,17 +17,18 @@ namespace EnlightenMAUI
         ////////////////////////////////////////////////////////////////////////
 
         static readonly Logger instance = new Logger();
+        public static string HELLO = "America";
 
         private StreamWriter outfile;
 
         const int AUTOSAVE_SIZE = 1 * 1024 * 1024; // 1MB
-        bool saving;
+        bool saving { get; set; }
 
         ////////////////////////////////////////////////////////////////////////
         // Public attributes
         ////////////////////////////////////////////////////////////////////////
 
-        public LogLevel level { get; set; } = LogLevel.DEBUG;
+        public LogLevel level { get; set; } = LogLevel.INFO;
         public bool loggingBLE;
 
         public bool liveUpdates { get; set; } = true;
@@ -52,7 +53,7 @@ namespace EnlightenMAUI
             }
         }
 
-        public bool debugEnabled() => level <= LogLevel.DEBUG;
+        public bool debugEnabled => level <= LogLevel.DEBUG;
         
         public bool error(string fmt, params Object[] obj)
         {
@@ -181,9 +182,17 @@ namespace EnlightenMAUI
             debug($"{label} [len {a.Length}]: {s}");
         }
 
-        public void update() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(history)));
+        public void update()
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(history)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(display)));
+        }
 
-        public StringBuilder history = new StringBuilder("Log data");
+        const int MAX_DISPLAY = 3 * 1024; // 3KB
+
+        public StringBuilder history { get; set; } = new StringBuilder("Log data");
+        public StringBuilder display { get; set; } = new StringBuilder("");
+
 
         ////////////////////////////////////////////////////////////////////////
         // Private methods
@@ -202,7 +211,7 @@ namespace EnlightenMAUI
         void log(LogLevel lvl, string fmt, params Object[] obj)
         {
             // check whether we're logging this level of message
-            if (lvl < level || saving)
+            if (saving)
                 return;
 
             string msg = "";
@@ -245,6 +254,15 @@ namespace EnlightenMAUI
                         saving = false;
                     }
                     history.Append(msg + "\n");
+                    if (lvl >= level)
+                    {
+                        display.Append(msg + "\n");
+                        while (display.Length > MAX_DISPLAY)
+                        {
+                            display.Remove(0, display.ToString().IndexOf('\n') + 1);
+                        }
+                    }
+
                     if (liveUpdates)
                         update();
                 }

@@ -22,7 +22,7 @@
         <Tab Title="About" Icon="Images/about_icon.png">
             <ShellContent x:Name="AboutTab"  ContentTemplate="{DataTemplate local:AboutPage}" Route="AboutPage"/>
         </Tab>
-        <!-- Bluetooth -->
+        <!-- Bluetooth® LE -->
         <Tab Title="Pair" Icon="IMages/pairing_icon.png">
             <ShellContent x:Name="BluetoothTab"  ContentTemplate="{DataTemplate local:BluetoothPage}" Route="BluetoothPage"/>
         </Tab>

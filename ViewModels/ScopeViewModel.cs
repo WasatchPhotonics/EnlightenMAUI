@@ -106,7 +106,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             (spec as BluetoothSpectrometer).notifyToast += (string msg) => EnlightenMAUI.Common.Util.toast(msg);
         }
 
-        Task loader = PlatformUtil.loadONNXModel("onnx", "etalon_correction.json");
+        Task loader = PlatformUtil.loadONNXModel("Processing/ml", "onnx", "etalon_correction.json");
         loader.Wait();
         //Thread.Sleep(100);
 
@@ -168,7 +168,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             libraryLoader = Task.Run(() =>
             {
                 //library = new DPLibrary("database", spec);
-                library = new WPLibrary("library/Wasatch", spec); 
+                library = new WPLibrary("Processing/library", spec); 
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
                 (library as WPLibrary).showMatchProgress += showMatchProgress;
@@ -188,7 +188,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     library = new DPLibrary("database", spec);
-                    //library = new WPLibrary("library/Wasatch", spec);
+                    //library = new WPLibrary("Processing/library", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -373,7 +373,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         {
             libraryLoader = Task.Run(() =>
             {
-                library = new WPLibrary("library/Wasatch", spec);
+                library = new WPLibrary("Processing/library", spec);
                 AnalysisViewModel.getInstance().library = library;
                 Settings.getInstance().library = library;
             });
@@ -459,7 +459,7 @@ public class ScopeViewModel : INotifyPropertyChanged
                 libraryLoader = Task.Run(() =>
                 {
                     //library = new DPLibrary("database", spec);
-                    library = new WPLibrary("library/Wasatch", spec);
+                    library = new WPLibrary("Processing/library", spec);
                     AnalysisViewModel.getInstance().library = library;
                     Settings.getInstance().library = library;
                 });
@@ -1159,7 +1159,7 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         updateLaserProperties();
 
-        if (PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
+        if (PlatformUtil.transformerLoaded && spec.performMatch && (spec.dark != null || spec.autoRamanEnabled || spec.autoDarkEnabled))
             doMatchAsync();
         else
         {
@@ -1323,7 +1323,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         uint pixels = (uint)spec.measurement.postProcessed.Length;
         double[] intensities = spec.measurement.postProcessed;
 
-        bool usingRemovalAxis = PlatformUtil.transformerLoaded && spec.useBackgroundRemoval && (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
+        bool usingRemovalAxis = (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
         try
         {

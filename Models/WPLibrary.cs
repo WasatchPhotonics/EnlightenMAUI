@@ -251,9 +251,9 @@ namespace EnlightenMAUI.Models
             }
 
             if (doLoad)
-                libraryLoader = loadFiles(root);
+                libraryLoader = loadFiles(useAssets: true, root);
 
-            userLoader = loadFiles("User Library", false);
+            userLoader = loadFiles(useAssets: false, "User Library", false);
 
             logger.debug($"finished initializing library load from {root}");
         }
@@ -327,10 +327,10 @@ namespace EnlightenMAUI.Models
             library[name] = adjusted;
         }
 
-        async Task loadFiles(string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+        async Task loadFiles(bool useAssets, string root, bool doDecon = true, string correctionFileName = "etalon_correction.json")
         {
             isLoading = true;
-            await PlatformUtil.loadFiles(root, library, originalRaws, originalDarks, doDecon, correctionFileName);
+            await PlatformUtil.loadFiles(useAssets, root, library, originalRaws, originalDarks, doDecon, correctionFileName);
 
             if (library.Count > 0)
                 loadSucceeded = true;

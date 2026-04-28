@@ -31,14 +31,6 @@ namespace EnlightenMAUI.Models
         Dictionary<string, string> libraryIDs = new Dictionary<string, string>();
         Dictionary<string, bool> activeLibraries = new Dictionary<string, bool>();
 
-        List<string> defaultSublibs = new List<string>()
-        {
-            "Alcohols, Phenols",
-            "Forensic",
-            "Hazardous Chemicals",
-            "Narcotics, Drugs, Controlled Substances Vol. 2 (customs)"
-        };
-
         public DPLibrary(string root, Spectrometer spec) : base(root, spec, false)
         {
             spectrum.y = new float[0];
@@ -125,13 +117,10 @@ namespace EnlightenMAUI.Models
                                 {
                                     logger.info("dplibrary item: {0} : {1}", key, libs[key]);
                                     libraryIDs.Add(libs[key], key);
-                                    activeLibraries.Add(libs[key], defaultSublibs.Contains(libs[key]));
+                                    activeLibraries.Add(libs[key], true);
 
-                                    if (defaultSublibs.Contains(libs[key]))
-                                    {
-                                        libIDs += key;
-                                        libIDs += ";";
-                                    }
+                                    libIDs += key;
+                                    libIDs += ";";
                                 }
                             }
                         }

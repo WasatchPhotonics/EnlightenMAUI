@@ -10,7 +10,10 @@ internal class AboutViewModel: INotifyPropertyChanged
     Logger logger = Logger.getInstance();
     Settings settings = Settings.getInstance();
 
-    public AboutViewModel() { }
+    public AboutViewModel() 
+    {
+        logger.info("Hello: {0}", Logger.HELLO);
+    }
 
     // AppInfo.Current.VersionString and VersionTracking.currentVersion seem interchangeable
     public string appVersion { get => $"EnlightenMobile {VersionTracking.CurrentVersion}"; }

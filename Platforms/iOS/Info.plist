@@ -29,8 +29,8 @@
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Location service permissions are required to use bluetooth connections.</string>
+	<string>Location service permissions are required to use Bluetooth® LE connections.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>This application acts primarily through a bluetooth-connected device and requires constant connection.</string>
+	<string>This application acts primarily through a Bluetooth® LE-connected device and requires constant connection.</string>
 </dict>
 </plist>

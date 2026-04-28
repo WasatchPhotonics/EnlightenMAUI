@@ -156,7 +156,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     {
         if (spec != null && spec is BluetoothSpectrometer)
         {
-            (spec as BluetoothSpectrometer).raiseToast("Bluetooth connection lost. Re-pair needed to collect data");
+            (spec as BluetoothSpectrometer).raiseToast("Bluetooth® LE connection lost. Re-pair needed to collect data");
             await doDisconnectAsync(true);
         }
     }
@@ -173,7 +173,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     public string title
     {
-        get => "Bluetooth Pairing";
+        get => "Bluetooth® LE Pairing";
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -182,7 +182,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
 
     /// <summary>
     /// Relay connection progress from the Spectrometer Model back to the 
-    /// Bluetooth View.
+    /// Bluetooth® LE View.
     /// </summary>
     internal void showSpectrometerConnectionProgress(double perc) =>
         connectionProgress = perc;
@@ -199,7 +199,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     double _connectionProgress = 0;
 
     ////////////////////////////////////////////////////////////////////////
-    // Bluetooth Enabled
+    // Bluetooth® LE Enabled
     ////////////////////////////////////////////////////////////////////////
 
     public bool bluetoothEnabled 
@@ -235,7 +235,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
     // float that update back here somehow, but...this will work for now
     public async Task<bool> doResetAsync()
     {
-        logger.debug("BVM.doResetAsync: attempting to disable Bluetooth");
+        logger.debug("BVM.doResetAsync: attempting to disable Bluetooth® LE");
 
         bleDeviceList.Clear();
         BLEDevice.paired = false;
@@ -243,29 +243,29 @@ public class BluetoothViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectButtonBackgroundColor)));
         
         if (!Util.enableBluetooth(false))
-            logger.error("BVM.doResetAsync: Unable to disable Bluetooth");
+            logger.error("BVM.doResetAsync: Unable to disable Bluetooth® LE");
 
         bluetoothEnabled = false;
 
-        logger.debug("BVM.doResetAsync: sleeping during Bluetooth restart");
+        logger.debug("BVM.doResetAsync: sleeping during Bluetooth® LE restart");
         await Task.Delay(1000);
 
-        logger.debug("BVM.doResetAsync: attempting to re-enable Bluetooth");
+        logger.debug("BVM.doResetAsync: attempting to re-enable Bluetooth® LE");
         var ok = Util.enableBluetooth(true);
         if (!ok)
         {
-            logger.error("BVM.doResetAsync: Unable to re-enable Bluetooth");
+            logger.error("BVM.doResetAsync: Unable to re-enable Bluetooth® LE");
             return false;
         }
 
 
-        logger.debug("BVM.doResetAsync: inferring successful Bluetooth enable...sleeping");
+        logger.debug("BVM.doResetAsync: inferring successful Bluetooth® LE enable...sleeping");
         await Task.Delay(2000);
 
-        logger.debug("BVM.doResetAsync: storing new Bluetooth enable status");
+        logger.debug("BVM.doResetAsync: storing new Bluetooth® LE enable status");
         bluetoothEnabled = true;
 
-        logger.info("BVM.doResetAsync: Bluetooth successfully reset");
+        logger.info("BVM.doResetAsync: Bluetooth® LE successfully reset");
         return true;
     }
 
@@ -443,13 +443,13 @@ public class BluetoothViewModel : INotifyPropertyChanged
             return false;
         }
 
-        logger.debug("Verifying Bluetooth permissions..");
+        logger.debug("Verifying Bluetooth® LE permissions..");
         var permissionResult = await Permissions.CheckStatusAsync<Permissions.Bluetooth>();
         if (permissionResult != PermissionStatus.Granted)
         {
             permissionResult = await Permissions.RequestAsync<Permissions.Bluetooth>();
         }
-        logger.debug($"Result of requesting Bluetooth permissions: '{permissionResult}'");
+        logger.debug($"Result of requesting Bluetooth® LE permissions: '{permissionResult}'");
         if (permissionResult != PermissionStatus.Granted)
         {
             logger.debug("Permissions not available, direct user to settings screen.");
@@ -695,7 +695,7 @@ public class BluetoothViewModel : INotifyPropertyChanged
                 _ = doResetAsync();
 
                 notifyUser("Bluetooth",
-                           ex.Message + "\nAutomatically resetting Bluetooth adapter. Click \"Ok\" to re-scan and try again.",
+                           ex.Message + "\nAutomatically resetting Bluetooth® LE adapter. Click \"Ok\" to re-scan and try again.",
                            "Ok");
                 return false;
             }
