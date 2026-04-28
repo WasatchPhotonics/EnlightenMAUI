@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:EnlightenMAUI.Popups"
              HorizontalOptions="Fill">
 
-    <Grid Padding="25">
+    <Grid Padding="0">
         <Border  BackgroundColor="#666" 
              Padding="2" 
              HorizontalOptions="Fill">

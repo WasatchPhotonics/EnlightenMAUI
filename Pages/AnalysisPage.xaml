@@ -67,66 +67,90 @@
                 <StackLayout HorizontalOptions="Center" Orientation="Horizontal" Margin="10,2,10,2">
 
                     <Border BackgroundColor="#4363d8" Stroke="Transparent" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
-                    <Label Text="Sample" Margin="2,0,15,0" FontSize="12"/>
+                    <Label Text="Sample" Margin="2,0,15,0" TextColor="#ddd" FontSize="12"/>
 
                     <Border BackgroundColor="#ffe119" Stroke="Transparent" IsVisible="{Binding matchFound}" WidthRequest="10" HeightRequest="10" StrokeShape="Ellipse 10,10"/>
-                    <Label Text="Reference" IsVisible="{Binding matchFound}" Margin="2,0,5,0" FontSize="12"/>
+                    <Label Text="Reference" IsVisible="{Binding matchFound}" Margin="2,0,5,0" TextColor="#ddd" FontSize="12"/>
 
 
                 </StackLayout>
 
                 <Label Text="{Binding spectrumLabel}" HorizontalOptions="Center" VerticalOptions="End" FontSize="12" TextColor="#ddd"/>
 
-                <Label HorizontalOptions="Center" IsVisible="{Binding noMatchYet}" Text="{Binding matchString}" FontSize="24" />
+                <Label HorizontalOptions="Center" IsVisible="{Binding noMatchYet}" Text="{Binding matchString}" TextColor="#ddd" FontSize="24" />
 
                 <VerticalStackLayout IsVisible="{Binding matchFound}" Margin="10,5,10,0" HorizontalOptions="Center">
 
                     <HorizontalStackLayout HorizontalOptions="FillAndExpand">
                         <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                            <Label Text="Compound" HorizontalOptions="End" FontSize="16" />
+                            <Label Text="Compound" HorizontalOptions="End" TextColor="#ddd" FontSize="16" />
                         </Border>
                         <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                            <Label Text="{Binding matchString}" HorizontalOptions="Start" FontSize="16" />
+                            <Label Text="{Binding matchString}" TextColor="#ddd" HorizontalOptions="Start" FontSize="16" />
                         </Border>
                     </HorizontalStackLayout>
 
                     <HorizontalStackLayout HorizontalOptions="FillAndExpand">
                         <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                            <Label Text="Score" HorizontalOptions="End" FontSize="16"/>
+                            <Label Text="Score" HorizontalOptions="End" TextColor="#ddd" FontSize="16"/>
                         </Border>
                         <Border Stroke="#999" WidthRequest="150" StrokeThickness="1" HorizontalOptions="FillAndExpand" Padding="5" >
-                            <Label Text="{Binding scoreString}" HorizontalOptions="Start" FontSize="16"/>
+                            <Label Text="{Binding scoreString}" TextColor="#ddd" HorizontalOptions="Start" FontSize="16"/>
                         </Border>
                     </HorizontalStackLayout>
 
                 </VerticalStackLayout>
 
-                <StackLayout IsVisible="{Binding spectrumCollected}" Orientation="Horizontal" Margin="5,5,5,0" HorizontalOptions="Center">
-                    <Button Margin="2" 
-                        CornerRadius="10"
-                        WidthRequest="75"
-                        HeightRequest="50"
-                        Text="Share"
-                        Command="{Binding shareCmd}"
-                        BackgroundColor="#515151"/>
-                    <Button Margin="2" 
-                        CornerRadius="10"
-                        WidthRequest="150"
-                        HeightRequest="50"
-                        Text="Add To Library"
-                        Command="{Binding saveCmd}"
-                        BackgroundColor="#515151"/>
-                    <!--
-                    <Grid Margin="5" HorizontalOptions="Center" VerticalOptions="Center" HeightRequest="50">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                    </Grid>
-                    -->
+                <Grid IsVisible="{Binding spectrumCollected}" Margin="5,5,5,0" HorizontalOptions="Center">
 
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    
+                    <Button Margin="2" 
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            HorizontalOptions="Fill"
+                            Text="Share"
+                            Command="{Binding shareCmd}"
+                            BackgroundColor="#515151"/>
 
-                </StackLayout>
+                    <Button Margin="2" 
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            HorizontalOptions="Fill"
+                            Text="Add To Library"
+                            Command="{Binding saveCmd}"
+                            BackgroundColor="#515151"/>
+                    <Button Margin="2" 
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            HeightRequest="50" 
+                            HorizontalOptions="Fill" 
+                            VerticalOptions="Start" 
+                            Text="Import Library" 
+                            Command="{Binding importCmd}"/>
+
+                    <Button Margin="2" 
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            HeightRequest="50" 
+                            HorizontalOptions="Fill" 
+                            VerticalOptions="Start" 
+                            Text="Export Library" 
+                            Command="{Binding exportCmd}"/>
+                
+                </Grid>
 
                 <Button Margin="10" IsVisible="False" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Start" Text="Correct Wavenumbers to Standard" Command="{Binding correctionCmd}"/>
 

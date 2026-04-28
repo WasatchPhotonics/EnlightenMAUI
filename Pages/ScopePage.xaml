@@ -12,54 +12,62 @@
         <local:ViewModels.ScopeViewModel/>
     </ContentPage.BindingContext>
 
-    <StackLayout Orientation="Vertical" Padding="0" Spacing="0">
+    <Grid>
 
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
         <!-- Page header -->
-        <Image Source="enlighten_logo.png" WidthRequest="300"/>
+        <Image Grid.Row="0" Source="enlighten_logo.png" WidthRequest="300"/>
 
         <!-- ======================================================= -->
         <!-- The all-important spectral chart                        -->
         <!-- ======================================================= -->
 
-        <telerik:RadCartesianChart x:Name="chart"
-                                    HorizontalOptions="FillAndExpand"
-                                    VerticalOptions="FillAndExpand"
-                                    MinimumHeightRequest="300"
+            
+        <Grid Grid.Row="1" VerticalOptions="Fill">
+            <telerik:RadCartesianChart x:Name="chart"
                                     BackgroundColor="#000"
                                     Margin="0">
 
-            <!-- axes -->
-            <telerik:RadCartesianChart.HorizontalAxis>
-                <telerik:NumericalAxis ShowLabels="True"
-                                           LabelFitMode="MultiLine"
-                                           LabelTextColor="#999"
-                                           LabelFormat="{Binding xAxisLabelFormat}"
-                                           Minimum="{Binding xAxisMinimum}"
-                                           Maximum="{Binding xAxisMaximum}" />
-            </telerik:RadCartesianChart.HorizontalAxis>
-            <telerik:RadCartesianChart.VerticalAxis>
-                <telerik:NumericalAxis ShowLabels="True"
-                                           LabelFitMode="MultiLine"
-                                       RangeExtendDirection="Positive"
-                                           LabelTextColor="#999"/>
-            </telerik:RadCartesianChart.VerticalAxis>
-            
-            <!-- series data -->
-            <telerik:RadCartesianChart.Series>
-                <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
-                <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#27c0a1" DisplayName="Live" x:DataType="local:ViewModels.ScopeViewModel" ItemsSource="{Binding chartData}" />
-             </telerik:RadCartesianChart.Series>
+                <!-- axes -->
+                <telerik:RadCartesianChart.HorizontalAxis>
+                    <telerik:NumericalAxis ShowLabels="True"
+                                            LabelFitMode="MultiLine"
+                                            LabelTextColor="#999"
+                                            LabelFormat="{Binding xAxisLabelFormat}"
+                                            Minimum="{Binding xAxisMinimum}"
+                                            Maximum="{Binding xAxisMaximum}" />
+                </telerik:RadCartesianChart.HorizontalAxis>
+                <telerik:RadCartesianChart.VerticalAxis>
+                    <telerik:NumericalAxis ShowLabels="True"
+                                            LabelFitMode="MultiLine"
+                                        RangeExtendDirection="Positive"
+                                            LabelTextColor="#999"/>
+                </telerik:RadCartesianChart.VerticalAxis>
 
-            <!-- pan and zoom -->
-            <telerik:RadCartesianChart.ChartBehaviors>
-                <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
-                                                     PanMode="Both" 
-                                                     HandleDoubleTap="True"/>
-                <telerik:ChartTooltipBehavior TriggerMode="Tap" />
-            </telerik:RadCartesianChart.ChartBehaviors>
-        </telerik:RadCartesianChart>
+                <!-- series data -->
+                <telerik:RadCartesianChart.Series>
+                    <!-- I'd like to bind XValueBinding="{Binding xAxisOptionName}", but that doesn't seem allowed -->
+                    <telerik:ScatterLineSeries XValueBinding="xValue" YValueBinding="intensity" Stroke="#27c0a1" DisplayName="Live" x:DataType="local:ViewModels.ScopeViewModel" ItemsSource="{Binding chartData}" />
+                </telerik:RadCartesianChart.Series>
 
-        <Grid HorizontalOptions="FillAndExpand" VerticalOptions="End" IsEnabled="{Binding paired}">
+                <!-- pan and zoom -->
+                <telerik:RadCartesianChart.ChartBehaviors>
+                    <telerik:ChartPanAndZoomBehavior ZoomMode="Both"
+                                                        PanMode="Both" 
+                                                        HandleDoubleTap="True"/>
+                    <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                </telerik:RadCartesianChart.ChartBehaviors>
+            </telerik:RadCartesianChart>
+
+            <Image Source="Images/laser.svg" Opacity="0.75" IsVisible="{Binding laserEnabled}" WidthRequest="250" HorizontalOptions="Center" VerticalOptions="Center" ZIndex="2"/>
+
+        </Grid>
+        <Grid Grid.Row="2" HorizontalOptions="Fill" VerticalOptions="End" IsEnabled="{Binding paired}">
 
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -97,10 +105,10 @@
             <!-- Command buttons -->
 
             <Grid   HorizontalOptions="CenterAndExpand" 
-                    IsVisible="{Binding manualModeEnabled}" 
-                    Grid.Row="2" 
-                    Grid.Column="0" 
-                    Margin="10, 0, 10, 0">
+                IsVisible="{Binding manualModeEnabled}" 
+                Grid.Row="2" 
+                Grid.Column="0" 
+                Margin="10, 0, 10, 0">
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -115,38 +123,40 @@
                 </Grid.ColumnDefinitions>
 
                 <Entry  IsVisible="{Binding laserArmIncomplete}" 
-                        IsEnabled="{Binding spectrometerInitialized}"
-                        Margin="30,0,30,5" 
-                        MinimumWidthRequest="300" 
-                        Grid.Row="0"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="3"
-                        FontSize="16"
-                        HorizontalOptions="Fill" 
-                        HorizontalTextAlignment="Center"
-                        Background="#333"
-                        TextColor="#eee"
-                        Text="{Binding PasswordEntry}"/>
+                    IsEnabled="{Binding spectrometerInitialized}"
+                    Margin="30,0,30,5" 
+                    MinimumWidthRequest="300" 
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    FontSize="16"
+                    HorizontalOptions="Fill" 
+                    HorizontalTextAlignment="Center"
+                    Background="#333"
+                   Placeholder="Laser Password"
+                    PlaceholderColor="#999"
+                    TextColor="#eee"
+                    Text="{Binding PasswordEntry}"/>
 
                 <Button IsVisible="{Binding laserArmIncomplete}"
-                        Text="{Binding laserWarningText}"
-                        IsEnabled="{Binding spectrometerInitialized}"
-                        FontSize="14"
-                        Margin="20,0,20,10"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="3"
-                        Grid.Row="1"
-                        Grid.RowSpan="2"
-                        HorizontalOptions="Fill"
-                        Command="{Binding laserWarningCmd}"
-                        BackgroundColor="{Binding laserWarningBackgroundColor}"
-                        MinimumWidthRequest="150"
-                        HeightRequest="80"
-                        LineBreakMode="WordWrap"
-                        ImageSource="Images/laser.svg"
-                        ContentLayout="Right, 3"/>
+                    Text="{Binding laserWarningText}"
+                    IsEnabled="{Binding spectrometerInitialized}"
+                    FontSize="14"
+                    Margin="20,0,20,10"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Grid.Row="1"
+                    Grid.RowSpan="2"
+                    HorizontalOptions="Fill"
+                    Command="{Binding laserWarningCmd}"
+                    BackgroundColor="{Binding laserWarningBackgroundColor}"
+                    MinimumWidthRequest="150"
+                    HeightRequest="80"
+                    LineBreakMode="WordWrap"
+                    ImageSource="Images/laser.svg"
+                    ContentLayout="Right, 3"/>
 
-                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
+                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" TextColor="#eee" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.ColumnSpan="3" Margin="5"/>
                 <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="0"/>
                 <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="1" Margin="10" Grid.Column="2"/>
 
@@ -154,61 +164,61 @@
 
                     <!-- Laser -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding laserCmd}"
-                                    Source="Images/laser.svg"
-                                    BackgroundColor="{Binding laserButtonBackgroundColor}" />
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding laserCmd}"
+                                Source="Images/laser.svg"
+                                BackgroundColor="{Binding laserButtonBackgroundColor}" />
 
 
                     <!-- Acquire -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding acquireCmd}"
-                                    Source="Images/apeture.svg"
-                                    BackgroundColor="{Binding acquireButtonBackgroundColor}" />
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding acquireCmd}"
+                                Source="Images/apeture.svg"
+                                BackgroundColor="{Binding acquireButtonBackgroundColor}" />
 
                     <!-- Dark -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding darkCmd}"
-                                    Source="Images/bulb_dark.svg"
-                                    BackgroundColor="{Binding darkButtonBackgroundColor}" />
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding darkCmd}"
+                                Source="Images/bulb_dark.svg"
+                                BackgroundColor="{Binding darkButtonBackgroundColor}" />
                     <!-- Save -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding saveCmd}"
-                                    IsEnabled="{Binding hasSpectrum}"
-                                    Source="Images/triangle_down_underline.svg"
-                                    BackgroundColor="#515151"/>
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding saveCmd}"
+                                IsEnabled="{Binding hasSpectrum}"
+                                Source="Images/triangle_down_underline.svg"
+                                BackgroundColor="#515151"/>
 
 
                     <!-- Add -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding addCmd}" 
-                                    IsEnabled="{Binding hasSpectrum}"
-                                    Source="Images/eye.svg" 
-                                    BackgroundColor="#515151"/>
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding addCmd}" 
+                                IsEnabled="{Binding hasSpectrum}"
+                                Source="Images/eye.svg" 
+                                BackgroundColor="#515151"/>
 
                     <!-- Clear -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding clearCmd}"
-                                    IsEnabled="{Binding hasTraces}"
-                                    Source="Images/eraser.svg" 
-                                    BackgroundColor="#515151"/> 
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding clearCmd}"
+                                IsEnabled="{Binding hasTraces}"
+                                Source="Images/eraser.svg" 
+                                BackgroundColor="#515151"/>
 
 
                 </FlexLayout>
@@ -216,17 +226,17 @@
 
             <!-- Command buttons -->
             <Grid   HorizontalOptions="Center" 
-                    IsVisible="{Binding manualModeDisabled}" 
-                    Grid.Row="2" 
-                    Grid.Column="0" 
-                    Margin="10, 0, 10, 0">
+                IsVisible="{Binding manualModeDisabled}" 
+                Grid.Row="2" 
+                Grid.Column="0" 
+                Margin="10, 0, 10, 0">
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
+
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -234,68 +244,70 @@
                 </Grid.ColumnDefinitions>
 
                 <Entry  IsVisible="{Binding laserArmIncomplete}" 
-                        IsEnabled="{Binding spectrometerInitialized}"
-                        Margin="30,0,30,5" 
-                        MinimumWidthRequest="300" 
-                        Grid.Row="0"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="3"
-                        FontSize="16"
-                        HorizontalOptions="Fill" 
-                        HorizontalTextAlignment="Center"
-                        Background="#333"
-                        TextColor="#eee"
-                        Text="{Binding PasswordEntry}"/>
+                    IsEnabled="{Binding spectrometerInitialized}"
+                    Margin="30,0,30,5" 
+                    MinimumWidthRequest="300" 
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    FontSize="16"
+                    HorizontalOptions="Fill" 
+                    HorizontalTextAlignment="Center"
+                    Background="#333"
+                   Placeholder="Laser Password"
+                    PlaceholderColor="#999"
+                    TextColor="#eee"
+                    Text="{Binding PasswordEntry}"/>
 
                 <Button IsVisible="{Binding laserArmIncomplete}"
-                        IsEnabled="{Binding spectrometerInitialized}"
-                        Text="{Binding laserWarningText}"
-                        FontSize="14"
-                        Margin="20,0,20,10"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="3"
-                        Grid.Row="1"
-                        Grid.RowSpan="2"
-                        HorizontalOptions="Fill"
-                        Command="{Binding laserWarningCmd}"
-                        BackgroundColor="{Binding laserWarningBackgroundColor}"
-                        MinimumWidthRequest="150"
-                        HeightRequest="80"
-                        LineBreakMode="WordWrap"
-                        ImageSource="Images/laser.svg"
-                        ContentLayout="Right, 3"/>
+                    IsEnabled="{Binding spectrometerInitialized}"
+                    Text="{Binding laserWarningText}"
+                    FontSize="14"
+                    Margin="20,0,20,10"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Grid.Row="1"
+                    Grid.RowSpan="2"
+                    HorizontalOptions="Fill"
+                    Command="{Binding laserWarningCmd}"
+                    BackgroundColor="{Binding laserWarningBackgroundColor}"
+                    MinimumWidthRequest="150"
+                    HeightRequest="80"
+                    LineBreakMode="WordWrap"
+                    ImageSource="Images/laser.svg"
+                    ContentLayout="Right, 3"/>
 
                 <StackLayout IsVisible="{Binding laserArmed}"
-                             Grid.Column="0"
-                             Orientation="Horizontal"
-                             HorizontalOptions="End"
-                             Spacing="5">
+                            Grid.Column="0"
+                            Orientation="Horizontal"
+                            HorizontalOptions="End"
+                            Spacing="5">
 
                     <!-- Add -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding addCmd}" 
-                                    IsEnabled="{Binding hasSpectrum}"
-                                    Source="Images/eye.svg" 
-                                    BackgroundColor="#515151"/>
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding addCmd}" 
+                                IsEnabled="{Binding hasSpectrum}"
+                                Source="Images/eye.svg" 
+                                BackgroundColor="#515151"/>
 
                     <!-- Clear -->
                     <ImageButton    Margin="2" 
-                                    CornerRadius="30"
-                                    WidthRequest="50"
-                                    HeightRequest="50"
-                                    Command="{Binding clearCmd}"
-                                    IsEnabled="{Binding hasTraces}"
-                                    Source="Images/eraser.svg" 
-                                    BackgroundColor="#515151"/>
+                                CornerRadius="30"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                Command="{Binding clearCmd}"
+                                IsEnabled="{Binding hasTraces}"
+                                Source="Images/eraser.svg" 
+                                BackgroundColor="#515151"/>
 
                 </StackLayout>
 
-                <Border IsVisible="{Binding laserArmed}"
+                <Grid Grid.Column="1">
+                    <Border IsVisible="{Binding laserArmed}"
                         Margin="10,0,10,5"
-                        Grid.Column="1"
                         Stroke="#515151"
                         HorizontalOptions="Center"
                         Background="Transparent"
@@ -303,33 +315,41 @@
                         WidthRequest="80"
                         HeightRequest="80"
                         StrokeShape="Ellipse 80,80">
-                    <Button HeightRequest="70"
+                        <Button HeightRequest="70"
                             Command="{Binding acquireCmd}"
                             IsEnabled="{Binding readyToCollect}"
                             BackgroundColor="{Binding acquireButtonBackgroundColor}"
                             CornerRadius="35"
                             WidthRequest="70"/>
-                </Border>
+                    </Border>
 
-                <Label Text="Perform PS Standard Correction?" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Margin="5"/>
+                    <Image Margin="0,0,0,3" 
+                           Source="Images/wp_enlighten_battery_critical.png"  
+                           WidthRequest="30" 
+                           HorizontalOptions="Center" 
+                           IsVisible="{Binding batteryCriticalForCollection}"/>
+
+                </Grid>
+
+                <Label Text="Perform PS Standard Correction?" TextColor="#eee" IsVisible="{Binding polyCorrectionStep}" HorizontalOptions="Center" FontSize="16" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Margin="5"/>
                 <Button Text="Skip" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding denyPSCmd}" WidthRequest="100" Grid.Row="2" Margin="10" Grid.Column="0"/>
                 <Button Text="Confirm" FontSize="16" IsVisible="{Binding polyCorrectionStep}" Command="{Binding confirmPSCmd}" WidthRequest="100" Grid.Row="2" Margin="10" Grid.Column="2"/>
 
                 <StackLayout Margin="0,0,10,5"
-                             Grid.Column="2"
-                             Orientation="Horizontal"
-                             HorizontalOptions="Start"
-                             IsVisible="{Binding laserArmed}"
-                             Spacing="5">
+                            Grid.Column="2"
+                            Orientation="Horizontal"
+                            HorizontalOptions="Start"
+                            IsVisible="{Binding laserArmed}"
+                            Spacing="5">
 
                     <StackLayout Orientation="Vertical" Padding="0,20,0,0" VerticalOptions="Start">
-                    <Image Source="Images/wp_enlighten_charging.png" IsVisible="{Binding batteryCharging}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_critical.png" IsVisible="{Binding batteryCritical}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_25.png" IsVisible="{Binding battery25}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_50.png" IsVisible="{Binding battery50}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_75.png" IsVisible="{Binding battery75}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
-                    <Image Source="Images/wp_enlighten_battery_100.png" IsVisible="{Binding battery100}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
-                    <Label TextColor="#eee" FontSize="10" HorizontalOptions="Center" Text="{Binding batteryState}"/>
+                        <Image Source="Images/wp_enlighten_charging.png" IsVisible="{Binding batteryCharging}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                        <Image Source="Images/wp_enlighten_battery_critical.png" IsVisible="{Binding batteryCritical}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                        <Image Source="Images/wp_enlighten_battery_25.png" IsVisible="{Binding battery25}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                        <Image Source="Images/wp_enlighten_battery_50.png" IsVisible="{Binding battery50}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                        <Image Source="Images/wp_enlighten_battery_75.png" IsVisible="{Binding battery75}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                        <Image Source="Images/wp_enlighten_battery_100.png" IsVisible="{Binding battery100}" WidthRequest="40" HeightRequest="40" Aspect="AspectFill"/>
+                        <Label TextColor="#eee" FontSize="10" HorizontalOptions="Center" Text="{Binding batteryState}"/>
                     </StackLayout>
 
                     <Image Source="Images/wp_enlighten_signal_bars1.png" VerticalOptions="Center" IsVisible="{Binding ble1Bar}" WidthRequest="50" HeightRequest="50" Aspect="AspectFill"/>
@@ -356,16 +376,16 @@
             </StackLayout>
 
         </Grid>
-
-        <!-- StatusBar -->
-        <Border IsVisible="False" VerticalOptions="End" BackgroundColor="#666" Padding="2">
-            <Border BackgroundColor="#444" Padding="2">
-                <StackLayout Orientation="Horizontal" Spacing="10" Padding="10">
-                    <Label TextColor="#eee" Text="Battery"/>
-                    <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}" />
-                </StackLayout>
-            </Border>
+       
+    <!-- StatusBar -->
+    <Border IsVisible="False" VerticalOptions="End" BackgroundColor="#666" Padding="2">
+        <Border BackgroundColor="#444" Padding="2">
+            <StackLayout Orientation="Horizontal" Spacing="10" Padding="10">
+                <Label TextColor="#eee" Text="Battery"/>
+                <Label TextColor="{Binding batteryColor}" Text="{Binding batteryState}" />
+            </StackLayout>
         </Border>
+    </Border>
 
-    </StackLayout>
+    </Grid>
 </ContentPage>

@@ -1,4 +1,5 @@
-﻿using Android;
+﻿using Accord.Math.Distances;
+using Android;
 using Android.Content;
 using Android.Content.Res;
 using Android.Locations;
@@ -20,11 +21,13 @@ using Newtonsoft.Json;
 using NumSharp;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
 using Xamarin.Google.Crypto.Tink.Subtle;
+using static Android.Provider.ContactsContract;
 using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
 using AndrApp = Android.App;
@@ -116,6 +119,8 @@ internal class PlatformUtil
     static string userLibraryPath;
     static string configurationPath;
     static string autoSavePath;
+
+    public static string modelName = "";
 
     public static void RequestSelectLogFolder()
     {
@@ -395,6 +400,7 @@ internal class PlatformUtil
                 if (path.Contains("light") && tempBuffer.Count > 0)
                 {
                     simpleBuffer = tempBuffer;
+                    modelName = getFileName(path);
                 }
                 else if (tempBuffer.Count > 0)
                 {
@@ -506,9 +512,47 @@ internal class PlatformUtil
         }
     }
 
+    static string getFileName(Java.IO.File file)
+    {
+        string name = file.Name;
+        string[] parts = name.Split('.');
+        StringBuilder sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            if (sb.Length > 0 && part != parts.Last())
+                sb.Append('.');
+
+            if (part != parts.Last())
+                sb.Append(part);
+            else
+                break;
+        }
+
+        return sb.ToString();
+    }
+
+    public static string getFileName(string name)
+    {
+        string temp = name.Split('/').Last();
+        string[] parts = temp.Split('.');
+        StringBuilder sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            if (sb.Length > 0 && part != parts.Last())
+                sb.Append('.');
+
+            if (part != parts.Last())
+                sb.Append(part);
+            else
+                break;
+        }
+
+        return sb.ToString();
+    }
+
     async static Task addUserFile(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)
     {
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
         await loadCSV(file, spec, dict);
     }
 
@@ -516,7 +560,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
@@ -576,6 +620,79 @@ internal class PlatformUtil
         catch (Exception ex)
         {
             logger.error("correction load failed with error {0}", ex.Message);
+        }
+    }
+
+    public static async Task Unzip(string source, string destination)
+    {
+        await ZipFile.ExtractToDirectoryAsync(source, destination);
+    }
+
+    public static async Task<string> ZipFolder(string source, string destination)
+    {
+        var f = new Java.IO.File(source);
+        if (!f.Exists() || !f.IsDirectory)
+            return null;
+
+        FileStream fs = System.IO.File.OpenWrite(destination + ".zip");
+        await ZipFile.CreateFromDirectoryAsync(source, fs);
+        fs.Flush();
+        fs.Close();
+
+        return destination + ".zip";
+    }
+
+    public static async Task<string> ZipFiles(string[] paths, string destination)
+    {
+        try
+        {
+            var f = new Java.IO.File(destination);
+            if (!f.Exists())
+                f.Mkdirs();
+
+            foreach (var path in paths)
+            {
+                string name = getFileName(path) + ".csv";
+                string fileDest = Path.Combine(destination, name);
+                System.IO.File.Copy(path, fileDest);
+            }
+            
+
+            FileStream fs = System.IO.File.OpenWrite(destination + ".zip");
+            await ZipFile.CreateFromDirectoryAsync(destination, fs);
+            fs.Flush();
+            fs.Close();
+            return destination + ".zip";
+            /*
+            BufferedInputStream origin = null;
+            Stream dest = System.IO.File.OpenHandle(destination);
+            ZipOutputStream zout = new ZipOutputStream(new BufferedOutputStream(dest));
+            byte[] data = new byte[1024];
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                
+                FileInputStream fi = new FileInputStream(paths[i]);
+                origin = new BufferedInputStream(fi, BUFFER);
+
+                ZipEntry entry = new ZipEntry(paths[i].substring(paths[i].lastIndexOf("/") + 1));
+                out.putNextEntry(entry);
+                int count;
+
+                while ((count = origin.read(data, 0, BUFFER)) != -1)
+                {
+                    out.write(data, 0, count);
+                }
+                origin.close();
+            }
+ 
+            out.close();
+            */
+        }
+        catch (Exception e)
+        {
+            return null;
+            //e.printStackTrace();
         }
     }
 
@@ -1345,7 +1462,86 @@ internal class PlatformUtil
         return compLibrary;
     }
 
-    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+    public static async Task<Dictionary<string, AgnosticSimpleMeasurement>> ImportZip(string path)
+    {
+        Dictionary<string, AgnosticSimpleMeasurement> data = new Dictionary<string, AgnosticSimpleMeasurement>();
+        Regex csvReg = new Regex(@".*\.csv$");
+
+        string unzipPath = PlatformUtil.getSavePath();
+        Java.IO.File initial = new Java.IO.File(path);
+        unzipPath = Path.Join(unzipPath, initial.Name.Split('.')[0]);
+
+        await Unzip(path,unzipPath);
+        Java.IO.File unzipped = new Java.IO.File(unzipPath);
+
+        if (unzipped.Exists())
+        {
+            if (unzipped.IsDirectory)
+            {
+                Java.IO.File[] paths = unzipped.ListFiles();
+                if (paths != null)
+                {
+                    foreach (Java.IO.File file in paths)
+                    {
+                        if (csvReg.IsMatch(file.AbsolutePath))
+                        {
+                            SimpleCSVParser parser = new SimpleCSVParser();
+                            Stream s = System.IO.File.OpenRead(file.AbsolutePath);
+                            StreamReader sr = new StreamReader(s);
+                            await parser.parseStream(s, tag: file.Name);
+
+                            AgnosticSimpleMeasurement asm = new AgnosticSimpleMeasurement();
+                            asm.data = new Tuple<List<double>, List<double>>(parser.wavenumbers, parser.intensities);
+                            asm.metadata = parser.metadata;
+
+                            data.Add(file.Name.Split('.')[0], asm);
+                        }
+                    }
+                }
+            }
+        }
+
+        return data;
+    }
+
+
+    public static async Task<Dictionary<string, AgnosticSimpleMeasurement>> ImportLibrary(string path)
+    {
+        Regex csvReg = new Regex(@".*\.csv$");
+        Regex zipReg = new Regex(@".*\.zip$");
+
+        Dictionary<string, AgnosticSimpleMeasurement> data = new Dictionary<string, AgnosticSimpleMeasurement>();
+
+        if (csvReg.IsMatch(path))
+        {
+            MultiCSVParser parser = new MultiCSVParser();
+            Stream s = System.IO.File.OpenRead(path);
+            StreamReader sr = new StreamReader(s);
+            await parser.parseStream(s);
+
+            foreach (string tag in parser.intensities.Keys)
+            {
+                string compound = tag;
+                if (compound.ToLower() == "processed")
+                    compound = parser.name;
+
+                AgnosticSimpleMeasurement asm = new AgnosticSimpleMeasurement();
+                asm.data = new Tuple<List<double>, List<double>>(parser.wavenumbers, parser.intensities[tag]);
+                if (parser.metadata.ContainsKey(tag))
+                    asm.metadata = parser.metadata[tag];
+
+                data.Add(compound, asm);
+            }
+        }
+        else if (zipReg.IsMatch(path))
+        {
+            data = await ImportZip(path);
+        }
+
+        return data;
+    }
+
+    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json", bool skipSearch = false)
     {
         if (useAssets)
         {
@@ -1387,33 +1583,43 @@ internal class PlatformUtil
         {
             var cacheDirs = Platform.AppContext.GetExternalFilesDirs(null);
             Java.IO.File libraryFolder = null;
-            string[] rootPath = root.Split('/');
-            int depth = rootPath.Length;
 
-            foreach (var cDir in cacheDirs)
+            if (!skipSearch)
             {
-                libraryFolder = traverseDown(rootPath, cDir);
-                if (libraryFolder != null)
-                    break;
+                string[] rootPath = root.Split('/');
+                int depth = rootPath.Length;
 
+                foreach (var cDir in cacheDirs)
+                {
+                    libraryFolder = traverseDown(rootPath, cDir);
+                    if (libraryFolder != null)
+                        break;
+
+                }
+
+                if (libraryFolder == null)
+                {
+                    /*
+                    if (library.Count > 0)
+                        loadSucceeded = true;
+                    isLoading = false;
+                    InvokeLoadFinished();
+                    return;
+                    */
+                    return library;
+                }
             }
-
-            if (libraryFolder == null)
+            else
             {
-                /*
-                if (library.Count > 0)
-                    loadSucceeded = true;
-                isLoading = false;
-                InvokeLoadFinished();
-                return;
-                */
-                return library;
+                libraryFolder = new Java.IO.File(root);
             }
 
             Regex csvReg = new Regex(@".*\.csv$");
             Regex jsonReg = new Regex(@".*\.json$");
 
             var libraryFiles = libraryFolder.ListFiles();
+            logger.debug("Found {0} files in user library folder {1}", libraryFiles.Length, libraryFolder.AbsolutePath);
+
 
             foreach (var libraryFile in libraryFiles)
             {
@@ -1432,7 +1638,7 @@ internal class PlatformUtil
                 {
                     try
                     {
-                        await loadCSV(libraryFile, originalRaws, library);
+                        await loadCSV(libraryFile, originalRaws, library, strictParse: skipSearch);
                     }
                     catch (Exception e)
                     {
@@ -1509,22 +1715,39 @@ internal class PlatformUtil
         return libraryFolder;
     }
 
-    static async Task loadCSV(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library)
+    static async Task loadCSV(Java.IO.File file, Dictionary<string, double[]> originalRaws, Dictionary<string, Measurement> library, bool strictParse = false)
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
         StreamReader sr = new StreamReader(s);
-        await parser.parseStream(s);
+        await parser.parseStream(s, strictParse, tag: file.Name);
 
         Measurement m = new Measurement();
         m.wavenumbers = parser.wavenumbers.ToArray();
         m.raw = parser.intensities.ToArray();
         m.excitationNM = 785;
 
+        if (parser.timestamp != null)
+        {
+            DateTime temp = DateTime.MinValue;
+            bool ok = DateTime.TryParseExact(parser.timestamp, "dd/MM/yyyy HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out temp);
+            if (ok)
+                m.timestamp = temp;
+            else
+            {
+                ok = DateTime.TryParseExact(parser.timestamp, "yyyy-MM-dd HH:mm:ss.ffffff", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out temp);
+                if (ok)
+                    m.timestamp = temp;
+            }
+        }
+        if (parser.matches != null)
+            m.declaredMatch = new string[] { parser.matches };
+        if (parser.score != null)
+            m.declaredScore = Double.Parse(parser.score);
 
 #if USE_DECON
             Deconvolution.Spectrum spec = new Deconvolution.Spectrum(parser.wavenumbers, parser.intensities);
@@ -1565,6 +1788,11 @@ internal class PlatformUtil
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
             updated.raw = newIntensities;
+            updated.excitationNM = m.excitationNM;
+            updated.timestamp = m.timestamp;
+            updated.declaredMatch = m.declaredMatch;
+            updated.declaredScore = m.declaredScore;
+
             //double airPLSLambda = 10000;
             //int airPLSMaxIter = 100;
             //double[] array = AirPLS.smooth(updated.processed, airPLSLambda, airPLSMaxIter, 0.001, verbose: false, (int)roiStart, (int)roiEnd);
@@ -1572,6 +1800,8 @@ internal class PlatformUtil
             //Array.Copy(array, 0, shortened, roiStart, array.Length);
             //updated.raw = shortened;
             //updated.dark = null;
+
+            //logger.debug("adding {0} to library (timestamp {1})", name, )
 
             library.Add(name, updated);
 
@@ -1588,7 +1818,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file);
 
-        string name = file.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
 
         SimpleCSVParser parser = new SimpleCSVParser();
@@ -1663,7 +1893,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file.AbsolutePath);
 
-        string name = file.AbsolutePath.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file.AbsolutePath);
@@ -1722,7 +1952,7 @@ internal class PlatformUtil
     {
         logger.info("start loading library file from {0}", file);
 
-        string name = file.Split('/').Last().Split('.').First();
+        string name = getFileName(file);
 
         SimpleCSVParser parser = new SimpleCSVParser();
         Stream s = System.IO.File.OpenRead(file);

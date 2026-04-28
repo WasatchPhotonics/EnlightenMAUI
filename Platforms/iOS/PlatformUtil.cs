@@ -11,6 +11,7 @@ using Microsoft.ML.Transforms.Onnx;
 //using Microsoft.ML.OnnxRuntime.
 using Newtonsoft.Json;
 using NumSharp;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -78,6 +79,8 @@ internal class PlatformUtil
     static string userLibraryPath;
     static string configurationPath;
     static string autoSavePath;
+
+    public static string modelName = "";
 
     public static void RequestSelectLogFolder()
     {
@@ -209,7 +212,7 @@ internal class PlatformUtil
                 fullPath = null;
             }
 
-            Regex extensionReg = new Regex(@".*\." + extension + @"$"); 
+            Regex extensionReg = new Regex(@".*\." + extension + @"$");
             cacheDirs = fileManager.GetDirectoryContent(
                 extPath,
                 null,
@@ -299,9 +302,9 @@ internal class PlatformUtil
 
         NSFileManager fileManager = NSFileManager.DefaultManager;
         NSUrl[] filePaths = fileManager.GetDirectoryContent(
-            path, 
-            null, 
-            NSDirectoryEnumerationOptions.SkipsHiddenFiles, 
+            path,
+            null,
+            NSDirectoryEnumerationOptions.SkipsHiddenFiles,
             out var _);
 
         foreach (var filePath in filePaths)
@@ -370,6 +373,24 @@ internal class PlatformUtil
                 await addUserFile(libraryFile, spec, dict);
             }
         }
+    }
+
+    public static string getFileName(string name)
+    {
+        string[] parts = name.Split('.');
+        StringBuilder sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            if (sb.Length > 0 && part != parts.Last())
+                sb.Append('.');
+
+            if (part != parts.Last())
+                sb.Append(part);
+            else
+                break;
+        }
+
+        return sb.ToString();
     }
 
     async static Task addUserFile(NSUrl file, Spectrometer spec, Dictionary<string, Measurement> dict)
@@ -442,6 +463,16 @@ internal class PlatformUtil
         {
             logger.error("correction load failed with error {0}", ex.Message);
         }
+    }
+
+    public static async Task<string> ZipFolder(string source, string destination)
+    {
+        return null;
+    }
+
+    public static async Task<string> ZipFiles(string[] paths, string destination)
+    {
+        return null;
     }
 
     public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
@@ -1230,7 +1261,13 @@ internal class PlatformUtil
 
         return compLibrary;
     }
-    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json")
+
+    public static async Task<Dictionary<string, AgnosticSimpleMeasurement>> ImportLibrary(string path)
+    {
+        return null;
+    }
+
+    public async static Task<Dictionary<string, Measurement>> loadFiles(bool useAssets, string root, Dictionary<string, Measurement> library, Dictionary<string, double[]> originalRaws, Dictionary<string, double[]> originalDarks, bool doDecon = true, string correctionFileName = "etalon_correction.json", bool skipSearch = false)
     {
         //isLoading = true;
         NSUrl extPath = NSFileManager.DefaultManager.GetUrl(

@@ -5,32 +5,30 @@
              xmlns:local="clr-namespace:EnlightenMAUI"
              x:Class="EnlightenMAUI.Popups.OverlaysPopup"
              HorizontalOptions="Fill">
-    <Border  BackgroundColor="#666" 
-          Padding="2" 
-          HorizontalOptions="Fill">
+    <Border BackgroundColor="#666" 
+            Stroke="Transparent"
+            Padding="2" 
+            HorizontalOptions="Fill">
 
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="10,10,10,10" />
+            <RoundRectangle CornerRadius="5,5,5,5" />
         </Border.StrokeShape>
-        <ListView ItemsSource="{Binding selections}"
+        <CollectionView ItemsSource="{Binding selections}"
                         VerticalScrollBarVisibility="Never"
-                  MaximumHeightRequest="300"
-                          SeparatorColor="#555" 
-                          BackgroundColor="Transparent" 
-                          VerticalOptions="StartAndExpand"
-                          x:DataType="local:ViewModels.SelectionPopupViewModel"
-                          HorizontalOptions="Fill"
-                          Margin="0, 0, 0, 10">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <ViewCell x:DataType="local:Models.SelectionMetadata">
-                        <StackLayout Orientation="Horizontal" BackgroundColor="Transparent">
-                            <CheckBox Margin="10" VerticalOptions="Center" IsChecked="{Binding selected}"/>
-                            <Label TextColor="WhiteSmoke" Margin="10" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Medium"/>
-                        </StackLayout>
-                    </ViewCell>
+                        MaximumHeightRequest="300"
+                        BackgroundColor="Transparent" 
+                        VerticalOptions="Start"
+                        x:DataType="local:ViewModels.SelectionPopupViewModel"
+                        HorizontalOptions="Fill"
+                        Margin="0, 0, 0, 10">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="local:Models.SelectionMetadata">
+                    <StackLayout Orientation="Horizontal" BackgroundColor="Transparent">
+                            <CheckBox Margin="2" VerticalOptions="Center" IsChecked="{Binding selected}"/>
+                            <Label TextColor="WhiteSmoke" Margin="2" VerticalOptions="Center" HorizontalOptions="Start" Text="{Binding name}" FontSize="Medium"/>
+                    </StackLayout>
                 </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
     </Border>
 </toolkit:Popup>

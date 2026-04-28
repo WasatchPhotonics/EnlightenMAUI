@@ -6,6 +6,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:EnlightenMAUI"
     Shell.FlyoutBehavior="Disabled"
+    Shell.TabBarBackgroundColor="#333"
+    Shell.TabBarForegroundColor="#EEE"
+    Shell.TabBarDisabledColor="#555"
+    Shell.TabBarUnselectedColor="#BBB"
+    Shell.TabBarTitleColor="#EEE"
     Title="EnlightenMAUI">
 
     <Shell.BindingContext>

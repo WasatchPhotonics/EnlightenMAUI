@@ -776,6 +776,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             _laserArmed = value; 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(laserArmed)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(readyToCollect)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryCriticalForCollection)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(acquireButtonBackgroundColor)));
         }
     }
     bool _laserArmed;
@@ -795,6 +797,14 @@ public class ScopeViewModel : INotifyPropertyChanged
     }
     bool _spectrometerInitialized = false;
     
+    public bool batteryCriticalForCollection
+    {
+        get
+        {
+            return laserArmed && batteryCritical;
+        }
+    }
+
     public bool readyToCollect
     {
         get
@@ -918,24 +928,26 @@ public class ScopeViewModel : INotifyPropertyChanged
         get => spec.battery.ToString();
     }
 
+    const double BATTERY_CRITICAL_LEVEL = 20;
+
     public string batteryColor
     {
-        get => spec.battery.level > 20 ? "#eee" : "#f33";
+        get => spec.battery.level > BATTERY_CRITICAL_LEVEL ? "#eee" : "#f33";
     }
 
     public bool batteryCharging
     {
-        get => spec.battery.charging && spec.battery.level > 15;
+        get => spec.battery.charging && spec.battery.level > BATTERY_CRITICAL_LEVEL;
     }
 
     public bool batteryCritical
     {
-        get => spec.battery.level < 15;
+        get => spec.battery.level < BATTERY_CRITICAL_LEVEL;
     }
 
     public bool battery25
     {
-        get => !spec.battery.charging && spec.battery.level >= 15 && spec.battery.level < 39;
+        get => !spec.battery.charging && spec.battery.level >= BATTERY_CRITICAL_LEVEL && spec.battery.level < 39;
     }
 
     public bool battery50
@@ -1003,6 +1015,9 @@ public class ScopeViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery50)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery75)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(battery100)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(readyToCollect)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(batteryCriticalForCollection)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(acquireButtonBackgroundColor)));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -1067,7 +1082,13 @@ public class ScopeViewModel : INotifyPropertyChanged
     public string acquireButtonBackgroundColor
     {
         // @todo move #ba0a0a to app-wide palette
-        get => spec.acquiring ? "#ba0a0a" : "#515151";
+        get
+        {
+            if (batteryCriticalForCollection)
+                return "#3a3a3a";
+
+            return spec.acquiring ? "#ba0a0a" : "#515151";
+        }
     }
 
     public string acquireButtonTextColor
@@ -1083,6 +1104,12 @@ public class ScopeViewModel : INotifyPropertyChanged
     {
         if (spec.acquiring)
             return false;
+
+        if (batteryCriticalForCollection)
+        {
+            notifyToast?.Invoke($"Battery is critically low, charge to >{BATTERY_CRITICAL_LEVEL}% to collect");
+            return false;
+        }
 
         hasMatch = false;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(hasMatch)));
@@ -1773,6 +1800,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             }
             else
             {
+                spec.measurement.declaredMatch = null;
+                spec.measurement.declaredScore = null;
                 if (settings.autoRetry && AnalysisViewModel.getInstance().currentParamSet == "Faster")
                 {
                     ScopeViewModel_TriggerIncreasedPrecision(this, AnalysisViewModel.getInstance());

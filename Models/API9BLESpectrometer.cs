@@ -1179,7 +1179,7 @@ namespace EnlightenMAUI.Models
                 logger.debug("current RSSI {0}", rssi);
                 NotifyPropertyChanged("rssi");
                 await Task.Delay(500);
-                if (rssi < -90)
+                if (rssi < -105)
                 {
                     ++badSignalCount;
 
@@ -1322,7 +1322,7 @@ namespace EnlightenMAUI.Models
                 measurement.rawDark = dark;
                 measurement.dark = stretchedDark;
                 measurement.postProcessed = smoothed;
-                measurement.processingMethod = "Noise and Background Removal";
+                measurement.processingMethod = PlatformUtil.modelName;
             }
             else
             {
@@ -1330,7 +1330,8 @@ namespace EnlightenMAUI.Models
                 double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
                 measurement.wavenumbers = staticWavenumbers;
                 measurement.postProcessed = newIntensities;
-            }
+				measurement.processingMethod = "";
+			}
 
             ////////////////////////////////////////////////////////////////////////
             // Store Measurement

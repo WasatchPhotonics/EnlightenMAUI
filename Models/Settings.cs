@@ -259,7 +259,7 @@ public class Settings : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(autoRetry)));
         }
     }
-    bool _autoRetry = true;
+    bool _autoRetry = false;
 
 
     public string getSavePath()

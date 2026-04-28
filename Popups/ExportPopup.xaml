@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:local="clr-namespace:EnlightenMAUI"
+             x:Class="EnlightenMAUI.Popups.ExportPopup"
+             HorizontalOptions="Fill">
+    <Border BackgroundColor="#666" 
+            Stroke="Transparent"
+            Padding="2" 
+            HorizontalOptions="Fill">
+
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="5,5,5,5" />
+        </Border.StrokeShape>
+
+        <Grid HorizontalOptions="Fill"
+              VerticalOptions="Center">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <CollectionView ItemsSource="{Binding selections}"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                    VerticalScrollBarVisibility="Never"
+                    MaximumHeightRequest="300"
+                    BackgroundColor="Transparent" 
+                    VerticalOptions="Start"
+                    x:DataType="local:ViewModels.SelectionPopupViewModel"
+                    HorizontalOptions="Fill"
+                    Margin="0, 0, 0, 10">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="local:Models.SelectionMetadata">
+                        <StackLayout Orientation="Horizontal" BackgroundColor="Transparent">
+                            <CheckBox Margin="2" VerticalOptions="Center" IsChecked="{Binding selected}"/>
+                            <Label TextColor="WhiteSmoke" Margin="2" VerticalOptions="Center" HorizontalOptions="Fill" Text="{Binding name}" FontSize="Medium"/>
+                        </StackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Filename" Margin="3" VerticalOptions="Center" FontSize="Medium" Grid.Column="0" Grid.Row="1" />
+            <Entry Text="{Binding exportName}" Margin="3" BackgroundColor="#666"  VerticalOptions="Center" FontSize="Medium" Grid.Column="1" Grid.Row="1" />
+
+            <Button Text="Export" Command="{Binding saveCommand}" BackgroundColor="#666" FontSize="Medium" Grid.Column="1" HorizontalOptions="End" Grid.Row="2"/>
+            <Button Text="Cancel" Command="{Binding closeCommand}" BackgroundColor="#666"  FontSize="Medium" Grid.Column="0" HorizontalOptions="Start" Grid.Row="2"/>
+
+        </Grid>
+    </Border>
+</toolkit:Popup>
