@@ -87,8 +87,8 @@ public class Settings : INotifyPropertyChanged
             "Default" ,
             new AutoRamanParameters()
             {
-                maxCollectionTimeMS = 10000,
-                startIntTimeMS = 100,
+                maxCollectionTimeMS = 60000,
+                startIntTimeMS = 10,
                 startGainDb = 0,
                 minIntTimeMS = 10,
                 maxIntTimeMS = 2000,

@@ -1492,7 +1492,10 @@ public class BluetoothSpectrometer : Spectrometer
             waitTime = 2 * (int)(integrationTimeMS + 25) * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
         {
-            waitTime = 30000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+            while (!acqSynced)
+                await Task.Delay(100);
+
+            waitTime = bufferTime + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         }
 
         int timeout = waitTime * 2 + 6000;
@@ -1595,6 +1598,13 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else if (autoStep > AUTO_OPT_TARGET_RATIO)
         {
+            if (arg > scansToAverage)
+            {
+                _scansToAverage = (byte)(arg + 1);
+                _nextIntegrationTimeMS = maxIntTimeMS;
+                acqSynced = true;
+            }
+
             logger.debug("{0} scans to average with {1} remaining in arg at {2} int time", scansToAverage, arg, integrationTimeMS);
 
             if (acqSynced)

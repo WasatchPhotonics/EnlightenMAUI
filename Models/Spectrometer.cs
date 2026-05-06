@@ -413,7 +413,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _maxCollectionTimeMS = 2000;
+        protected ushort _maxCollectionTimeMS = 60000;
         
         public virtual ushort startIntTimeMS
         {
@@ -428,7 +428,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _startIntTimeMS = 200;
+        protected ushort _startIntTimeMS = 10;
 
         public virtual byte startGainDb
         {
@@ -447,7 +447,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _startGainDB = 8;
+        protected byte _startGainDB = 0;
 
         public virtual ushort minIntTimeMS
         {
@@ -477,7 +477,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _maxIntTimeMS = 1000;
+        protected ushort _maxIntTimeMS = 2000;
 
         public virtual byte autoRamanMinGainDb
         {
@@ -530,7 +530,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _targetCounts = 35000;
+        protected ushort _targetCounts = 45000;
         
         public virtual ushort minCounts
         {
@@ -545,7 +545,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected ushort _minCounts = 20000;
+        protected ushort _minCounts = 40000;
 
         public virtual ushort maxCounts
         {
@@ -575,7 +575,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxFactor = 10;
+        protected byte _maxFactor = 5;
 
         public virtual float dropFactor
         {
@@ -617,7 +617,7 @@ namespace EnlightenMAUI.Models
                 }
             }
         }
-        protected byte _maxAverage = 5;
+        protected byte _maxAverage = 100;
 
         protected byte[] packAutoRamanParameters()
         {

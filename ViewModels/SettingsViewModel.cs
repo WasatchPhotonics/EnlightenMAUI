@@ -74,7 +74,7 @@ namespace EnlightenMAUI.ViewModels
             }
 
         }
-        string _currentParamSet = "Faster";
+        string _currentParamSet = "Default";
 
         public bool fastMode
         {
@@ -92,7 +92,7 @@ namespace EnlightenMAUI.ViewModels
                 }
             }
         }
-        bool _fastMode = true;
+        bool _fastMode = false;
 
         public string enteredPassword
         {
@@ -160,9 +160,9 @@ namespace EnlightenMAUI.ViewModels
         {
             // the watchdog REALLY needs to be controlled by EEPROM, but this is a bandaid for testing
             if (spec.laserState.payloadLength < 8)
-                laserWatchdogTimeoutSec = 254;
+                laserWatchdogTimeoutSec = 10;
             else
-                laserWatchdogTimeoutSec = 300;
+                laserWatchdogTimeoutSec = 10;
 
             laserWarningDelaySec = 0;
 
