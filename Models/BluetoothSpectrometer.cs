@@ -1485,6 +1485,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public async Task<bool> monitorSpectrumAcquire()
     {
+        logger.debug("BS.monitorSpectrumAcquire(): function entered");
         int bufferTime = 10000;
 
         int waitTime = (int)integrationTimeMS + bufferTime;
@@ -1493,7 +1494,14 @@ public class BluetoothSpectrometer : Spectrometer
         else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
         {
             while (!acqSynced)
-                await Task.Delay(100);
+            {
+                await Task.Delay(100); 
+                if (collectionErrorDetected)
+                {
+                    logger.debug("BS.monitorSpectrumAcquire(): detected measurement error, aborting");
+                    return false;
+                }
+            }
 
             waitTime = bufferTime + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         }
@@ -1502,6 +1510,8 @@ public class BluetoothSpectrometer : Spectrometer
 
         Stopwatch sw = Stopwatch.StartNew();
         sw.Start();
+
+        logger.debug("BS.monitorSpectrumAcquire(): entering monitor loop");
 
         while (sw.ElapsedMilliseconds <= timeout)
         {
@@ -1513,7 +1523,10 @@ public class BluetoothSpectrometer : Spectrometer
                 return true;
             }
             else if (collectionErrorDetected)
+            {
+                logger.debug("BS.monitorSpectrumAcquire(): detected measurement error, aborting");
                 return false;
+            }
         }
 
         logger.info("collection timed out");
@@ -1544,7 +1557,10 @@ public class BluetoothSpectrometer : Spectrometer
             if (totalPixelsRead > 0)
                 break;
             else if (collectionErrorDetected)
+            {
+                logger.debug("BS.monitorAutoRamanProgress(): detected measurement error, aborting");
                 return false;
+            }
 
             now = DateTime.Now;
             estimatedMilliseconds = (autoEnd - autoStart).TotalMilliseconds;
