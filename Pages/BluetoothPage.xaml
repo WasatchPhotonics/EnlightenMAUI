@@ -52,6 +52,8 @@
                         </StackLayout>
                     </Frame>
                 </Frame>
+                
+                <Label Text="{Binding connectionMessage}" Margin="3" IsVisible="{Binding displayConnectionMessage}" HorizontalOptions="Center" x:DataType="local:ViewModels.BluetoothViewModel"/>
 
                 <!-- Connection ProgressBar -->
                 <ProgressBar Progress="{Binding connectionProgress}" ProgressColor="#27c0a1" x:DataType="local:ViewModels.BluetoothViewModel"/>

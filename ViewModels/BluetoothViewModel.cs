@@ -174,6 +174,13 @@ public class BluetoothViewModel : INotifyPropertyChanged
         get => "Bluetooth® LE Pairing";
     }
 
+
+    public string connectionMessage
+    {
+        get => spec == null ? "" : spec.connectionMessage;
+    }
+    public bool displayConnectionMessage => connectionMessage.Length > 0;
+
     ////////////////////////////////////////////////////////////////////////
     // connectionProgress
     ////////////////////////////////////////////////////////////////////////
@@ -192,6 +199,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             _connectionProgress = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectionProgress)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectionMessage)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(displayConnectionMessage)));
         }
     }
     double _connectionProgress = 0;

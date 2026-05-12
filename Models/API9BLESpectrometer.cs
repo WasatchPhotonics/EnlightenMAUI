@@ -288,7 +288,7 @@ namespace EnlightenMAUI.Models
             EEPROMReadComplete = false;
             EEPROMBytesRead = 0;
             CurrentEEPROMPage = 0;
-            EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+            EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.INITIAL_PAGES];
 
             while (!EEPROMReadComplete)
             {
@@ -307,7 +307,7 @@ namespace EnlightenMAUI.Models
                     await Task.Delay(5);
             }
 
-            for (int i = 0; i < EEPROM.MAX_PAGES; i++)
+            for (int i = 0; i < EEPROM.INITIAL_PAGES; i++)
             {
                 byte[] buf = new byte[EEPROM.PAGE_LENGTH];
                 Array.Copy(EEPROMBuffer, i * EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
@@ -317,6 +317,12 @@ namespace EnlightenMAUI.Models
 
             logger.debug($"Spectrometer.readEEPROMAsync: done");
             return pages;
+        }
+
+        protected override async Task<List<byte[]>> readEEPROMPixelCorrectionAsync()
+        {
+            logger.info("API BLE 9 Spectrometers do not support pixel calibration pages");
+            return null;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1294,11 +1300,14 @@ namespace EnlightenMAUI.Models
 
             // Bin2x2
             apply2x2Binning(spectrum);
+            correctBadPixels(ref spectrum);
+
+            lastRaw = spectrum;
 
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
+            applyEtalonCorrection(spectrum);
 
-            lastRaw = spectrum;
             lastSpectrum = spectrum;
 
             measurement.reset();

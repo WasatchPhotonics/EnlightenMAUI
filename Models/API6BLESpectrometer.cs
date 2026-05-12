@@ -208,7 +208,7 @@ public class API6BLESpectrometer : Spectrometer
         }
         logger.debug("Spectrometer.readEEPROMAsync: reading EEPROM");
         List<byte[]> pages = new List<byte[]>();
-        for (int page = 0; page < EEPROM.MAX_PAGES; page++)
+        for (int page = 0; page < EEPROM.INITIAL_PAGES; page++)
         {
             byte[] buf = new byte[EEPROM.PAGE_LENGTH];
             int pos = 0;
@@ -241,10 +241,16 @@ public class API6BLESpectrometer : Spectrometer
             }
             logger.hexdump(buf, $"adding page {page}: ");
             pages.Add(buf);
-            raiseConnectionProgress(.15 + .85 * page / EEPROM.MAX_PAGES);
+            raiseConnectionProgress(.15 + .85 * page / EEPROM.INITIAL_PAGES);
         }
         logger.debug($"Spectrometer.readEEPROMAsync: done");
         return pages;
+    }
+
+    protected override async Task<List<byte[]>> readEEPROMPixelCorrectionAsync()
+    {
+        logger.info("API BLE 6 Spectrometers do not support pixel calibration pages");
+        return null;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -819,11 +825,14 @@ public class API6BLESpectrometer : Spectrometer
 
         // Bin2x2
         apply2x2Binning(spectrum);
+        correctBadPixels(ref spectrum);
+
+        lastRaw = spectrum;
 
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
+        applyEtalonCorrection(spectrum);
 
-        lastRaw = spectrum;
         lastSpectrum = spectrum;
 
         measurement.reset();

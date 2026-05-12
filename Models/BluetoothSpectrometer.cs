@@ -48,6 +48,7 @@ public class BluetoothSpectrometer : Spectrometer
     // WhereAmI whereAmI;
 
     public BLEDevice bleDevice { get; set; } = null;
+    Task pixelCorrectionLoader { get; set; }
 
     ushort lastCRC;
 
@@ -142,18 +143,33 @@ public class BluetoothSpectrometer : Spectrometer
         // parse the EEPROM
         ////////////////////////////////////////////////////////////////////
 
-        var pages = await readEEPROMAsync();
-        if (pages is null)
-        {
-            logger.error("BluetoothSpectrometer.initAsync: failed to read EEPROM");
-            return false;
-        }
+        eeprom.serialNumber = bleDeviceInfo.deviceName;
+        bool cached = await loadCachedEEPROM();
 
-        logger.debug("BluetoothSpectrometer.initAsync: parsing EEPROM");
-        if (!eeprom.parse(pages))
+        if (!cached)
         {
-            logger.error("BluetoothSpectrometer.initAsync: failed to parse EEPROM");
-            return false;
+            connectionMessage = "Initial memory read and cache";
+            var pages = await readEEPROMAsync();
+            //await handleCorrectionLoadAsync();
+            if (pages is null)
+            {
+                logger.error("BluetoothSpectrometer.initAsync: failed to read EEPROM");
+                return false;
+            }
+
+            logger.debug("BluetoothSpectrometer.initAsync: parsing EEPROM");
+            if (!eeprom.parse(pages))
+            {
+                logger.error("BluetoothSpectrometer.initAsync: failed to parse EEPROM");
+                return false;
+            }
+
+            await cacheEEPROM();
+        }
+        else
+        {
+            raiseConnectionProgress(.95);
+            EEPROMReadComplete = true;
         }
 
         ////////////////////////////////////////////////////////////////////
@@ -224,6 +240,7 @@ public class BluetoothSpectrometer : Spectrometer
         //updateRSSI();
 
         logger.debug("BluetoothSpectrometer.initAsync: done");
+
         return true;
     }
 
@@ -306,6 +323,32 @@ public class BluetoothSpectrometer : Spectrometer
         return true;
     }
 
+    protected async Task<bool> handleCorrectionLoadAsync()
+    {
+        if (eeprom.pixelCalibrationCount > 0)
+        {
+            var pages = await readEEPROMPixelCorrectionAsync();
+            if (pages is null)
+            {
+                logger.error("BluetoothSpectrometer.handleCorrectionLoadAsync: failed to read EEPROM");
+                return false;
+            }
+
+            logger.debug("BluetoothSpectrometer.handleCorrectionLoadAsync: parsing EEPROM");
+            if (!eeprom.parse(pages))
+            {
+                logger.error("BluetoothSpectrometer.handleCorrectionLoadAsync: failed to parse EEPROM");
+                return false;
+            }
+
+            return true;
+
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     protected override async Task<List<byte[]>> readEEPROMAsync()
     {
@@ -345,6 +388,53 @@ public class BluetoothSpectrometer : Spectrometer
         }
 
         logger.debug($"Spectrometer.readEEPROMAsync: done");
+        return pages;
+    }
+
+    protected override async Task<List<byte[]>> readEEPROMPixelCorrectionAsync()
+    {
+        logger.info("reading EEPROM");
+        ICharacteristic eepromCmd;
+        ICharacteristic eepromData;
+
+        List<byte[]> pages = new List<byte[]>();
+        EEPROMReadComplete = false;
+        //EEPROMBytesRead = 0;
+
+        while (!EEPROMReadComplete)
+        {
+            genericReturned = false;
+
+            logger.debug($"Spectrometer.readEEPROMPixelCorrectionAsync: requestEEPROMSubpage: page {CurrentEEPROMPage}, offset {EEPROMBytesRead % EEPROM.PAGE_LENGTH}");
+            byte[] request = { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
+            if (!await sem.WaitAsync(EXTENDED_SEM_TIMEOUT))
+            {
+                logger.error("Spectrometer.readEEPROMPixelCorrectionAsync: couldn't get semaphore");
+                return null;
+            }
+            bool ok = await writeGenericCharacteristic(request);
+            if (!ok)
+            {
+                logger.error($"Spectrometer.readEEPROMPixelCorrectionAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+                sem.Release();
+                return null;
+            }
+
+            while (!genericReturned)
+                await Task.Delay(25);
+
+            sem.Release();
+        }
+
+        for (int i = 0; i < EEPROM.MAX_PAGES; i++)
+        {
+            byte[] buf = new byte[EEPROM.PAGE_LENGTH];
+            Array.Copy(EEPROMBuffer, i *  EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
+            logger.hexdump(buf, $"adding page {i}: ");
+            pages.Add(buf);
+        }
+
+        logger.debug($"Spectrometer.readEEPROMPixelCorrectionAsync: done");
         return pages;
     }
 
@@ -1345,11 +1435,14 @@ public class BluetoothSpectrometer : Spectrometer
 
         // Bin2x2
         apply2x2Binning(spectrum);
+        correctBadPixels(ref spectrum);
+
+        lastRaw = spectrum;
 
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
+        applyEtalonCorrection(spectrum);
 
-        lastRaw = spectrum; 
         lastSpectrum = spectrum;
 
         measurement.reset();
@@ -1470,6 +1563,7 @@ public class BluetoothSpectrometer : Spectrometer
         await syncAcqParams();
 
         // apply 2x2 binning
+        /*
         if (eeprom.featureMask.bin2x2)
         {
             var smoothed = new double[spectrum.Length];
@@ -1478,6 +1572,7 @@ public class BluetoothSpectrometer : Spectrometer
             smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
             spectrum = smoothed;
         }
+        */
 
         logger.debug("Spectrometer.takeOneAsync: returning completed spectrum");
         return spectrum;

@@ -1403,6 +1403,20 @@ internal class PlatformUtil
         return configurationPath = docDir + "/configuration.json";
     }
 
+    public static string getSpectrometerEEPROMPath(string serial)
+    {
+        var docDir = AndrApp.Application.Context.GetExternalFilesDir(null).AbsolutePath;
+
+        if (!writeable(docDir))
+        {
+            logger.error($"getuserLibraryPath: unable to write userLibDir {docDir}");
+            return null;
+        }
+
+        logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
+        return docDir + $"/{serial}-EEPROM.json";
+    }
+
     public static string getAutoSavePath(bool highLevelAutoSave)
     {
         if (autoSavePath != null)

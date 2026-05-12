@@ -1169,6 +1169,10 @@ internal class PlatformUtil
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
         return configurationPath = Path.Join(docDir.AbsoluteString, "configuration.json");
     }
+    public static string getSpectrometerEEPROMPath(string serial)
+    {
+        return null;
+    }
 
     /*
      * 
