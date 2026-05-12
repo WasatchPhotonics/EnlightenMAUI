@@ -1,12 +1,12 @@
-﻿using System.ComponentModel;
-using Plugin.BLE.Abstractions.Contracts;
-
-using EnlightenMAUI.Common;
+﻿using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using Plugin.BLE.Abstractions.EventArgs;
-using System.Diagnostics;
 using EnlightenMAUI.ViewModels;
 using Microsoft.Extensions.Logging;
+using Plugin.BLE.Abstractions.Contracts;
+using Plugin.BLE.Abstractions.EventArgs;
+using System.ComponentModel;
+using System.Diagnostics;
+using static EnlightenMAUI.Models.EEPROM;
 
 namespace EnlightenMAUI.Models;
 
@@ -350,25 +350,60 @@ public class BluetoothSpectrometer : Spectrometer
         }
     }
 
+    public bool initialPoke = true;
+    public bool readFullPixelCorrection = false;
+
     protected override async Task<List<byte[]>> readEEPROMAsync()
     {
         logger.info("reading EEPROM");
         ICharacteristic eepromCmd;
         ICharacteristic eepromData;
 
+        initialPoke = true; 
         List<byte[]> pages = new List<byte[]>();
         EEPROMReadComplete = false;
         EEPROMBytesRead = 0;
         CurrentEEPROMPage = 0;
-        EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+        genericReturned = false;
+
+        logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 8, offset 0");
+        byte[] request = { 0xff, 0x01, 0, (byte)8, 0 };
+        bool ok = await writeGenericCharacteristic(request);
+        if (!ok)
+        {
+            logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+            return null;
+        }
+
+        while (!genericReturned)
+            await Task.Delay(5);
+
+        PIXEL_CALIBRATION_TYPE temp = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(EEPROMBuffer, 39);
+
+        if (temp == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+        {
+            logger.debug($"Spectrometer.readEEPROMAsync: reading full EEPROM with Etalon correction");
+            EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+            readFullPixelCorrection = true;
+        }
+        else
+        {
+            logger.debug($"Spectrometer.readEEPROMAsync: reading limited EEPROM without Etalon correction");
+            EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.INITIAL_PAGES];
+            readFullPixelCorrection = false;
+        }
+        EEPROMReadComplete = false;
+        EEPROMBytesRead = 0;
+        CurrentEEPROMPage = 0;
+        initialPoke = false;
 
         while (!EEPROMReadComplete)
         {
             genericReturned = false;
 
             logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {CurrentEEPROMPage}, offset {EEPROMBytesRead % EEPROM.PAGE_LENGTH}");
-            byte[] request = { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
-            bool ok = await writeGenericCharacteristic(request);
+            request = new byte[] { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
+            ok = await writeGenericCharacteristic(request);
             if (!ok)
             {
                 logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
@@ -379,10 +414,11 @@ public class BluetoothSpectrometer : Spectrometer
                 await Task.Delay(5);
         }
 
-        for (int i = 0; i < EEPROM.MAX_PAGES; i++)
+        int pagesToRead = readFullPixelCorrection ? EEPROM.MAX_PAGES : EEPROM.INITIAL_PAGES;
+        for (int i = 0; i < pagesToRead; i++)
         {
             byte[] buf = new byte[EEPROM.PAGE_LENGTH];
-            Array.Copy(EEPROMBuffer, i *  EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
+            Array.Copy(EEPROMBuffer, i * EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
             logger.hexdump(buf, $"adding page {i}: ");
             pages.Add(buf);
         }

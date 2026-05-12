@@ -815,17 +815,27 @@ namespace EnlightenMAUI.Models
             int bytesToRead = data.Length - 2;
             Array.Copy(data, 2, EEPROMBuffer, EEPROMBytesRead, Math.Min(bytesToRead, EEPROM.PAGE_LENGTH));
             EEPROMBytesRead += (uint)bytesToRead;
+            int pagesToRead = EEPROM.INITIAL_PAGES;
             if (EEPROMBytesRead % EEPROM.PAGE_LENGTH == 0 || bytesToRead > EEPROM.PAGE_LENGTH)
                 ++CurrentEEPROMPage;
-            if (this is BluetoothSpectrometer && CurrentEEPROMPage == EEPROM.MAX_PAGES)
-                EEPROMReadComplete = true;
+            if (this is BluetoothSpectrometer)
+            {
+                pagesToRead = (this as BluetoothSpectrometer).readFullPixelCorrection ? EEPROM.MAX_PAGES : EEPROM.INITIAL_PAGES;
+
+                if (CurrentEEPROMPage == pagesToRead)
+                    EEPROMReadComplete = true;
+            }
             else if ((this is API6BLESpectrometer || this is API9BLESpectrometer) && CurrentEEPROMPage == EEPROM.INITIAL_PAGES)
                 EEPROMReadComplete = true;
 
             if (this is BluetoothSpectrometer)
             {
-                connectionMessage = $"Initial memory read and cache (page {CurrentEEPROMPage} of {EEPROM.MAX_PAGES})";
-                raiseConnectionProgress(.15 + .8 * CurrentEEPROMPage / EEPROM.MAX_PAGES);
+                bool raiseProgress = !(this as BluetoothSpectrometer).initialPoke;
+                if (raiseProgress)
+                {
+                    connectionMessage = $"Initial memory read and cache (page {CurrentEEPROMPage} of {pagesToRead})";
+                    raiseConnectionProgress(.15 + .8 * CurrentEEPROMPage / pagesToRead);
+                }
             }
             else
                 raiseConnectionProgress(.15 + .8 * CurrentEEPROMPage / EEPROM.INITIAL_PAGES);
