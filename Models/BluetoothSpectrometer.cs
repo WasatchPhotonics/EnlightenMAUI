@@ -724,6 +724,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _maxCollectionTimeMS = value;
                 logger.debug($"Spectrometer.maxTimeMS -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -739,6 +740,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _startIntTimeMS = value;
                 logger.debug($"Spectrometer.startIntTimeMS -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -754,6 +756,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _startGainDB = value;
                 logger.debug($"Spectrometer.startGainDb: next = {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -773,6 +776,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _minIntTimeMS = value;
                 logger.debug($"Spectrometer.minIntTimeMS -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -788,6 +792,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _maxIntTimeMS = value;
                 logger.debug($"Spectrometer.maxIntTimeMS -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -803,6 +808,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _autoRamanMinGainDb = value;
                 logger.debug($"Spectrometer.minGainDb: next = {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -822,6 +828,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _autoRamanMaxGainDb = value;
                 logger.debug($"Spectrometer.maxGainDb: next = {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -841,6 +848,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _targetCounts = value;
                 logger.debug($"Spectrometer.targetCounts -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -856,6 +864,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _minCounts = value;
                 logger.debug($"Spectrometer.minCounts -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -871,6 +880,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _maxCounts = value;
                 logger.debug($"Spectrometer.maxCounts -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -886,6 +896,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _maxFactor = value;
                 logger.debug($"Spectrometer.maxFactor -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -899,6 +910,7 @@ public class BluetoothSpectrometer : Spectrometer
         {
             _dropFactor = value;
             logger.debug($"Spectrometer.dropFactor: next = {value}");
+            autoRamanSynced = false;
             _ = syncAutoRamanParameters();
             NotifyPropertyChanged();
         }
@@ -913,6 +925,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _saturationCounts = value;
                 logger.debug($"Spectrometer.saturationCounts -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -928,6 +941,7 @@ public class BluetoothSpectrometer : Spectrometer
             {
                 _maxAverage = value;
                 logger.debug($"Spectrometer.maxAverage -> {value}");
+                autoRamanSynced = false;
                 _ = syncAutoRamanParameters();
                 NotifyPropertyChanged();
             }
@@ -1272,6 +1286,8 @@ public class BluetoothSpectrometer : Spectrometer
         if (!paired || characteristicsByName is null)
             return false;
 
+        holdAutoRamanParameterSet = false;
+
         logger.debug("Spectrometer.takeOneAveragedAsync: -------------------------");
         logger.debug("Spectrometer.takeOneAveragedAsync: take one averaged reading");
         logger.debug("Spectrometer.takeOneAveragedAsync: -------------------------");
@@ -1288,117 +1304,121 @@ public class BluetoothSpectrometer : Spectrometer
         if (!autoRamanSynced && acquisitionMode == AcquisitionMode.AUTO_RAMAN)
             await syncAutoRamanParameters();
 
-        // update battery FIRST
-        //logger.debug("Spectrometer.takeOneAveragedAsync: updating battery");
-        //await updateBatteryAsync();
+        holdAutoRamanParameterSet = true;
+        currentRepeat = 1;
 
-        // for progress bar
-        totalPixelsToRead = pixels; // * scansToAverage;
-        totalPixelsRead = 0;
-        collectionErrorDetected = false;
-        acquiring = true;
-
-        // TODO: integrate laserDelayMS into showProgress
-        var swRamanMode = laserState.mode == LaserMode.AUTO_DARK && LaserState.SW_RAMAN_MODE;
-        logger.debug($"Spectrometer.takeOneAveragedAsync: swRamanMode {swRamanMode}");
-        if (swRamanMode)
+        for (int j = 0; j < repeatCount; ++j)
         {
-            const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
-            var watchdogMS = (scansToAverage + 1) * integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS;
-            var watchdogSec = (byte)((Math.Max(MAX_SPECTRUM_READOUT_TIME_MS, watchdogMS) / 1000.0) * 2);
-            logger.debug($"Spectrometer.takeOneAveragedAsync: setting laserWatchdogSec -> {watchdogSec}");
+            // for progress bar
+            totalPixelsToRead = pixels; // * scansToAverage;
+            totalPixelsRead = 0;
+            collectionErrorDetected = false;
+            acquiring = true;
 
-            // since we're going to sync the laser state immediately after to turn on the laser,
-            // skip this sync
-            laserSyncEnabled = false;
-            laserWatchdogSec = watchdogSec;
-            laserSyncEnabled = true;
-
-            logger.debug("Spectrometer.takeOneAveragedAsync: setting laserEnabled = true");
-            laserEnabled = true;
-
-            logger.debug($"Spectrometer.takeOneAveragedAsync: waiting {laserState.laserDelayMS}ms");
-            await Task.Delay(laserState.laserDelayMS);
-        }
-
-        logger.debug($"Spectrometer.takeOneAveragedAsync: integrationTimeMS {integrationTimeMS}, gainDb {gainDb}, scansToAverage {scansToAverage}, laserWatchdogSec {laserWatchdogSec}");
-
-        bool disableLaserAfterFirstPacket = swRamanMode;
-
-        double[] spectrum = await takeOneAsync(disableLaserAfterFirstPacket);
-        logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
-
-        if (spectrum is null)
-        {
-            logger.error("Spectrometer.takeOneAveragedAsync: spectrum is null");
-
+            // TODO: integrate laserDelayMS into showProgress
+            var swRamanMode = laserState.mode == LaserMode.AUTO_DARK && LaserState.SW_RAMAN_MODE;
+            logger.debug($"Spectrometer.takeOneAveragedAsync: swRamanMode {swRamanMode}");
             if (swRamanMode)
-                laserEnabled = false;
-
-            logger.error("Spectrometer.takeOneAveragedAsync: giving up");
-            return acquiring = false;
-        }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Post-Processing
-        ////////////////////////////////////////////////////////////////////////
-
-        // Bin2x2
-        apply2x2Binning(spectrum);
-
-        // Raman Intensity Correction
-        applyRamanIntensityCorrection(spectrum);
-
-        lastRaw = spectrum; 
-        lastSpectrum = spectrum;
-
-        measurement.reset();
-        measurement.reload(this);
-
-        if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
-        {
-            if (dark != null)
             {
-                logger.info("Performing background removal");
-                for (int i = 0; i < spectrum.Length; ++i)
-                {
-                    spectrum[i] -= dark[i];
-                }
+                const int MAX_SPECTRUM_READOUT_TIME_MS = 6000;
+                var watchdogMS = (scansToAverage + 1) * integrationTimeMS + MAX_SPECTRUM_READOUT_TIME_MS;
+                var watchdogSec = (byte)((Math.Max(MAX_SPECTRUM_READOUT_TIME_MS, watchdogMS) / 1000.0) * 2);
+                logger.debug($"Spectrometer.takeOneAveragedAsync: setting laserWatchdogSec -> {watchdogSec}");
+
+                // since we're going to sync the laser state immediately after to turn on the laser,
+                // skip this sync
+                laserSyncEnabled = false;
+                laserWatchdogSec = watchdogSec;
+                laserSyncEnabled = true;
+
+                logger.debug("Spectrometer.takeOneAveragedAsync: setting laserEnabled = true");
+                laserEnabled = true;
+
+                logger.debug($"Spectrometer.takeOneAveragedAsync: waiting {laserState.laserDelayMS}ms");
+                await Task.Delay(laserState.laserDelayMS);
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, PlatformUtil.simpleTransformerLoaded ? true : false);
-            //double[] smoothedB = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, false);
-            measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
-            stretchedDark = new double[smoothed.Length];
-            measurement.rawDark = dark;
-            measurement.dark = stretchedDark;
-            measurement.postProcessed = smoothed;
-            measurement.processingMethod = PlatformUtil.modelName;
-        }
-        else
-        {
-            double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
-            double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
-            measurement.wavenumbers = staticWavenumbers;
-            measurement.postProcessed = newIntensities;
-            measurement.processingMethod = "";
-        }
+            logger.debug($"Spectrometer.takeOneAveragedAsync: integrationTimeMS {integrationTimeMS}, gainDb {gainDb}, scansToAverage {scansToAverage}, laserWatchdogSec {laserWatchdogSec}");
 
-        ////////////////////////////////////////////////////////////////////////
-        // Store Measurement
-        ////////////////////////////////////////////////////////////////////////
+            bool disableLaserAfterFirstPacket = swRamanMode;
 
-        logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
-        
-        logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
+            double[] spectrum = await takeOneAsync(disableLaserAfterFirstPacket);
+            logger.debug("Spectrometer.takeOneAveragedAsync: back from takeOneAsync");
 
-        logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}", 
-            measurement.processed == null ? "null" : "NOT NULL");
-        if (measurement.processed != null)
-        {
-            logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed mean is {0:f2}",
-                measurement.processed.Average());
-        }
+            if (spectrum is null)
+            {
+                logger.error("Spectrometer.takeOneAveragedAsync: spectrum is null");
+
+                if (swRamanMode)
+                    laserEnabled = false;
+
+                logger.error("Spectrometer.takeOneAveragedAsync: giving up");
+                return acquiring = false;
+            }
+
+            ////////////////////////////////////////////////////////////////////////
+            // Post-Processing
+            ////////////////////////////////////////////////////////////////////////
+
+            // Bin2x2
+            apply2x2Binning(spectrum);
+
+            // Raman Intensity Correction
+            applyRamanIntensityCorrection(spectrum);
+
+            lastRaw = spectrum;
+            lastSpectrum = spectrum;
+
+            measurement.reset();
+            measurement.reload(this);
+
+            if (PlatformUtil.transformerLoaded && useBackgroundRemoval && (dark != null || autoDarkEnabled || autoRamanEnabled))
+            {
+                if (dark != null)
+                {
+                    logger.info("Performing background removal");
+                    for (int i = 0; i < spectrum.Length; ++i)
+                    {
+                        spectrum[i] -= dark[i];
+                    }
+                }
+
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, PlatformUtil.simpleTransformerLoaded ? true : false);
+                //double[] smoothedB = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, false);
+                measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                stretchedDark = new double[smoothed.Length];
+                measurement.rawDark = dark;
+                measurement.dark = stretchedDark;
+                measurement.postProcessed = smoothed;
+                measurement.processingMethod = PlatformUtil.modelName;
+            }
+            else
+            {
+                double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
+                measurement.wavenumbers = staticWavenumbers;
+                measurement.postProcessed = newIntensities;
+                measurement.processingMethod = "";
+            }
+
+            ////////////////////////////////////////////////////////////////////////
+            // Store Measurement
+            ////////////////////////////////////////////////////////////////////////
+
+            logger.debug("Spectrometer.takeOneAveragedAsync: storing lastSpectrum");
+
+            logger.info($"Spectrometer.takeOneAveragedAsync: acquired Measurement {measurement.measurementID}");
+
+            logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed is {0}",
+                measurement.processed == null ? "null" : "NOT NULL");
+            if (measurement.processed != null)
+            {
+                logger.debug($"Spectrometer.takeOneAveragedAsync: at end, spec.measurement.processed mean is {0:f2}",
+                    measurement.processed.Average());
+            }
+
+            ++currentRepeat;
+        }   
 
         logger.debug("Spectrometer.takeOneAveragedAsync: done");
         acquiring = false;
@@ -1501,6 +1521,11 @@ public class BluetoothSpectrometer : Spectrometer
                     logger.debug("BS.monitorSpectrumAcquire(): detected measurement error, aborting");
                     return false;
                 }
+                if (totalPixelsRead == totalPixelsToRead)
+                {
+                    logger.debug("BS.monitorSpectrumAcquire(): collection finished in ??? ms, issue with timeouts");
+                    return true;
+                }
             }
 
             waitTime = bufferTime + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
@@ -1519,7 +1544,7 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (totalPixelsRead == totalPixelsToRead)
             {
-                logger.debug("collection finished in {0} ms", sw.ElapsedMilliseconds);
+                logger.debug("BS.monitorSpectrumAcquire(): collection finished in {0} ms", sw.ElapsedMilliseconds);
                 return true;
             }
             else if (collectionErrorDetected)
@@ -1570,7 +1595,9 @@ public class BluetoothSpectrometer : Spectrometer
 
             if (progress > prevProgress && progress <= 1)
             {
-                raiseAcquisitionProgress(0.75 * progress);
+                float modifier = 1 / (float)repeatCount;
+                float complete = (currentRepeat - 1) / (float)repeatCount;
+                raiseAcquisitionProgress(0.75 * progress * modifier + complete);
 
                 prevProgress = progress;
             }
@@ -1614,7 +1641,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else if (autoStep > AUTO_OPT_TARGET_RATIO)
         {
-            if (arg > scansToAverage)
+            if (arg >= scansToAverage)
             {
                 _scansToAverage = (byte)(arg + 1);
                 _nextIntegrationTimeMS = maxIntTimeMS;
@@ -1689,11 +1716,13 @@ public class BluetoothSpectrometer : Spectrometer
                 spectrum[totalPixelsRead] = intensity;
             totalPixelsRead += 1;
         }
+        float modifier = 1 / (float)repeatCount;
+        float complete = (currentRepeat - 1) / (float)repeatCount;
 
         if (autoRamanEnabled || autoDarkEnabled)
-            raiseAcquisitionProgress(0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead);
+            raiseAcquisitionProgress(modifier * (0.75 + 0.25 * ((double)totalPixelsRead) / totalPixelsToRead) + complete);
         else
-            raiseAcquisitionProgress(((double)totalPixelsRead) / totalPixelsToRead);
+            raiseAcquisitionProgress(modifier * (((double)totalPixelsRead) / totalPixelsToRead) + complete);
         logger.debug($"BVM.receivePixels: total pixels read {totalPixelsRead} out of {totalPixelsToRead} expected");
     }
 

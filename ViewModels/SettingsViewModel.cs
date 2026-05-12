@@ -148,7 +148,7 @@ namespace EnlightenMAUI.ViewModels
                 spec.maxFactor = parameters.maxFactor;
                 spec.dropFactor = parameters.dropFactor;
                 spec.saturationCounts = parameters.saturationCounts;
-                spec.holdAutoRamanParameterSet = false;
+                //spec.holdAutoRamanParameterSet = false;
                 spec.maxAverage = parameters.maxAverage;
 
                 _currentParamSet = key;
@@ -339,6 +339,150 @@ namespace EnlightenMAUI.ViewModels
                     advancedModeEnabled = advancedModeEnabled;
                 }
                 updateLaserProperties();
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Auto-Raman Parameters
+        ////////////////////////////////////////////////////////////////////////
+        
+        public ushort maxCollectionTimeMS
+        {
+            get => spec != null ? spec.maxCollectionTimeMS : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.maxCollectionTimeMS = value;
+            }
+        }
+        public ushort startIntTimeMS
+        {
+            get => spec != null ? spec.startIntTimeMS : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.startIntTimeMS = value;
+            }
+        }
+        public byte startGainDb
+        {
+            get => spec != null ? spec.startGainDb : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.startGainDb = value;
+            }
+        }
+        public ushort minIntTimeMS
+        {
+            get => spec != null ? spec.minIntTimeMS : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.minIntTimeMS = value;
+            }
+        }
+        
+        public ushort maxIntTimeMS
+        {
+            get => spec != null ? spec.maxIntTimeMS : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.maxIntTimeMS = value;
+            }
+        }
+
+        public byte autoRamanMinGainDb
+        {
+            get => spec != null ? spec.autoRamanMinGainDb : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.autoRamanMinGainDb = value;
+            }
+        }
+
+        public byte autoRamanMaxGainDb
+        {
+            get => spec != null ? spec.autoRamanMaxGainDb : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.autoRamanMaxGainDb = value;
+            }
+        }
+        public ushort targetCounts
+        {
+            get => spec != null ? spec.targetCounts : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.targetCounts = value;
+            }
+        }
+        public ushort minCounts
+        {
+            get => spec != null ? spec.minCounts : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.minCounts = value;
+            }
+        }
+        public ushort maxCounts
+        {
+            get => spec != null ? spec.maxCounts : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.maxCounts = value;
+            }
+        }
+
+        public byte maxFactor
+        {
+            get => spec != null ? spec.maxFactor : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.maxFactor = value;
+            }
+        }
+        public float dropFactor
+        {
+            get => spec != null ? spec.dropFactor : (float)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.dropFactor = value;
+            }
+        }
+        public ushort saturationCounts
+        {
+            get => spec != null ? spec.saturationCounts : (ushort)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.saturationCounts = value;
+            }
+        }
+        public byte maxAverage
+        {
+            get => spec != null ? spec.maxAverage : (byte)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.maxAverage = value;
+            }
+        }
+        public int repeatCount
+        {
+            get => spec != null ? spec.repeatCount : (int)0;
+            set
+            {
+                if (spec != null && spec.paired)
+                    spec.repeatCount = value;
             }
         }
 

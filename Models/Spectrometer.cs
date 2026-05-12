@@ -398,7 +398,7 @@ namespace EnlightenMAUI.Models
         // Auto-Raman Parameters
         ////////////////////////////////////////////////////////////////////////
 
-        public bool holdAutoRamanParameterSet = false;
+        public bool holdAutoRamanParameterSet = true;
 
         public virtual ushort maxCollectionTimeMS
         {
@@ -677,6 +677,9 @@ namespace EnlightenMAUI.Models
         ////////////////////////////////////////////////////////////////////////
         // spectra
         ////////////////////////////////////////////////////////////////////////
+
+        public int repeatCount = 1;
+        public int currentRepeat = 1;
 
         // responsible for taking one fully-averaged measurement
         public abstract Task<bool> takeOneAveragedAsync();

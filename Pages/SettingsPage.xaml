@@ -138,8 +138,6 @@
 
                     </StackLayout>
 
-                    
-
                     <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
 
                         <Label Text="Processing Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
@@ -246,6 +244,149 @@
                         </Grid>
                     </StackLayout>
 
+                    <StackLayout Orientation="Vertical" HorizontalOptions="FillAndExpand" Spacing="10" Padding="20, 10, 20, 10">
+
+                        <Label Text="Auto-Raman Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Auto Repeats" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="repeatCount" 
+                         Value="{Binding repeatCount}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="100"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Max Total Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="maxCollectionTimeMS" 
+                         Value="{Binding maxCollectionTimeMS}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="65535"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Starting Int. Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="startIntTimeMS" 
+                         Value="{Binding startIntTimeMS}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="4000"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Starting Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="startGainDb" 
+                         Value="{Binding startGainDb}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="0" Maximum="64"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Minimum Int. Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="minIntTimeMS" 
+                         Value="{Binding minIntTimeMS}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="4000"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Maximum Int. Time (ms)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="maxIntTimeMS" 
+                         Value="{Binding maxIntTimeMS}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="4000"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Minimum Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="autoRamanMinGainDb" 
+                         Value="{Binding autoRamanMinGainDb}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="0" Maximum="64"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Maximum Gain (dB)" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="autoRamanMaxGainDb" 
+                         Value="{Binding autoRamanMaxGainDb}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="0" Maximum="64"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Target Counts" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="targetCounts" 
+                         Value="{Binding targetCounts}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="0" Maximum="65535"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Minimum Counts" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="minCounts" 
+                         Value="{Binding minCounts}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="0" Maximum="65535"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Maximum Counts" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="maxCounts" 
+                         Value="{Binding maxCounts}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="0" Maximum="65535"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Maximum Factor" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="maxFactor" 
+                         Value="{Binding maxFactor}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="255"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Drop Factor" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="dropFactor" 
+                         Value="{Binding dropFactor}" 
+                             Style="{StaticResource NumericInputStyle}"
+                             StringFormat="{}{0:f2}"
+                         Minimum="0" Maximum="1" Step="0.05"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Saturation Counts" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="saturationCounts" 
+                         Value="{Binding saturationCounts}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="65535"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Maximum Averaging" TextColor="#eee" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="maxAverage" 
+                         Value="{Binding maxAverage}" 
+                             Style="{StaticResource NumericInputStyle}"
+                         Minimum="1" Maximum="255"
+                         HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+                        
+                    </StackLayout>
+                    
                     <!-- Category header -->
                     <Label Text="Save Options" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
 
