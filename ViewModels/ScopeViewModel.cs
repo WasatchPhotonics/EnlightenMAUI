@@ -106,7 +106,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             (spec as BluetoothSpectrometer).notifyToast += (string msg) => EnlightenMAUI.Common.Util.toast(msg);
         }
 
-        Task loader = PlatformUtil.loadONNXModel("Processing/ml", "onnx", "etalon_correction.json");
+        Task loader = PlatformUtil.loadONNXModel("Processing/ml", "onnx", "etalon_correction.json", spec);
         loader.Wait();
         //Thread.Sleep(100);
 

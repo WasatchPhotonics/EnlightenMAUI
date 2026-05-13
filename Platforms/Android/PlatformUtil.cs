@@ -434,7 +434,6 @@ internal class PlatformUtil
                 ProcessingConfigJSON json = JsonConvert.DeserializeObject<ProcessingConfigJSON>(blob);
                 if (json != null)
                 {
-
                     inputIsNormalized = json.input_is_normalized;
                     inputStart = json.input_start;
                     inputLength = json.input_length;
@@ -447,7 +446,9 @@ internal class PlatformUtil
 
                     if (Math.Ceiling(spec.wavenumbers[spec.eeprom.ROIHorizStart]) < outputStart && Math.Ceiling(spec.wavenumbers[spec.eeprom.ROIHorizEnd]) < outputStart + outputLength)
                     {
-
+                        logger.debug("calculating shifted input/output values");
+                        outputStart = (int)Math.Ceiling(spec.wavenumbers[spec.eeprom.ROIHorizStart]);
+                        inputStart = outputStart - leftPadding;
                     }
                 }
             }
