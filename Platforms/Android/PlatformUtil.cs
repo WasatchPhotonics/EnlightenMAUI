@@ -310,7 +310,7 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string root, string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath, Spectrometer spec)
     {
         try
         {
@@ -434,6 +434,7 @@ internal class PlatformUtil
                 ProcessingConfigJSON json = JsonConvert.DeserializeObject<ProcessingConfigJSON>(blob);
                 if (json != null)
                 {
+
                     inputIsNormalized = json.input_is_normalized;
                     inputStart = json.input_start;
                     inputLength = json.input_length;
@@ -443,6 +444,11 @@ internal class PlatformUtil
                     outputStart = json.output_start;
                     outputLength = json.output_length;
                     outputSpacing = json.output_spacing;
+
+                    if (Math.Ceiling(spec.wavenumbers[spec.eeprom.ROIHorizStart]) < outputStart && Math.Ceiling(spec.wavenumbers[spec.eeprom.ROIHorizEnd]) < outputStart + outputLength)
+                    {
+
+                    }
                 }
             }
 
@@ -602,8 +608,8 @@ internal class PlatformUtil
 
         if (transformerLoaded)
         {
-            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
-            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart, spec.eeprom.ROIHorizEnd);
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, smoothed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
             updated.raw = smoothed;
@@ -719,7 +725,7 @@ internal class PlatformUtil
         }
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, int roiEnd, bool useSimple = false)
     {
         try
         {
@@ -741,10 +747,10 @@ internal class PlatformUtil
 
             //logger.logArray("etalon-corrected counts", counts);
 
-            double[] targetWavenum = new double[2376];
+            double[] targetWavenum = new double[inputLength];
             for (int i = 0; i < targetWavenum.Length; i++)
             {
-                targetWavenum[i] = i + 216;
+                targetWavenum[i] = i + inputStart;
             }
 
             List<double> trimmedWN = new List<double>();
@@ -760,23 +766,26 @@ internal class PlatformUtil
 
             double max = interpolatedCounts.Max();
 
-            for (int i = 0; i < interpolatedCounts.Length; i++)
+            if (inputIsNormalized)
             {
-                interpolatedCounts[i] = interpolatedCounts[i] / max;
+                for (int i = 0; i < interpolatedCounts.Length; i++)
+                {
+                    interpolatedCounts[i] = interpolatedCounts[i] / max;
+                }
             }
 
             //SimpleModelInput modelInput = new SimpleModelInput();
             // modelInput.spectrum = new float[2376];
-            float[] tempSpectrum = new float[2376];
+            float[] tempSpectrum = new float[inputLength];
             for (int i = 0; i < interpolatedCounts.Length; i++)
                 tempSpectrum[i] = (float)interpolatedCounts[i];
 
             var sessionInputs = new List<NamedOnnxValue>
             {
-                NamedOnnxValue.CreateFromTensor(correctionSession.InputNames[0], new DenseTensor<float>(tempSpectrum, new int[] { 1, 2376, 1 }))
+                NamedOnnxValue.CreateFromTensor(correctionSession.InputNames[0], new DenseTensor<float>(tempSpectrum, new int[] { 1, inputLength, 1 }))
             };
 
-            var inValue = OrtValue.CreateTensorValueFromMemory(tempSpectrum, new long[] { 1, 2376, 1 });
+            var inValue = OrtValue.CreateTensorValueFromMemory(tempSpectrum, new long[] { 1, inputLength, 1 });
 
             var sessionOutput = correctionSession.Run(sessionInputs);
 
@@ -794,9 +803,19 @@ internal class PlatformUtil
             float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
 
             double[] output = new double[outputSize];
-            for (int i = 0; i < outputSize; ++i)
+            if (inputIsNormalized)
             {
-                output[i] = sessionData[i] * max;
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = sessionData[i] * max;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < outputSize; ++i)
+                {
+                    output[i] = sessionData[i];
+                }
             }
             double min = output.Min();
             for (int i = 0; i < outputSize; ++i)
@@ -1751,7 +1770,7 @@ internal class PlatformUtil
 
         if (false)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -1766,7 +1785,7 @@ internal class PlatformUtil
 
         else
         {
-            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, m.processed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
 
             Measurement updated = new Measurement();
@@ -1834,7 +1853,7 @@ internal class PlatformUtil
 
         if (false)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -1849,7 +1868,7 @@ internal class PlatformUtil
 
         else
         {
-            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
 
             Measurement updated = new Measurement();
@@ -1902,8 +1921,8 @@ internal class PlatformUtil
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
-            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
             updated.raw = smoothed;
@@ -1961,8 +1980,8 @@ internal class PlatformUtil
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
-            double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, smoothed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
             updated.raw = smoothed;

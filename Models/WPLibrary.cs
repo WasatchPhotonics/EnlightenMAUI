@@ -568,7 +568,7 @@ namespace EnlightenMAUI.Models
         {
             Measurement adjusted = new Measurement();
             
-            if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
+            if (sample.wavenumbers[0] == PlatformUtil.outputStart && sample.wavenumbers.Length == PlatformUtil.outputLength)
             {
                 adjusted = sample.copy();
                 adjusted.dark = null;

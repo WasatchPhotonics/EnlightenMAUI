@@ -186,7 +186,7 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string root, string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath, Spectrometer spec)
     {
         try
         {
@@ -430,7 +430,7 @@ internal class PlatformUtil
 
         if (transformerLoaded)
         {
-            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
+            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart, spec.eeprom.ROIHorizEnd);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -484,7 +484,7 @@ internal class PlatformUtil
         return null;
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, int roiEnd, bool useSimple = false)
     {
         try
         {
@@ -1453,7 +1453,7 @@ internal class PlatformUtil
 
         if (false)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -1521,7 +1521,7 @@ internal class PlatformUtil
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;

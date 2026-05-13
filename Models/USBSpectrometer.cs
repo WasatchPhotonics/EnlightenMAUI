@@ -550,8 +550,8 @@ namespace EnlightenMAUI.Models
                     }
                 }
 
-                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart);
-                measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+                double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, eeprom.ROIHorizEnd);
+                measurement.wavenumbers = Enumerable.Range(PlatformUtil.outputStart, smoothed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
                 stretchedDark = new double[smoothed.Length];
                 measurement.rawDark = dark;
                 measurement.dark = stretchedDark;

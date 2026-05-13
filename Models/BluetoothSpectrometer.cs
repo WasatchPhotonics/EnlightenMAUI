@@ -1495,9 +1495,9 @@ public class BluetoothSpectrometer : Spectrometer
                 }
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, PlatformUtil.simpleTransformerLoaded ? true : false);
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, eeprom.ROIHorizEnd, PlatformUtil.simpleTransformerLoaded ? true : false);
             //double[] smoothedB = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, false);
-            measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            measurement.wavenumbers = Enumerable.Range(PlatformUtil.outputStart, smoothed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             stretchedDark = new double[smoothed.Length];
             measurement.rawDark = dark;
             measurement.dark = stretchedDark;
