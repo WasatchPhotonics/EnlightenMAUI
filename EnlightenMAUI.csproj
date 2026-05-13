@@ -223,10 +223,10 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="Exists('..\EMAUIHelpers\models')">
-	  <MauiAsset Include="..\EMAUIHelpers\models\nrd5-r3-model-17-opset18\r3-model-17-light.onnx" Link="Processing\ml\r3-model-17-light.onnx">
+	  <MauiAsset Include="..\EMAUIHelpers\models\DALAI-0526\DALAI-0526.onnx" Link="Processing\ml\DALAI-0526.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
-	  <MauiAsset Include="..\EMAUIHelpers\models\nrd5-r3-model-17-opset18\r3-model-17-config.json" Link="Processing\ml\r3-model-17-config.json">
+	  <MauiAsset Include="..\EMAUIHelpers\models\DALAI-0526\DALAI-0526.json" Link="Processing\ml\DALAI-0526.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	</ItemGroup>
@@ -470,12 +470,6 @@
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	  <MauiAsset Include="..\EMAUIHelpers\library\Wasatch\Vinylacetate.csv" Link="Processing\library\Vinylacetate.csv">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </MauiAsset>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiAsset Include="Processing\ml\r3-model-17-light.onnx">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </MauiAsset>
 	</ItemGroup>
