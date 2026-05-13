@@ -81,6 +81,15 @@ internal class PlatformUtil
     static string autoSavePath;
 
     public static string modelName = "";
+    public static bool inputIsNormalized = true;
+    public static int inputStart = 0;
+    public static int inputLength = 2048;
+    public static double inputSpacing = 1;
+    public static int leftPadding = 184;
+    public static int rightPadding = 184;
+    public static int outputStart = 0;
+    public static int outputLength = 2048;
+    public static double outputSpacing = 1;
 
     public static void RequestSelectLogFolder()
     {
@@ -1117,6 +1126,11 @@ internal class PlatformUtil
         return savePath = todayDir;
     }
 
+    public static string getSpectrometerEEPROMPath(string serial)
+    {
+        return null;
+    }
+
     public static string getUserLibraryPath()
     {
         if (userLibraryPath != null)
@@ -1168,10 +1182,6 @@ internal class PlatformUtil
 
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
         return configurationPath = Path.Join(docDir.AbsoluteString, "configuration.json");
-    }
-    public static string getSpectrometerEEPROMPath(string serial)
-    {
-        return null;
     }
 
     /*

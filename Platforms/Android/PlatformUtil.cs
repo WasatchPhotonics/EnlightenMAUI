@@ -9,7 +9,9 @@ using Android.Webkit;
 using AndroidX.AppCompat.Widget;
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Models;
+using EnlightenMAUI.ViewModels;
 using Java.IO;
+using Java.Nio;
 using Kotlin.Contracts;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.ML;
@@ -27,6 +29,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Telerik.Maui.Controls.Scheduler;
 using Xamarin.Google.Crypto.Tink.Subtle;
+using Xamarin.Google.Crypto.Tink.Util;
 using static Android.Provider.ContactsContract;
 using static Android.Widget.GridLayout;
 using static Microsoft.Maui.LifecycleEvents.AndroidLifecycle;
@@ -35,38 +38,6 @@ using AndrContent = Android.Content;
 using AndrNet = Android.Net;
 using AndrOS = Android.OS;
 namespace EnlightenMAUI.Platforms; 
-
-
-internal class ModelInput
-{
-    [ColumnName("serving_default_input_layer:0")]
-    [VectorType(1, 2376, 1)]
-    public float[] spectrum { get; set; }
-}
-
-internal class Prediction
-{
-    [ColumnName("StatefulPartitionedCall_1:0")]
-    [VectorType(1, 2008, 1)]
-    public float[] spectrum { get; set; }
-
-}
-
-internal class SimpleModelInput
-{
-    [ColumnName("serving_default_input_1:0")]
-    [VectorType(1, 2376, 1)]
-    public float[] spectrum { get; set; }
-}
-
-internal class SimplePrediction
-{
-    [ColumnName("StatefulPartitionedCall:0")]
-    [VectorType(1, 2008, 1)]
-    public float[] spectrum { get; set; }
-
-}
-
 
 public static class StorageHelper
 {
@@ -107,7 +78,7 @@ internal class PlatformUtil
 {
     static Logger logger = Logger.getInstance();
     static MLContext mlContext = new MLContext();
-    static Dictionary<string, InferenceSession> correctionSessions = new Dictionary<string, InferenceSession>();
+    static InferenceSession correctionSession = null;
     static Dictionary<string, double[]> correctionFactors = new Dictionary<string, double[]>();
     static ITransformer transformer;
     public static bool transformerLoaded = false;
@@ -121,6 +92,15 @@ internal class PlatformUtil
     static string autoSavePath;
 
     public static string modelName = "";
+    public static bool inputIsNormalized = true;
+    public static int inputStart = 0;
+    public static int inputLength = 2048;
+    public static double inputSpacing = 1;
+    public static int leftPadding = 184;
+    public static int rightPadding = 184;
+    public static int outputStart = 0;
+    public static int outputLength = 2048;
+    public static double outputSpacing = 1;
 
     public static void RequestSelectLogFolder()
     {
@@ -356,18 +336,21 @@ internal class PlatformUtil
             }
 
             Regex extensionReg = new Regex(@".*\." + extension + @"$");
+            Regex configReg = new Regex(@".*\.json$");
             List<string> fullPaths = new List<string>();
+            List<string> configPaths = new List<string>();
             foreach (string path in assetP)
             {
                 if (extensionReg.IsMatch(path))
                     fullPaths.Add(Path.Join(root, path));
+                if (configReg.IsMatch(path))
+                    configPaths.Add(Path.Join(root, path));
             }
 
             if (fullPaths == null || fullPaths.Count == 0)
                 return;
 
-            List<byte> aggressiveBuffer = new List<byte>();
-            List<byte> simpleBuffer = new List<byte>();
+            List<byte> modelBuffer = new List<byte>();
 
             foreach (string path in fullPaths)
             {
@@ -397,39 +380,79 @@ internal class PlatformUtil
                     }
                 }
 
-                if (path.Contains("light") && tempBuffer.Count > 0)
-                {
-                    simpleBuffer = tempBuffer;
-                    modelName = getFileName(path);
-                }
-                else if (tempBuffer.Count > 0)
-                {
-                    aggressiveBuffer = tempBuffer;
-                }
-
+                modelBuffer = tempBuffer;
+                modelName = getFileName(path);
             }
 
-            if (simpleBuffer.Count > 0)
+            foreach (string path in configPaths)
+            {
+                List<byte> tempBuffer = new List<byte>();
+                using Stream s = await FileSystem.Current.OpenAppPackageFileAsync(path);
+                StringBuilder sb = new StringBuilder();
+                using (BinaryReader reader = new BinaryReader(s))
+                {
+                    var bytesRead = 0;
+
+                    int bufferSize = 1024;
+                    byte[] bytes;
+                    var buffer = new byte[bufferSize];
+                    using (s)
+                    {
+                        do
+                        {
+                            buffer = reader.ReadBytes(bufferSize);
+                            bytesRead = buffer.Count();
+                            tempBuffer.AddRange(buffer);
+                            //logger.info("model file {0} read {1} bytes", path, bytesRead);
+                        }
+
+                        while (bytesRead > 0);
+
+                    }
+                }
+
+                int end = 0;
+                if (tempBuffer.Last() == 0)
+                {
+                    for (int i = tempBuffer.Count - 1; i >= 0; i--)
+                    {
+                        if (tempBuffer[i] != 0)
+                        {
+                            end = i;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    end = tempBuffer.Count();
+                }
+                
+                sb.Append(System.Text.Encoding.UTF8.GetString(tempBuffer.Take(end).ToArray()));
+
+                string blob = sb.ToString();
+                ProcessingConfigJSON json = JsonConvert.DeserializeObject<ProcessingConfigJSON>(blob);
+                if (json != null)
+                {
+                    inputIsNormalized = json.input_is_normalized;
+                    inputStart = json.input_start;
+                    inputLength = json.input_length;
+                    inputSpacing = json.input_spacing;
+                    leftPadding = json.left_padding;
+                    rightPadding = json.right_padding;
+                    outputStart = json.output_start;
+                    outputLength = json.output_length;
+                    outputSpacing = json.output_spacing;
+                }
+            }
+
+            if (modelBuffer.Count > 0)
             {
                 try
                 {
-                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(simpleBuffer.ToArray());
+                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(modelBuffer.ToArray());
                     transformerLoaded = simpleTransformerLoaded = true;
-                    correctionSessions.Add("simple", session);
-                }
-                catch (Exception ex)
-                {
-                    logger.info("onnx session load failed with exception {0}", ex.Message);
-                }
-            }
-
-            if (aggressiveBuffer.Count > 0)
-            {
-                try
-                {
-                    var session = new Microsoft.ML.OnnxRuntime.InferenceSession(aggressiveBuffer.ToArray());
-                    transformerLoaded = aggressiveTransformerLoaded = true;
-                    correctionSessions.Add("aggressive", session);
+                    correctionSession = session;
                 }
                 catch (Exception ex)
                 {
@@ -737,111 +760,58 @@ internal class PlatformUtil
 
             double max = interpolatedCounts.Max();
 
-            if (useSimple)
+            for (int i = 0; i < interpolatedCounts.Length; i++)
             {
-                for (int i = 0; i < interpolatedCounts.Length; i++)
-                {
-                    interpolatedCounts[i] = interpolatedCounts[i] / max;
-                }
-
-                SimpleModelInput modelInput = new SimpleModelInput();
-                modelInput.spectrum = new float[2376];
-                for (int i = 0; i < interpolatedCounts.Length; i++)
-                    modelInput.spectrum[i] = (float)interpolatedCounts[i];
-
-                var sessionInputs = new List<NamedOnnxValue>
-                {
-                    NamedOnnxValue.CreateFromTensor(correctionSessions["simple"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))
-                };
-
-                var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
-
-                var sessionOutput = correctionSessions["simple"].Run(sessionInputs);
-
-                var sessionInput1 = new Dictionary<string, OrtValue>
-                {
-                    { correctionSessions["simple"].InputNames[0], inValue }
-                };
-
-                var runOptions = new RunOptions();
-                var sessionOutput2 = correctionSessions["simple"].Run(runOptions, sessionInput1, correctionSessions["simple"].OutputNames.ToArray());
-                var shape = sessionOutput2[0].GetTensorTypeAndShape();
-                //var shape = sessionOutput2[0].GetTensorDataAsSpan
-
-                int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
-                float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
-
-                double[] output = new double[outputSize];
-                for (int i = 0; i < outputSize; ++i)
-                {
-                    output[i] = sessionData[i] * max;
-                }
-                double min = output.Min();
-                for (int i = 0; i < outputSize; ++i)
-                {
-                    output[i] = output[i] - min; // * max;
-                }
-
-                //logger.logArray("rebased counts", output);
-
-                output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
-                ////logger.logArray("deconvoluted counts", output);
-
-                logger.debug("returning processed spectrum");
-                return output;
-
+                interpolatedCounts[i] = interpolatedCounts[i] / max;
             }
 
-            else
+            //SimpleModelInput modelInput = new SimpleModelInput();
+            // modelInput.spectrum = new float[2376];
+            float[] tempSpectrum = new float[2376];
+            for (int i = 0; i < interpolatedCounts.Length; i++)
+                tempSpectrum[i] = (float)interpolatedCounts[i];
+
+            var sessionInputs = new List<NamedOnnxValue>
             {
-                ModelInput modelInput = new ModelInput();
-                modelInput.spectrum = new float[2376];
-                for (int i = 0; i < interpolatedCounts.Length; i++)
-                    modelInput.spectrum[i] = (float)interpolatedCounts[i];
+                NamedOnnxValue.CreateFromTensor(correctionSession.InputNames[0], new DenseTensor<float>(tempSpectrum, new int[] { 1, 2376, 1 }))
+            };
 
-                var sessionInputs = new List<NamedOnnxValue>
-                {
-                    NamedOnnxValue.CreateFromTensor(correctionSessions["aggressive"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, new int[] { 1, 2376, 1 }))     
-                    //NamedOnnxValue.CreateFromTensor(correctionSessions["aggressive"].InputNames[0], new DenseTensor<float>(modelInput.spectrum, correctionSessions["aggressive"].InputMetadata[correctionSessions["aggressive"].InputNames[0]].Dimensions))
+            var inValue = OrtValue.CreateTensorValueFromMemory(tempSpectrum, new long[] { 1, 2376, 1 });
 
-                };
+            var sessionOutput = correctionSession.Run(sessionInputs);
 
-                var inValue = OrtValue.CreateTensorValueFromMemory(modelInput.spectrum, new long[] { 1, 2376, 1 });
+            var sessionInput1 = new Dictionary<string, OrtValue>
+            {
+                { correctionSession.InputNames[0], inValue }
+            };
 
-                var sessionOutput = correctionSessions["aggressive"].Run(sessionInputs);
+            var runOptions = new RunOptions();
+            var sessionOutput2 = correctionSession.Run(runOptions, sessionInput1, correctionSession.OutputNames.ToArray());
+            var shape = sessionOutput2[0].GetTensorTypeAndShape();
+            //var shape = sessionOutput2[0].GetTensorDataAsSpan
 
-                var sessionInput1 = new Dictionary<string, OrtValue>
-                {
-                    { correctionSessions["aggressive"].InputNames[0], inValue }
-                };
+            int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
+            float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
 
-                var runOptions = new RunOptions();
-                var sessionOutput2 = correctionSessions["aggressive"].Run(runOptions, sessionInput1, correctionSessions["aggressive"].OutputNames.ToArray());
-                var shape = sessionOutput2[0].GetTensorTypeAndShape();
-                //var shape = sessionOutput2[0].GetTensorDataAsSpan
-
-                int outputSize = sessionOutput2[0].GetTensorDataAsSpan<float>().Length;
-                float[] sessionData = sessionOutput2[0].GetTensorDataAsSpan<float>().ToArray();
-
-                double[] output = new double[outputSize];
-                for (int i = 0; i < outputSize; ++i)
-                {
-                    output[i] = sessionData[i] * max;
-                }
-                double min = output.Min();
-                for (int i = 0; i < outputSize; ++i)
-                {
-                    output[i] = output[i] - min; // * max;
-                }
-
-                //logger.logArray("rebased counts", output);
-
-                output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
-                //logger.logArray("deconvoluted counts", output);
-
-                logger.debug("returning processed spectrum");
-                return output;
+            double[] output = new double[outputSize];
+            for (int i = 0; i < outputSize; ++i)
+            {
+                output[i] = sessionData[i] * max;
             }
+            double min = output.Min();
+            for (int i = 0; i < outputSize; ++i)
+            {
+                output[i] = output[i] - min; // * max;
+            }
+
+            //logger.logArray("rebased counts", output);
+
+            output = customDeconvoluteSpectrum(targetWavenum, output, fwhm);
+            ////logger.logArray("deconvoluted counts", output);
+
+            logger.debug("returning processed spectrum");
+            return output;
+
         }
         catch (Exception e)
         {
