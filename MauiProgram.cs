@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using EnlightenMAUI.Models;
 using System.Reflection;
 using Telerik.Maui.Controls.Compatibility;
-using Android.Content.Res;
 
 #if ANDROID
 using AndroidX.AppCompat.Widget;

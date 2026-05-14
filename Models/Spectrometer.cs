@@ -2,6 +2,7 @@
 using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
 using EnlightenMAUI.ViewModels;
+using Newtonsoft.Json;
 using Plugin.BLE.Abstractions.Contracts;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using WPProduction.Utils;
 
 namespace EnlightenMAUI.Models
 {
@@ -100,7 +102,47 @@ namespace EnlightenMAUI.Models
 
         public string fullModelName { get => $"{eeprom.model}{eeprom.productConfiguration}"; }
 
+        public string connectionMessage
+        {
+            get => _connectionMessage;
+            set
+            {
+                _connectionMessage = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectionMessage)));
+            }
+        }
+        string _connectionMessage = "";
+
         protected abstract Task<List<byte[]>> readEEPROMAsync();
+        protected abstract Task<List<byte[]>> readEEPROMPixelCorrectionAsync();
+
+        public async Task cacheEEPROM()
+        {
+            string EEPROMPath = PlatformUtil.getSpectrometerEEPROMPath(eeprom.serialNumber);
+            JsonThingWriter jtw = new JsonThingWriter();
+            jtw.writePair("EEPROM", eeprom.toJSON());
+
+            await File.WriteAllTextAsync(EEPROMPath, jtw.ToString());
+        }
+
+        public async Task<bool> loadCachedEEPROM()
+        {
+            string EEPROMPath = PlatformUtil.getSpectrometerEEPROMPath(eeprom.serialNumber);
+            if (File.Exists(EEPROMPath))
+            {
+                SimpleCSVParser parser = new SimpleCSVParser();
+                Stream s = File.OpenRead(EEPROMPath);
+                StreamReader sr = new StreamReader(s);
+                string blob = await sr.ReadToEndAsync();
+
+                EEPROMHolder json = JsonConvert.DeserializeObject<EEPROMHolder>(blob);
+                eeprom.setFromJSON(json.EEPROM);
+
+                return true;
+            }
+
+            return false;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // acquiring
@@ -773,12 +815,31 @@ namespace EnlightenMAUI.Models
             int bytesToRead = data.Length - 2;
             Array.Copy(data, 2, EEPROMBuffer, EEPROMBytesRead, Math.Min(bytesToRead, EEPROM.PAGE_LENGTH));
             EEPROMBytesRead += (uint)bytesToRead;
+            int pagesToRead = EEPROM.INITIAL_PAGES;
             if (EEPROMBytesRead % EEPROM.PAGE_LENGTH == 0 || bytesToRead > EEPROM.PAGE_LENGTH)
                 ++CurrentEEPROMPage;
-            if (CurrentEEPROMPage == EEPROM.MAX_PAGES)
+            if (this is BluetoothSpectrometer)
+            {
+                pagesToRead = (this as BluetoothSpectrometer).readFullPixelCorrection ? EEPROM.MAX_PAGES : EEPROM.INITIAL_PAGES;
+
+                if (CurrentEEPROMPage == pagesToRead)
+                    EEPROMReadComplete = true;
+            }
+            else if ((this is API6BLESpectrometer || this is API9BLESpectrometer) && CurrentEEPROMPage == EEPROM.INITIAL_PAGES)
                 EEPROMReadComplete = true;
 
-            raiseConnectionProgress(.15 + .85 * CurrentEEPROMPage / EEPROM.MAX_PAGES);
+            if (this is BluetoothSpectrometer)
+            {
+                bool raiseProgress = !(this as BluetoothSpectrometer).initialPoke;
+                if (raiseProgress)
+                {
+                    connectionMessage = $"Initial memory read and cache (page {CurrentEEPROMPage} of {pagesToRead})";
+                    raiseConnectionProgress(.15 + .8 * CurrentEEPROMPage / pagesToRead);
+                }
+            }
+            else
+                raiseConnectionProgress(.15 + .8 * CurrentEEPROMPage / EEPROM.INITIAL_PAGES);
+
 
             genericReturned = true;
         }
@@ -824,10 +885,19 @@ namespace EnlightenMAUI.Models
                 return;
             }
 
-            if (dark == null)
+            if (!autoRamanEnabled && !autoDarkEnabled)
             {
-                logger.debug("declining RamanIntensityCorrection: not dark-corrected");
-                return;
+                if (dark == null)
+                {
+                    logger.debug("declining RamanIntensityCorrection: not dark-corrected");
+                    return;
+                }
+
+                if (!laserEnabled)
+                {
+                    logger.debug("declining RamanIntensityCorrection: laser not enabled");
+                    return;
+                }
             }
 
             if (eeprom.ROIHorizStart >= eeprom.ROIHorizEnd)
@@ -836,11 +906,6 @@ namespace EnlightenMAUI.Models
                 return;
             }
 
-            if (!laserEnabled)
-            {
-                logger.debug("declining RamanIntensityCorrection: laser not enabled");
-                return;
-            }
 
             for (int i = eeprom.ROIHorizStart; i <= eeprom.ROIHorizEnd; ++i)
             {
@@ -853,6 +918,112 @@ namespace EnlightenMAUI.Models
                 }
                 double factor = Math.Pow(10, logTen);
                 spectrum[i] *= factor;
+            }
+        }
+
+        public bool useEtalonCorrection { get; set; } = true;
+
+        /// <summary>
+        /// Performs Etalon correction on the given spectrum if factors are available
+        /// </summary>
+        protected void applyEtalonCorrection(double[] spectrum)
+        {
+            if (!useEtalonCorrection)
+            {
+                logger.debug("declining EtalonCorrection: disabled");
+                return;
+            }
+
+            if (eeprom.pixelCalibrationFactors == null || eeprom.pixelCalibrationFactors.Count == 0)
+            {
+                logger.debug("declining EtalonCorrection: factors not present in EEPROM");
+                return;
+            }
+
+            for (int i = 0; i < eeprom.pixelCalibrationFactors.Count; ++i)
+            {
+                spectrum[i + eeprom.pixelCalibrationStart] *= eeprom.pixelCalibrationFactors[i];
+            }
+        }
+
+        protected void correctBadPixels(ref double[] spectrum)
+        {
+            if (eeprom.badPixelList.Count == 0)
+                return;
+
+            if (spectrum is null || spectrum.Length == 0)
+                return;
+
+            // iterate over each bad pixel
+            int i = 0;
+            while (i < eeprom.badPixelList.Count)
+            {
+                short badPix = eeprom.badPixelList[i];
+                if (badPix == 0)
+                {
+                    // handle the left edge
+                    i++;
+                    short nextGood = (short)(badPix + 1);
+                    while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
+                    {
+                        nextGood++;
+                        i++;
+                    }
+                    if (nextGood < spectrum.Length)
+                        for (int j = 0; j < nextGood; j++)
+                            spectrum[j] = spectrum[nextGood];
+
+                    i++;
+                }
+                else
+                {
+                    // find previous good pixel
+                    short prevGood = (short)(badPix - 1);
+                    while (eeprom.badPixelSet.Contains(prevGood) && prevGood >= 0)
+                        prevGood -= 1;
+
+                    if (prevGood >= 0)
+                    {
+                        // find next good pixel
+                        short nextGood = (short)(badPix + 1);
+                        while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
+                        {
+                            nextGood += 1;
+                            i += 1;
+                        }
+
+                        if (nextGood < spectrum.Length)
+                        {
+                            // For now, draw a line between previous and next good pixels.
+                            //
+                            // Note that obviously this is in pixel-space, and not non-linear
+                            // wavelength or wavenumber space.  It is debateable as to which
+                            // would be more accurate...but the difference would only matter
+                            // if we had multiple consecutative bad pixels which didn't fall
+                            // on an edge of the spectrum, which should not be a common 
+                            // allowed circumstance.
+                            //
+                            // TODO: consider some kind of curve-fit instead of this linear
+                            //       interpolation (THAT could matter in non-linear space).
+                            //       Note that if chosen, we'd still want that to be done
+                            //       BEFORE boxcar etc.
+                            double delta = spectrum[nextGood] - spectrum[prevGood];
+                            int rng = nextGood - prevGood;
+                            double step = delta / rng;
+                            for (int j = 0; j < rng - 1; j++)
+                                spectrum[prevGood + j + 1] = spectrum[prevGood] + step * (j + 1);
+                        }
+                        else
+                        {
+                            // we ran off the high end, so copy-right
+                            for (short j = badPix; j < spectrum.Length; j++)
+                                spectrum[j] = spectrum[prevGood];
+                        }
+                    }
+
+                    // advance to next bad pixel
+                    i++;
+                }
             }
         }
 
