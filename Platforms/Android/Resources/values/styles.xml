@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+	<style name="Maui.MainTheme" parent="Theme.MaterialComponents">
+		<item name="colorControlNormal">#c5c5c5</item>
+	</style>
+</resources>
