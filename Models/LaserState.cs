@@ -181,7 +181,7 @@ public class LaserState
         ushort newWatchdog = 0;
         ushort newLaserDelayMS = 0;
 
-        if (data.Length == 8)
+        if (data.Length >= 8)
         {
             
             ////////////////////////////////////////////////////////////////////

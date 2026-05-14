@@ -252,6 +252,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         polyCorrectionStep = false;
         laserArmed = false;
         spectrometerInitialized = false;
+        PasswordEntry = "";
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -689,7 +690,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PasswordEntry)));
         }
     }
-    string _PasswordEntry;
+    string _PasswordEntry = "";
 
     bool armLaser()
     {
