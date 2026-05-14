@@ -1468,7 +1468,7 @@ internal class PlatformUtil
 
         else
         {
-            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
 
             Measurement updated = new Measurement();

@@ -366,21 +366,21 @@ public class BluetoothSpectrometer : Spectrometer
         CurrentEEPROMPage = 0;
         genericReturned = false;
 
-        logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 8, offset 0");
-        byte[] request = { 0xff, 0x01, 0, (byte)8, 0 };
+        logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 5, offset 0");
+        byte[] request = { 0xff, 0x01, 0, (byte)5, 0 };
         bool ok = await writeGenericCharacteristic(request);
         if (!ok)
         {
-            logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+            logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd(5, 0)");
             return null;
         }
 
         while (!genericReturned)
             await Task.Delay(5);
 
-        PIXEL_CALIBRATION_TYPE temp = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(EEPROMBuffer, 39);
+        PAGE_SUBFORMAT temp = (PAGE_SUBFORMAT)ParseData.toUInt8(EEPROMBuffer, 63);
 
-        if (temp == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+        if (temp == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
         {
             logger.debug($"Spectrometer.readEEPROMAsync: reading full EEPROM with Etalon correction");
             EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
@@ -1506,7 +1506,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else
         {
-            double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] staticWavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
             measurement.wavenumbers = staticWavenumbers;
             measurement.postProcessed = newIntensities;

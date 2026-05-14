@@ -1335,7 +1335,7 @@ namespace EnlightenMAUI.Models
             }
             else
             {
-                double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] staticWavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
                 double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
                 measurement.wavenumbers = staticWavenumbers;
                 measurement.postProcessed = newIntensities;

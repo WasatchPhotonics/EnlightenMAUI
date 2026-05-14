@@ -576,7 +576,7 @@ namespace EnlightenMAUI.Models
             }
             else
             {
-                double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
                 double[] newIntensities = Wavecal.mapWavenumbers(sample.wavenumbers, sample.processed, wavenumbers);
                 adjusted.wavenumbers = wavenumbers;
                 adjusted.dark = null;
