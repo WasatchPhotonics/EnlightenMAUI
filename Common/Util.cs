@@ -102,7 +102,7 @@ public class Util
     //
     // Pearson library match, assumes provided measurements are already corrected to be on the same axis
     //
-    public static double pearsonLibraryMatch(Measurement sampleM, Measurement library, double airPLSLambda = 10000, int airPLSMaxIter = 100, bool smooth = true)
+    public static double pearsonLibraryMatch(Measurement sampleM, Measurement library, double airPLSLambda = 10000, int airPLSMaxIter = 100, bool smooth = true, int leftTrim = -1)
     {
         if (smooth)
         {
@@ -137,6 +137,17 @@ public class Util
         {
             double[] yIn = sampleM.postProcessed;
             double[] array = library.processed;
+
+            if (leftTrim > 0)
+            {
+                int skipCount = 0;
+                while (sampleM.wavenumbers[skipCount] < leftTrim)
+                {
+                    ++skipCount;
+                }
+                yIn = yIn.Skip(skipCount).ToArray();
+                array = array.Skip(skipCount).ToArray();
+            }
 
             return MathNet.Numerics.Statistics.Correlation.Pearson(yIn, array);
         }

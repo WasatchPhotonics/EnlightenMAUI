@@ -39,7 +39,7 @@
 		<Authors>mzieg</Authors>
 		<Company>Wasatch Photonics</Company>
 		<Description>Smartphone client for BLE-capable Wasatch Photonics spectrometers</Description>
-		<Copyright>2024</Copyright>
+		<Copyright>2026</Copyright>
 		<PackageProjectUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/WasatchPhotonics/EnlightenMAUI</RepositoryUrl>

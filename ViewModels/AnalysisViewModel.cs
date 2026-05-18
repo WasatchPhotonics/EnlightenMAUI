@@ -1,4 +1,5 @@
 ﻿using Accord.Statistics.Testing.Power;
+using Android.Renderscripts;
 using CommunityToolkit.Maui.Extensions;
 using CommunityToolkit.Maui.Views;
 using EnlightenMAUI.Models;
@@ -676,10 +677,18 @@ namespace EnlightenMAUI.ViewModels
             {
                 xAxisMinimum = spec.wavenumbers.Minimum();
                 xAxisMaximum = spec.wavenumbers.Maximum();
+                if (settings.leftTrim > 0)
+                    xAxisMinimum = Math.Max(xAxisMinimum, settings.leftTrim);
 
                 if (spec != null)
                 {
-                    for (int i = 0; i < spec.wavenumbers.Length; i++)
+                    int skipCount = 0;
+                    while (spec.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+
+                    for (int i = skipCount; i < spec.wavenumbers.Length; i++)
                     {
                         chartData.Add(new ChartDataPoint() { intensity = 0, xValue = i });
                     }
@@ -701,19 +710,34 @@ namespace EnlightenMAUI.ViewModels
 
             if (reference != null && sample != null)
             {
+                int skipCount = 0;
+                if (!usingRemovalAxis)
+                {
+                    while (spec.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+                }
+                else
+                {
+                    while (sample.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+                }
 
                 if (!usingRemovalAxis &&
                     spec.useHorizontalROI &&
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd)
                 {
-                    double refScale = reference.processed.Skip(spec.eeprom.ROIHorizStart).Take(spec.eeprom.ROIHorizEnd - spec.eeprom.ROIHorizStart).Max();
-                    double samScale = sample.postProcessed.Skip(spec.eeprom.ROIHorizStart).Take(spec.eeprom.ROIHorizEnd - spec.eeprom.ROIHorizStart).Max();
+                    double refScale = reference.processed.Skip(skipCount).Take(spec.eeprom.ROIHorizEnd - skipCount).Max();
+                    double samScale = sample.postProcessed.Skip(skipCount).Take(spec.eeprom.ROIHorizEnd - skipCount).Max();
                     scaleFactor = refScale / samScale;
                 }
                 else
                 {
-                    double refScale = reference.processed.Maximum();
-                    double samScale = sample.postProcessed.Maximum();
+                    double refScale = reference.processed.Skip(skipCount).Maximum();
+                    double samScale = sample.postProcessed.Skip(skipCount).Maximum();
                     scaleFactor = refScale / samScale;
                 }
             }
@@ -721,6 +745,25 @@ namespace EnlightenMAUI.ViewModels
             {
                 uint pixels = sample.pixels;
                 double[] intensities = sample.postProcessed;
+
+                int skipCount = 0;
+                if (!usingRemovalAxis)
+                {
+                    while (spec.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+                }
+                else
+                {
+                    while (sample.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+                }
+
+                intensities = intensities.Skip(skipCount).ToArray();
+                pixels = pixels - (uint)skipCount;
 
                 try
                 {
@@ -730,9 +773,9 @@ namespace EnlightenMAUI.ViewModels
                     else if (xAxisName == "Wavenumber")
                     {
                         if (usingRemovalAxis)
-                            xAxis = spec.measurement.wavenumbers;
+                            xAxis = sample.wavenumbers.Skip(skipCount).ToArray();
                         else
-                            xAxis = spec.wavenumbers;
+                            xAxis = spec.wavenumbers.Skip(skipCount).ToArray();
                     }
                     else
                         xAxis = spec.xAxisPixels;
@@ -751,7 +794,8 @@ namespace EnlightenMAUI.ViewModels
                     int pxHi = -1;
                     for (int i = 0; i < pixels; i++)
                     {
-                        if (!usingRemovalAxis &&
+                        if (skipCount != 0 &&
+                            !usingRemovalAxis &&
                             spec.useHorizontalROI &&
                             spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                             (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
@@ -793,6 +837,25 @@ namespace EnlightenMAUI.ViewModels
                 uint pixels = reference.pixels;
                 double[] intensities = reference.processed;
 
+                int skipCount = 0;
+                if (!usingRemovalAxis)
+                {
+                    while (spec.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+                }
+                else
+                {
+                    while (reference.wavenumbers[skipCount] < settings.leftTrim)
+                    {
+                        ++skipCount;
+                    }
+                }
+
+                intensities = intensities.Skip(skipCount).ToArray();
+                pixels = pixels - (uint)skipCount;
+
                 try
                 {
                     xAxis = null;
@@ -801,9 +864,9 @@ namespace EnlightenMAUI.ViewModels
                     else if (xAxisName == "Wavenumber")
                     {
                         if (usingRemovalAxis)
-                            xAxis = spec.measurement.wavenumbers;
+                            xAxis = reference.wavenumbers.Skip(skipCount).ToArray();
                         else
-                            xAxis = spec.wavenumbers;
+                            xAxis = spec.wavenumbers.Skip(skipCount).ToArray();
                     }
                     else
                         xAxis = spec.xAxisPixels;
@@ -822,7 +885,8 @@ namespace EnlightenMAUI.ViewModels
                     int pxHi = -1;
                     for (int i = 0; i < pixels; i++)
                     {
-                        if (!usingRemovalAxis &&
+                        if (skipCount != 0 &&
+                            !usingRemovalAxis &&
                             spec.useHorizontalROI &&
                             spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                             (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))

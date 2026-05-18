@@ -463,6 +463,7 @@ namespace EnlightenMAUI.Models
         public Measurement mostRecentMeasurement;
         public event EventHandler<Library> LoadFinished;
         public List<string> samples => library.Keys.ToList();
+        protected Settings settings = Settings.getInstance();
 
         public Library(string root, Spectrometer spec) { }
 
@@ -658,7 +659,7 @@ namespace EnlightenMAUI.Models
 
             foreach (string sample in library.Keys)
             {
-                double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded, leftTrim: settings.leftTrim);
                 logger.info($"{sample} score: {score}");
                 scores[sample] = score;
                 /*
