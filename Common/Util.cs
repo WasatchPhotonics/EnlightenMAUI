@@ -233,7 +233,7 @@ public class Util
 
     public static async Task<bool> enableAutoSave()
     {
-        return await StorageHelper.GetManageAllFilesPermission();
+        return false; // await StorageHelper.GetManageAllFilesPermission();
     }
 
     ////////////////////////////////////////////////////////////////////////

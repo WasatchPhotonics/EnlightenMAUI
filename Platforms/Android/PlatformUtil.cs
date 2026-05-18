@@ -41,6 +41,7 @@ namespace EnlightenMAUI.Platforms;
 
 public static class StorageHelper
 {
+    /*
     public const int RequestCode = 2296;
     private static TaskCompletionSource<bool>? GetPermissionTask { get; set; }
 
@@ -72,6 +73,7 @@ public static class StorageHelper
     {
         GetPermissionTask?.SetResult(AndrOS.Environment.IsExternalStorageManager);
     }
+    */
 }
 
 internal class PlatformUtil
