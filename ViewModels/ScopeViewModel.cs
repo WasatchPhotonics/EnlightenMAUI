@@ -20,7 +20,6 @@ using DeconvolutionMAUI;
 using System.Security.AccessControl;
 using Accord.Math;
 using CommunityToolkit.Maui.Extensions;
-using Android.Renderscripts;
 
 namespace EnlightenMAUI.ViewModels;
 

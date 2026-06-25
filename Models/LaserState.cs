@@ -24,7 +24,7 @@ public class LaserState
     public bool interlockClosed = false;
     public bool laserActive = false;
 
-    public int payloadLength = 7;
+    public int payloadLength { get; set; } = 7;
 
     // While we're working out various timing and stabilization issues in FW,
     // we're just going to implment Raman Mode in SW.  However, the FW version

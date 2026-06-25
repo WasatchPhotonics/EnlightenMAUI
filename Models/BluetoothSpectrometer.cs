@@ -1745,8 +1745,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else if (autoStep > AUTO_OPT_TARGET_RATIO)
         {
-            if (arg > scansToAverage)
+            //if (arg > scansToAverage)
+            if (arg > scansToAverage || !acqSynced)
             {
+                if (arg > scansToAverage)
+                    logger.debug($"BVM.updateAutoEstimate: marking acqSync using old logic");
+                else
+                    logger.debug($"BVM.updateAutoEstimate: marking acqSync using new logic");
+
                 _scansToAverage = (byte)(arg + 1);
                 _nextIntegrationTimeMS = maxIntTimeMS;
                 acqSynced = true;
@@ -1784,6 +1790,13 @@ public class BluetoothSpectrometer : Spectrometer
     {
         logger.debug($"BVM.receivePixels: start");
         var c = characteristicUpdatedEventArgs.Characteristic;
+
+        if (!acqSynced)
+        {
+            logger.debug($"BVM.receivePixels: acqSynced not marked, doing so now");
+            _nextIntegrationTimeMS = maxIntTimeMS;
+            acqSynced = true;
+        }
 
         byte[] data = c.Value;
 
