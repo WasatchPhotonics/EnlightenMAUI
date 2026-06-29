@@ -466,10 +466,10 @@ public class Measurement : INotifyPropertyChanged
         else
         {
             logger.debug("Measurement.reload: re-using lastSpectrum");
-            raw = spec.lastSpectrum;
+            raw = spec.lastRaw;
+            processed = spec.lastSpectrum;
         }
 
-        processed = (double[])raw.Clone(); // MZ: needed?
         timestamp = DateTime.Now;
 
         if (spec.stretchedDark != null)

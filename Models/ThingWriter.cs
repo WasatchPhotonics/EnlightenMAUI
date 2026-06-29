@@ -1,12 +1,13 @@
-﻿using System;
+﻿using EnlightenMAUI.Models;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
-using System.IO;
-using System.Globalization;
-using System.Drawing;
+using System.Threading.Tasks;
 
 namespace WPProduction.Utils
 {
@@ -118,6 +119,10 @@ namespace WPProduction.Utils
         override public void writePair(string name, DateTime value) { sb.AppendFormat("{0}\"{1}\": \"{2}\",\n", indent, name, value.ToString("s")); }
         override public void write(int[] values) { sb.AppendFormat("[ {0} ],\n", string.Join(", ", values)); }
         override public void write(string text, int repeats = 1) { sb.Append(text); }
+        public void writePair(string name, EEPROMJSON value)
+        {
+            sb.AppendFormat("{0}\"{1}\": {2},\n", indent, name, value.ToString(lvl + 1));
+        }
 
         override public void closeArray()
         {

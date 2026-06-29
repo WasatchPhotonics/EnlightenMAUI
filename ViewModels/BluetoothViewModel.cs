@@ -1,19 +1,17 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
-
-using Plugin.BLE.Abstractions.Contracts;
-using Plugin.BLE.Abstractions.EventArgs;
-using Plugin.BLE.Abstractions.Exceptions;
-using Plugin.BLE;
-
+﻿using EnlightenMAUI.Common;
 using EnlightenMAUI.Models;
-using EnlightenMAUI.Common;
-
+using EnlightenMAUI.Platforms;
 //using Android.Hardware.Usb;
 //using Android.Content;
 using LibUsbDotNet.Main;
 using Microsoft.Maui;
-using EnlightenMAUI.Platforms;
+using Plugin.BLE;
+using Plugin.BLE.Abstractions;
+using Plugin.BLE.Abstractions.Contracts;
+using Plugin.BLE.Abstractions.EventArgs;
+using Plugin.BLE.Abstractions.Exceptions;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -176,6 +174,13 @@ public class BluetoothViewModel : INotifyPropertyChanged
         get => "Bluetooth® LE Pairing";
     }
 
+
+    public string connectionMessage
+    {
+        get => spec == null ? "" : spec.connectionMessage;
+    }
+    public bool displayConnectionMessage => connectionMessage.Length > 0;
+
     ////////////////////////////////////////////////////////////////////////
     // connectionProgress
     ////////////////////////////////////////////////////////////////////////
@@ -194,6 +199,8 @@ public class BluetoothViewModel : INotifyPropertyChanged
         {
             _connectionProgress = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectionProgress)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(connectionMessage)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(displayConnectionMessage)));
         }
     }
     double _connectionProgress = 0;
@@ -670,8 +677,9 @@ public class BluetoothViewModel : INotifyPropertyChanged
             try
             {
                 // Step 5: actually try to connect
-                logger.debug($"BVM.doConnectAsync[Step 5]: calling adapter.ConnectToDeviceAsync");
-                await adapter.ConnectToDeviceAsync(bleDevice.device);
+                logger.debug($"BVM.doConnectAsync[Step 5]: calling adapter.ConnectToDeviceAsync"); 
+                var parameters = new ConnectParameters(autoConnect: true, forceBleTransport: true);
+                await adapter.ConnectToDeviceAsync(bleDevice.device, parameters);
 
                 // Step 5a: verify connection
                 logger.debug($"BVM.doConnectAsync[Step 5a]: verifying connection");

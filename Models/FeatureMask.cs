@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 namespace EnlightenMAUI.Models;
 
 /// <summary>
@@ -7,25 +8,73 @@ namespace EnlightenMAUI.Models;
 /// expending quite as much storage as, for instance, legacy hasCooling,
 /// hasLaser or hasBattery bytes.
 /// </summary>
-public class FeatureMask
+
+/// <summary>
+/// This class encapsulates a 16-bit set of boolean flags which indicate
+/// whether a given spectrometer has a particular feature or not, without
+/// expending quite as much storage as, for instance, legacy hasCooling,
+/// hasLaser or hasBattery bytes.
+/// </summary>
+public class FeatureMask : INotifyPropertyChanged
 {
-    enum Flags 
-    { 
-        INVERT_X_AXIS   = 0x0001, // 2^0 
-        BIN_2X2         = 0x0002  // 2^1
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    enum Flags
+    {
+        INVERT_X_AXIS = 0x0001, // 2^0 
+        BIN_2X2 = 0x0002, // 2^1
+        GEN15 = 0x0004, // 2^2
+        CUTOFF_INSTALLED = 0x0008, // 2^3
+        HARDWARE_EVEN_ODD_CORRECTION = 0x0010, // 2^4
+        SIG_LASER_TEC = 0x0020, // 2^5
+        HAS_INTERLOCK_FEEDBACK = 0x0040, // 2^6
+        HAS_SHUTTER = 0x0080, // 2^7
+        DISABLE_BLE_POWER = 0x0100, // 2^8
+        DISABLE_LASER_ARMED_INDIC = 0x0200, // 2^9
+        INTERLOCK_EXCLUDED = 0x0400, // 2^10
+        LASER_TIMEOUT_IN_COUNTS = 0x0800, // 2^10
+        IS_OEM = 0x1000  // 2^10
     }
 
     public FeatureMask(ushort value = 0)
     {
         invertXAxis = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
-        bin2x2      = 0 != (value & (ushort)Flags.BIN_2X2);
+        bin2x2 = 0 != (value & (ushort)Flags.BIN_2X2);
+        gen15 = 0 != (value & (ushort)Flags.GEN15);
+        cutoffInstalled = 0 != (value & (ushort)Flags.CUTOFF_INSTALLED);
+        evenOddHardwareCorrected = 0 != (value & (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION);
+        sigLaserTEC = 0 != (value & (ushort)Flags.SIG_LASER_TEC);
+        hasInterlockFeedback = 0 != (value & (ushort)Flags.HAS_INTERLOCK_FEEDBACK);
+        hasShutter = 0 != (value & (ushort)Flags.HAS_SHUTTER);
+        disableBLEPower = 0 != (value & (ushort)Flags.DISABLE_BLE_POWER);
+        disableLaserArmedIndication = 0 != (value & (ushort)Flags.DISABLE_LASER_ARMED_INDIC);
+        interlockExcluded = 0 != (value & (ushort)Flags.INTERLOCK_EXCLUDED);
+        laserTimeoutInCounts = 0 != (value & (ushort)Flags.LASER_TIMEOUT_IN_COUNTS);
+        isOEM = 0 != (value & (ushort)Flags.IS_OEM);
+    }
+
+    public override string ToString()
+    {
+        return $"0x{toUInt16():X4}";
     }
 
     public ushort toUInt16()
     {
         ushort value = 0;
         if (invertXAxis) value |= (ushort)Flags.INVERT_X_AXIS;
-        if (bin2x2)      value |= (ushort)Flags.BIN_2X2;
+        if (bin2x2) value |= (ushort)Flags.BIN_2X2;
+        if (gen15) value |= (ushort)Flags.GEN15;
+        if (cutoffInstalled) value |= (ushort)Flags.CUTOFF_INSTALLED;
+        if (evenOddHardwareCorrected) value |= (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION;
+        if (sigLaserTEC) value |= (ushort)Flags.SIG_LASER_TEC;
+        if (hasInterlockFeedback) value |= (ushort)Flags.HAS_INTERLOCK_FEEDBACK;
+        if (hasShutter) value |= (ushort)Flags.HAS_SHUTTER;
+        if (disableBLEPower) value |= (ushort)Flags.DISABLE_BLE_POWER;
+        if (disableLaserArmedIndication) value |= (ushort)Flags.DISABLE_LASER_ARMED_INDIC;
+        if (interlockExcluded) value |= (ushort)Flags.INTERLOCK_EXCLUDED;
+        if (laserTimeoutInCounts) value |= (ushort)Flags.INTERLOCK_EXCLUDED;
+        if (isOEM) value |= (ushort)Flags.IS_OEM;
+
         return value;
     }
 
@@ -44,7 +93,22 @@ public class FeatureMask
     /// between the spectrometer and driver and ensure correct internal 
     /// processing within the driver.
     /// </summary>
-    public bool invertXAxis { get; set; }
+    public bool invertXAxis
+    {
+        get
+        {
+            return _invertXAxis;
+        }
+        set
+        {
+            if (value != _invertXAxis)
+            {
+                _invertXAxis = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(invertXAxis)));
+            }
+        }
+    }
+    bool _invertXAxis = false;
 
     /// <summary>
     /// Some 2D detectors use a Bayer filter in which pixel columns alternate
@@ -59,4 +123,86 @@ public class FeatureMask
     /// Spectrometer.getSpectrumRaw.
     /// </summary>
     public bool bin2x2 { get; set; }
+
+    /// <summary>
+    /// Starting in 2021, some of our spectrometers have what is called a 
+    /// "Gen 1.5 Connector" for interfacing with various external functionality.
+    /// 
+    /// More information to come later.
+    /// </summary>
+    public bool gen15 { get; set; }
+
+    /// <summary>
+    /// In some downstream applications, especially related to "range-finding,"
+    /// whether or not there's a cutoff filter can greatly affect our in-house 
+    /// algorithms.
+    /// </summary>
+    public bool cutoffInstalled { get; set; }
+
+    /// <summary>
+    /// Our InGaAs detector spectrometers have a sawtooth pattern between their
+    /// even/odd pixels. We have used differentiated gain and offsets to correct this
+    /// difference. We did not have hardware level correction for this pattern
+    /// until briefly in 2021, before moving such corrections permanently to software.
+    /// This field is used to indicate whether software level
+    /// even/odd correction need be applied, or if the correction is already
+    /// taken care of at a hardware level.
+    /// </summary>
+    public bool evenOddHardwareCorrected { get; set; }
+
+    /// <summary>
+    /// By default, all Wasatch lasers (either SML or MML) include a built-in
+    /// TEC, EXCEPT on the SiG (Series XS, "microRaman") units.  Laser TEC is
+    /// a rare / experimental option on that platform, so this this flag is
+    /// introduced to configure whether a laser TEC is present.
+    /// </summary>
+    public bool sigLaserTEC { get; set; }
+
+    /// <summary>
+    /// Originally the laser interlock board did not provide feedback to
+    /// software as to whether the laser interlock was open (laser cannot
+    /// fire) or closed (laser can fire).  In addition, it did not provide
+    /// feedback to software as to whether the laser was ACTUALLY FIRING,
+    /// irrespective of whether laserEnable was set.  Newer firmware and
+    /// board wiring supports this feedback, and this flag indicates whether
+    /// the installed firmware and wiring support this feature.
+    /// </summary>
+    public bool hasInterlockFeedback { get; set; }
+
+    public bool hasShutter { get; set; }
+    public bool disableBLEPower { get; set; }
+    public bool disableLaserArmedIndication { get; set; }
+    public bool interlockExcluded { get; set; }
+    public bool laserTimeoutInCounts { get; set; }
+    public bool isOEM { get; set; }
+}
+public class FeatureMaskXS : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    enum Flags
+    {
+        BLE_DOOR_SENSOR = 0x00000001, // 2^0 
+    }
+
+    public FeatureMaskXS(uint value = 0)
+    {
+        BLEDoorSensor = 0 != (value & (ushort)Flags.BLE_DOOR_SENSOR);
+    }
+
+    public override string ToString()
+    {
+        return $"0x{toUInt32():X8}";
+    }
+
+    public uint toUInt32()
+    {
+        uint value = 0;
+        if (BLEDoorSensor) value |= (ushort)Flags.BLE_DOOR_SENSOR;
+
+        return value;
+    }
+
+
+    public bool BLEDoorSensor { get; set; }
 }

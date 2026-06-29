@@ -1,12 +1,12 @@
-﻿using System.ComponentModel;
-using Plugin.BLE.Abstractions.Contracts;
-
-using EnlightenMAUI.Common;
+﻿using EnlightenMAUI.Common;
 using EnlightenMAUI.Platforms;
-using Plugin.BLE.Abstractions.EventArgs;
-using System.Diagnostics;
 using EnlightenMAUI.ViewModels;
 using Microsoft.Extensions.Logging;
+using Plugin.BLE.Abstractions.Contracts;
+using Plugin.BLE.Abstractions.EventArgs;
+using System.ComponentModel;
+using System.Diagnostics;
+using static EnlightenMAUI.Models.EEPROM;
 
 namespace EnlightenMAUI.Models;
 
@@ -48,6 +48,7 @@ public class BluetoothSpectrometer : Spectrometer
     // WhereAmI whereAmI;
 
     public BLEDevice bleDevice { get; set; } = null;
+    Task pixelCorrectionLoader { get; set; }
 
     ushort lastCRC;
 
@@ -142,18 +143,33 @@ public class BluetoothSpectrometer : Spectrometer
         // parse the EEPROM
         ////////////////////////////////////////////////////////////////////
 
-        var pages = await readEEPROMAsync();
-        if (pages is null)
-        {
-            logger.error("BluetoothSpectrometer.initAsync: failed to read EEPROM");
-            return false;
-        }
+        eeprom.serialNumber = bleDeviceInfo.deviceName;
+        bool cached = await loadCachedEEPROM();
 
-        logger.debug("BluetoothSpectrometer.initAsync: parsing EEPROM");
-        if (!eeprom.parse(pages))
+        if (!cached)
         {
-            logger.error("BluetoothSpectrometer.initAsync: failed to parse EEPROM");
-            return false;
+            connectionMessage = "Initial memory read and cache";
+            var pages = await readEEPROMAsync();
+            //await handleCorrectionLoadAsync();
+            if (pages is null)
+            {
+                logger.error("BluetoothSpectrometer.initAsync: failed to read EEPROM");
+                return false;
+            }
+
+            logger.debug("BluetoothSpectrometer.initAsync: parsing EEPROM");
+            if (!eeprom.parse(pages))
+            {
+                logger.error("BluetoothSpectrometer.initAsync: failed to parse EEPROM");
+                return false;
+            }
+
+            await cacheEEPROM();
+        }
+        else
+        {
+            raiseConnectionProgress(.95);
+            EEPROMReadComplete = true;
         }
 
         ////////////////////////////////////////////////////////////////////
@@ -224,6 +240,7 @@ public class BluetoothSpectrometer : Spectrometer
         //updateRSSI();
 
         logger.debug("BluetoothSpectrometer.initAsync: done");
+
         return true;
     }
 
@@ -306,6 +323,35 @@ public class BluetoothSpectrometer : Spectrometer
         return true;
     }
 
+    protected async Task<bool> handleCorrectionLoadAsync()
+    {
+        if (eeprom.pixelCalibrationCount > 0)
+        {
+            var pages = await readEEPROMPixelCorrectionAsync();
+            if (pages is null)
+            {
+                logger.error("BluetoothSpectrometer.handleCorrectionLoadAsync: failed to read EEPROM");
+                return false;
+            }
+
+            logger.debug("BluetoothSpectrometer.handleCorrectionLoadAsync: parsing EEPROM");
+            if (!eeprom.parse(pages))
+            {
+                logger.error("BluetoothSpectrometer.handleCorrectionLoadAsync: failed to parse EEPROM");
+                return false;
+            }
+
+            return true;
+
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public bool initialPoke = true;
+    public bool readFullPixelCorrection = false;
 
     protected override async Task<List<byte[]>> readEEPROMAsync()
     {
@@ -313,19 +359,51 @@ public class BluetoothSpectrometer : Spectrometer
         ICharacteristic eepromCmd;
         ICharacteristic eepromData;
 
+        initialPoke = true; 
         List<byte[]> pages = new List<byte[]>();
         EEPROMReadComplete = false;
         EEPROMBytesRead = 0;
         CurrentEEPROMPage = 0;
-        EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+        genericReturned = false;
+
+        logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 8, offset 0");
+        byte[] request = { 0xff, 0x01, 0, (byte)8, 0 };
+        bool ok = await writeGenericCharacteristic(request);
+        if (!ok)
+        {
+            logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+            return null;
+        }
+
+        while (!genericReturned)
+            await Task.Delay(5);
+
+        PIXEL_CALIBRATION_TYPE temp = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(EEPROMBuffer, 39);
+
+        if (temp == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+        {
+            logger.debug($"Spectrometer.readEEPROMAsync: reading full EEPROM with Etalon correction");
+            EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+            readFullPixelCorrection = true;
+        }
+        else
+        {
+            logger.debug($"Spectrometer.readEEPROMAsync: reading limited EEPROM without Etalon correction");
+            EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.INITIAL_PAGES];
+            readFullPixelCorrection = false;
+        }
+        EEPROMReadComplete = false;
+        EEPROMBytesRead = 0;
+        CurrentEEPROMPage = 0;
+        initialPoke = false;
 
         while (!EEPROMReadComplete)
         {
             genericReturned = false;
 
             logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page {CurrentEEPROMPage}, offset {EEPROMBytesRead % EEPROM.PAGE_LENGTH}");
-            byte[] request = { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
-            bool ok = await writeGenericCharacteristic(request);
+            request = new byte[] { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
+            ok = await writeGenericCharacteristic(request);
             if (!ok)
             {
                 logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
@@ -336,6 +414,54 @@ public class BluetoothSpectrometer : Spectrometer
                 await Task.Delay(5);
         }
 
+        int pagesToRead = readFullPixelCorrection ? EEPROM.MAX_PAGES : EEPROM.INITIAL_PAGES;
+        for (int i = 0; i < pagesToRead; i++)
+        {
+            byte[] buf = new byte[EEPROM.PAGE_LENGTH];
+            Array.Copy(EEPROMBuffer, i * EEPROM.PAGE_LENGTH, buf, 0, EEPROM.PAGE_LENGTH);
+            logger.hexdump(buf, $"adding page {i}: ");
+            pages.Add(buf);
+        }
+
+        logger.debug($"Spectrometer.readEEPROMAsync: done");
+        return pages;
+    }
+
+    protected override async Task<List<byte[]>> readEEPROMPixelCorrectionAsync()
+    {
+        logger.info("reading EEPROM");
+        ICharacteristic eepromCmd;
+        ICharacteristic eepromData;
+
+        List<byte[]> pages = new List<byte[]>();
+        EEPROMReadComplete = false;
+        //EEPROMBytesRead = 0;
+
+        while (!EEPROMReadComplete)
+        {
+            genericReturned = false;
+
+            logger.debug($"Spectrometer.readEEPROMPixelCorrectionAsync: requestEEPROMSubpage: page {CurrentEEPROMPage}, offset {EEPROMBytesRead % EEPROM.PAGE_LENGTH}");
+            byte[] request = { 0xff, 0x01, 0, (byte)CurrentEEPROMPage, (byte)(EEPROMBytesRead % EEPROM.PAGE_LENGTH) };
+            if (!await sem.WaitAsync(EXTENDED_SEM_TIMEOUT))
+            {
+                logger.error("Spectrometer.readEEPROMPixelCorrectionAsync: couldn't get semaphore");
+                return null;
+            }
+            bool ok = await writeGenericCharacteristic(request);
+            if (!ok)
+            {
+                logger.error($"Spectrometer.readEEPROMPixelCorrectionAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+                sem.Release();
+                return null;
+            }
+
+            while (!genericReturned)
+                await Task.Delay(25);
+
+            sem.Release();
+        }
+
         for (int i = 0; i < EEPROM.MAX_PAGES; i++)
         {
             byte[] buf = new byte[EEPROM.PAGE_LENGTH];
@@ -344,7 +470,7 @@ public class BluetoothSpectrometer : Spectrometer
             pages.Add(buf);
         }
 
-        logger.debug($"Spectrometer.readEEPROMAsync: done");
+        logger.debug($"Spectrometer.readEEPROMPixelCorrectionAsync: done");
         return pages;
     }
 
@@ -1345,11 +1471,14 @@ public class BluetoothSpectrometer : Spectrometer
 
         // Bin2x2
         apply2x2Binning(spectrum);
+        correctBadPixels(ref spectrum);
+
+        lastRaw = spectrum;
 
         // Raman Intensity Correction
         applyRamanIntensityCorrection(spectrum);
+        applyEtalonCorrection(spectrum);
 
-        lastRaw = spectrum; 
         lastSpectrum = spectrum;
 
         measurement.reset();
@@ -1470,6 +1599,7 @@ public class BluetoothSpectrometer : Spectrometer
         await syncAcqParams();
 
         // apply 2x2 binning
+        /*
         if (eeprom.featureMask.bin2x2)
         {
             var smoothed = new double[spectrum.Length];
@@ -1478,6 +1608,7 @@ public class BluetoothSpectrometer : Spectrometer
             smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
             spectrum = smoothed;
         }
+        */
 
         logger.debug("Spectrometer.takeOneAsync: returning completed spectrum");
         return spectrum;
@@ -1485,6 +1616,7 @@ public class BluetoothSpectrometer : Spectrometer
 
     public async Task<bool> monitorSpectrumAcquire()
     {
+        logger.debug("BS.monitorSpectrumAcquire(): function entered");
         int bufferTime = 10000;
 
         int waitTime = (int)integrationTimeMS + bufferTime;
@@ -1492,13 +1624,25 @@ public class BluetoothSpectrometer : Spectrometer
             waitTime = 2 * (int)(integrationTimeMS + 25) * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         else if (acquisitionMode == AcquisitionMode.AUTO_RAMAN)
         {
-            waitTime = 30000 + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
+            while (!acqSynced)
+            {
+                await Task.Delay(100); 
+                if (collectionErrorDetected)
+                {
+                    logger.debug("BS.monitorSpectrumAcquire(): detected measurement error, aborting");
+                    return false;
+                }
+            }
+
+            waitTime = bufferTime + 2 * (int)integrationTimeMS * scansToAverage + (int)laserWarningDelaySec * 1000 + (int)eeprom.laserWarmupSec * 1000;
         }
 
         int timeout = waitTime * 2 + 6000;
 
         Stopwatch sw = Stopwatch.StartNew();
         sw.Start();
+
+        logger.debug("BS.monitorSpectrumAcquire(): entering monitor loop");
 
         while (sw.ElapsedMilliseconds <= timeout)
         {
@@ -1510,7 +1654,10 @@ public class BluetoothSpectrometer : Spectrometer
                 return true;
             }
             else if (collectionErrorDetected)
+            {
+                logger.debug("BS.monitorSpectrumAcquire(): detected measurement error, aborting");
                 return false;
+            }
         }
 
         logger.info("collection timed out");
@@ -1541,7 +1688,10 @@ public class BluetoothSpectrometer : Spectrometer
             if (totalPixelsRead > 0)
                 break;
             else if (collectionErrorDetected)
+            {
+                logger.debug("BS.monitorAutoRamanProgress(): detected measurement error, aborting");
                 return false;
+            }
 
             now = DateTime.Now;
             estimatedMilliseconds = (autoEnd - autoStart).TotalMilliseconds;
@@ -1595,6 +1745,13 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else if (autoStep > AUTO_OPT_TARGET_RATIO)
         {
+            if (arg > scansToAverage)
+            {
+                _scansToAverage = (byte)(arg + 1);
+                _nextIntegrationTimeMS = maxIntTimeMS;
+                acqSynced = true;
+            }
+
             logger.debug("{0} scans to average with {1} remaining in arg at {2} int time", scansToAverage, arg, integrationTimeMS);
 
             if (acqSynced)

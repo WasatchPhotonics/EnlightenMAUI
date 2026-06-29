@@ -78,6 +78,9 @@ namespace EnlightenMAUI.Models
             raiseConnectionProgress(0.2);
             logger.info("Spectrometer.initAsync: reading EEPROM");
             var pages = await readEEPROMAsync();
+            var correctionPages = await readEEPROMPixelCorrectionAsync();
+            pages.AddRange(correctionPages);
+
             if (pages is null)
             {
                 logger.error("Spectrometer.initAsync: failed to read EEPROM");
@@ -457,7 +460,7 @@ namespace EnlightenMAUI.Models
 
             logger.debug("Spectrometer.readEEPROMAsync: reading EEPROM");
             List<byte[]> pages = new List<byte[]>();
-            for (int page = 0; page < 8; page++)
+            for (int page = 0; page < EEPROM.INITIAL_PAGES; page++)
             {
                 byte[] buf = new byte[EEPROM.PAGE_LENGTH];
                 logger.debug("attempting to read page {0}", page);
@@ -469,7 +472,31 @@ namespace EnlightenMAUI.Models
 
                 logger.hexdump(buf, $"adding page {page}: ");
                 pages.Add(buf);
-                raiseConnectionProgress(.2 + .7 * (page + 1) / 8);
+                raiseConnectionProgress(.2 + .7 * (page + 1) / EEPROM.MAX_PAGES);
+            }
+            logger.debug($"Spectrometer.readEEPROMAsync: done");
+            return pages;
+        }
+
+        protected override async Task<List<byte[]>> readEEPROMPixelCorrectionAsync()
+        {
+            logger.info("reading EEPROM");
+
+            logger.debug("Spectrometer.readEEPROMAsync: reading EEPROM");
+            List<byte[]> pages = new List<byte[]>();
+            for (int page = EEPROM.INITIAL_PAGES; page < EEPROM.MAX_PAGES; page++)
+            {
+                byte[] buf = new byte[EEPROM.PAGE_LENGTH];
+                logger.debug("attempting to read page {0}", page);
+                buf = await getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: (ushort)page, fakeBufferLengthARM: 8);
+                if (buf == null)
+                    logger.debug("null buffer on EEPROM read");
+                else if (buf.Length <= 0)
+                    logger.debug("buffer too small on EEPROM read");
+
+                logger.hexdump(buf, $"adding page {page}: ");
+                pages.Add(buf);
+                raiseConnectionProgress(.2 + .7 * (page + 1) / EEPROM.MAX_PAGES);
             }
             logger.debug($"Spectrometer.readEEPROMAsync: done");
             return pages;
@@ -499,11 +526,14 @@ namespace EnlightenMAUI.Models
 
             // Bin2x2
             apply2x2Binning(spectrum);
+            correctBadPixels(ref spectrum);
+
+            lastRaw = spectrum;
 
             // Raman Intensity Correction
             applyRamanIntensityCorrection(spectrum);
+            applyEtalonCorrection(spectrum);
 
-            lastRaw = spectrum;
             lastSpectrum = spectrum;
 
             measurement.reset();
