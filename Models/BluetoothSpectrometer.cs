@@ -366,21 +366,21 @@ public class BluetoothSpectrometer : Spectrometer
         CurrentEEPROMPage = 0;
         genericReturned = false;
 
-        logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 8, offset 0");
-        byte[] request = { 0xff, 0x01, 0, (byte)8, 0 };
+        logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 5, offset 0");
+        byte[] request = { 0xff, 0x01, 0, (byte)5, 0 };
         bool ok = await writeGenericCharacteristic(request);
         if (!ok)
         {
-            logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd({CurrentEEPROMPage}, {EEPROMBytesRead % EEPROM.PAGE_LENGTH})");
+            logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd(5, 0)");
             return null;
         }
 
         while (!genericReturned)
             await Task.Delay(5);
 
-        PIXEL_CALIBRATION_TYPE temp = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(EEPROMBuffer, 39);
+        PAGE_SUBFORMAT temp = (PAGE_SUBFORMAT)ParseData.toUInt8(EEPROMBuffer, 63);
 
-        if (temp == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+        if (temp == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
         {
             logger.debug($"Spectrometer.readEEPROMAsync: reading full EEPROM with Etalon correction");
             EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
@@ -1495,9 +1495,9 @@ public class BluetoothSpectrometer : Spectrometer
                 }
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, PlatformUtil.simpleTransformerLoaded ? true : false);
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, eeprom.ROIHorizEnd, PlatformUtil.simpleTransformerLoaded ? true : false);
             //double[] smoothedB = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, false);
-            measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            measurement.wavenumbers = Enumerable.Range(PlatformUtil.outputStart, smoothed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             stretchedDark = new double[smoothed.Length];
             measurement.rawDark = dark;
             measurement.dark = stretchedDark;
@@ -1506,7 +1506,7 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else
         {
-            double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] staticWavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
             measurement.wavenumbers = staticWavenumbers;
             measurement.postProcessed = newIntensities;
@@ -1745,8 +1745,14 @@ public class BluetoothSpectrometer : Spectrometer
         }
         else if (autoStep > AUTO_OPT_TARGET_RATIO)
         {
-            if (arg > scansToAverage)
+            //if (arg > scansToAverage)
+            if (arg > scansToAverage || !acqSynced)
             {
+                if (arg > scansToAverage)
+                    logger.debug($"BVM.updateAutoEstimate: marking acqSync using old logic");
+                else
+                    logger.debug($"BVM.updateAutoEstimate: marking acqSync using new logic");
+
                 _scansToAverage = (byte)(arg + 1);
                 _nextIntegrationTimeMS = maxIntTimeMS;
                 acqSynced = true;
@@ -1784,6 +1790,13 @@ public class BluetoothSpectrometer : Spectrometer
     {
         logger.debug($"BVM.receivePixels: start");
         var c = characteristicUpdatedEventArgs.Characteristic;
+
+        if (!acqSynced)
+        {
+            logger.debug($"BVM.receivePixels: acqSynced not marked, doing so now");
+            _nextIntegrationTimeMS = maxIntTimeMS;
+            acqSynced = true;
+        }
 
         byte[] data = c.Value;
 

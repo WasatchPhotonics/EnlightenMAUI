@@ -61,6 +61,16 @@ public class Settings : INotifyPropertyChanged
         }
     }
     int _snrThreshold = 120;
+    public int leftTrim
+    {
+        get => _leftTrim;
+        set
+        {
+            _leftTrim = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(leftTrim)));
+        }
+    }
+    int _leftTrim = 400;
 
     public Spectrometer spec = BluetoothSpectrometer.getInstance();
 
@@ -312,6 +322,7 @@ public class Settings : INotifyPropertyChanged
 
             matchThreshold = (float)json.MatchThereshold;
             snrThreshold = json.SNRThreshold;
+            leftTrim = json.LeftTrim;
 
             string temp = json.lastSpecDate;
             if (temp != null && json.specCount.HasValue)
@@ -371,6 +382,7 @@ public class Settings : INotifyPropertyChanged
 
         jtw.writePair("MatchThereshold", matchThreshold, null);
         jtw.writePair("SNRThreshold", snrThreshold);
+        jtw.writePair("LeftTrim", leftTrim);
         jtw.writePair("specCount", specCount);
         jtw.writePair("lastSpecDate", lastTime.ToString("yyyyMMddHHmmss"));
 

@@ -411,7 +411,8 @@ public class EEPROM
 
         if (jsonSubformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
         {
-            pixelCalibrationFactors = new List<float>(json.PixelCalibrationFactors);
+            if (json.PixelCalibrationFactors != null)
+                pixelCalibrationFactors = new List<float>(json.PixelCalibrationFactors);
             pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)json.PixelCalibrationType;
             pixelCalibrationStart = json.PixelCalibrationStart;
             pixelCalibrationCount = json.PixelCalibrationCount;

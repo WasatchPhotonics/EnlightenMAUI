@@ -106,7 +106,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             (spec as BluetoothSpectrometer).notifyToast += (string msg) => EnlightenMAUI.Common.Util.toast(msg);
         }
 
-        Task loader = PlatformUtil.loadONNXModel("Processing/ml", "onnx", "etalon_correction.json");
+        Task loader = PlatformUtil.loadONNXModel("Processing/ml", "onnx", "etalon_correction.json", spec);
         loader.Wait();
         //Thread.Sleep(100);
 
@@ -252,6 +252,7 @@ public class ScopeViewModel : INotifyPropertyChanged
         polyCorrectionStep = false;
         laserArmed = false;
         spectrometerInitialized = false;
+        PasswordEntry = "";
     }
 
     private async void ScopeViewModel_TriggerRetry(object sender, AnalysisViewModel e)
@@ -689,7 +690,7 @@ public class ScopeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PasswordEntry)));
         }
     }
-    string _PasswordEntry;
+    string _PasswordEntry = "";
 
     bool armLaser()
     {
@@ -1352,6 +1353,25 @@ public class ScopeViewModel : INotifyPropertyChanged
 
         bool usingRemovalAxis = (spec.measurement.dark != null || spec.autoDarkEnabled || spec.autoRamanEnabled);
 
+        int skipCount = 0;
+        if (!usingRemovalAxis)
+        {
+            while (spec.wavenumbers[skipCount] < settings.leftTrim)
+            {
+                ++skipCount;
+            }
+        }
+        else
+        {
+            while (spec.measurement.wavenumbers[skipCount] < settings.leftTrim)
+            {
+                ++skipCount;
+            }
+        }
+
+        intensities = intensities.Skip(skipCount).ToArray();
+        pixels = pixels - (uint)skipCount;
+
         try
         {
             xAxis = null;
@@ -1359,10 +1379,10 @@ public class ScopeViewModel : INotifyPropertyChanged
                 xAxis = spec.wavelengths;
             else if (xAxisName == "Wavenumber")
             {
-                if (usingRemovalAxis && spec.measurement.wavenumbers != null)
-                    xAxis = spec.measurement.wavenumbers;
+                if (usingRemovalAxis)
+                    xAxis = spec.measurement.wavenumbers.Skip(skipCount).ToArray();
                 else
-                    xAxis = spec.wavenumbers;
+                    xAxis = spec.wavenumbers.Skip(skipCount).ToArray();
             }
             else
                 xAxis = spec.xAxisPixels;
@@ -1381,7 +1401,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             int pxHi = -1;
             for (int i = 0; i < pixels; i++)
             {
-                if (!usingRemovalAxis &&
+                if (skipCount != 0 &&
+                    !usingRemovalAxis &&
                     spec.useHorizontalROI &&
                     spec.eeprom.ROIHorizStart != spec.eeprom.ROIHorizEnd &&
                     (i < spec.eeprom.ROIHorizStart || i > spec.eeprom.ROIHorizEnd))
