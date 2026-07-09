@@ -1,5 +1,163 @@
 # Changelog
 
+## 1.0 Initial Validated Play Store Release
+
+## 0.9.67- Pre-Validation Play Store Releases
+- 2026-06-29 0.9.69
+	- more robust fixes for infinite loop issue
+- 2026-06-25 0.9.68
+	- added left trim option (both for display and matching)
+	- removed one path where app could get stuck in infinite loop "waiting" for spectrum
+- 2026-05-18 0.9.67
+	- removed libraries and priveleges to match Play Store requirements
+	
+## 0.9.62-66 Play Store Beta Releases
+- 2026-05-14 0.9.66
+	- laser safety fixes
+- 2026-05-14 0.9.65
+	- fixed library matching when ML turned off
+- 2026-05-13 0.9.64
+	- fixed (more like backgrounded) Gatt 133 connection issues
+	- added Etalon correction pull from EEPROM
+	- added EEPROM caching
+	- new ML model plus moved from magic numbers to configurable ones for easier model switching in future
+- 2026-05-06 0.9.61-2
+	- renamed com. app name for listing purposes
+	
+## 0.X Pre-Play Store Releases
+- 2026-04-22 0.9.60
+	- further cleaned up UI color consistency, especially across light/dark mode
+- 2026-04-21 0.9.59
+	- fixed most inconsistencies in UI elements
+- 2026-04-09 0.9.57-8
+	- (should have been 0.11)
+	- laser on feedback
+	- improved control over user library
+	- added library export and import
+	- added ability to export multiple spectra
+	- added built-in spectral library
+	- updated ML engine
+- 2026-04-08 0.9.56 
+	- support for updated laser state API
+- 2026-03-26 0.9.55
+	- fixed initialization race condition
+- 2026-03-26 0.9.54
+	- hotfix around disconnect cycle
+- 2026-03-25 0.9.53
+	- better handling of laser safety through disconnect cycle
+- 2026-03-25 0.9.52
+	- crash hotfix
+- 2026-03-25 0.9.51
+	- laser password/safety feature
+	- stability improvements
+- 2026-02-18 0.9.50
+	- (really should have been 0.10)
+	- fully split out all platform code to allow targeting iOS
+	- moved to .NET 10
+- 2026-01-06 0.9.46-49
+	- greatly improved error handling around error codes over Bluetooth
+	- better handling of other failure cases as well
+	- fixed USB endtime estimates
+- 2025-09-12 0.9.45
+	- UI and flow tweaks
+- 2025-09-08 0.9.44
+	- rolled back to .NET 8
+- 2025-08-21 0.9.34-39
+	- attempts to fix issues with third party library
+- 2025-08-20 0.9.34
+	- corner case bug hotfix around library switching
+- 2025-08-20 0.9.33
+	- added support for multiple, switchable libraries
+- 2025-08-19 0.9.32
+	- more buttoned up release of changes mentioned in 0.9.19
+- 2025-08-15 0.9.31
+	- redid auto Raman parameter initialization
+- 2025-08-14 0.9.30
+	- bug fix attempt
+- 2025-08-13 0.9.29
+	- minor bug fixes
+- 2025-08-12 0.9.28
+	- improved logging around software locks
+	- increased timeouts
+- 2025-05-12 0.9.26
+	- reworked decision tree for different ML models and acq parameter sets
+	- final release for high flouresence demo
+- 2025-05-12 0.9.25
+	- finally hooked in persistent settings via JSON
+	- portrait lock
+- 2025-05-09 0.9.24
+	- library reference hotfix
+- 2025-05-09 0.9.23
+	- ROI/background subtraction hotfix
+- 2025-05-08 0.9.22
+	- support for dual ML models
+- 2025-05-01 0.9.21
+	- added logic for digesting auto raman update/status messages
+	- decon fix
+- 2025-04-25 0.9.19
+	- support for new ML model
+	- support for exploratory new spectrum acquire method
+- 2025-04-25 0.9.18
+	- added packet drop notification
+	- added "retry with high precision"
+- 2025-04-23 0.9.16
+	- made high level file permission persistent
+- 2025-04-23 0.9.15
+	- moved location for file saving (requires high level permissions)
+	- added warning for library loading issues
+- 2025-04-17 0.9.14
+	- added auto save
+	- added custom thresholding
+	- added re-analyze / match
+- 2025-04-17 0.9.13
+	- added auto retry logic for high flouresence demo
+- 2025-04-16 0.9.12
+	- added polystyrene raman correction
+	- added resolution deconvolution to processing
+	- added password over settings
+	- skeleton for persistent settings via local JSON
+- 2025-04-14 0.9.11
+	- altered parameters to help with corner case
+- 2025-04-14 0.9.10
+	- work around for packet drop issue with firmware
+- 2025-04-11 0.9.9
+	- added unit keying for 3rd party library
+- 2025-03-14 0.9.8
+	- improved timeouts for very specific scenario
+- 2025-03-12 0.9.7
+	- hotfix for severe crash bug
+- 2025-03-10 0.9.6
+	- added library switching
+	- added persistent user library
+	- added support for sub-libraries in third party library
+- 2025-01-15 0.9.4
+	- added auto raman acquisition progress logic for USB
+- 2025-01-13 0.9.3
+	- improved acquisition progress bar estimation for auto raman
+- 2025-01-13 0.9.2
+	- added support for pre-API 7 units
+	- added auto raman for USB
+	- USB bug fixes
+- 2024-12-18 0.9.1
+	- small design tweaks, support for new ML model
+- 2024-12-11 0.9.0
+	- share button
+	- add to library
+	- initial "final" release for API 7 (and only API 7)
+- 2024-12-09 0.8.7
+	- redesigned spectral tab for auto-raman
+	- added analysis tab
+	- icons for battery and signal levels
+- 2024-11-22 0.8.6
+	- auto raman support
+- 2024-11-14 0.8.4
+	- hotfix for newer faster spectral reads
+- 2024-11-11 0.8.3
+	- initial API 7 support
+- 2024-10-21 0.8.2
+	- API 7 support
+- 2024-10-18 0.8.1
+	- battery hotfix
 - 2024-10-16 0.8.0
     - reworked tab layout
     - simplified "spectra" tab controls and icon-ized buttons

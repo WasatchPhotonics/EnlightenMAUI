@@ -417,6 +417,8 @@ public class EEPROM
             pixelCalibrationStart = json.PixelCalibrationStart;
             pixelCalibrationCount = json.PixelCalibrationCount;
         }
+
+        registerAll();
     }
 
 
