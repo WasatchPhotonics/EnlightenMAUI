@@ -39,8 +39,8 @@ namespace EnlightenMAUI
 
         protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
         {
-            if (requestCode == StorageHelper.RequestCode)
-                StorageHelper.OnActivityResult();
+            //if (requestCode == StorageHelper.RequestCode)
+                //StorageHelper.OnActivityResult();
 
 
             //UsbDevice device = (UsbDevice)data.GetParcelableExtra(UsbManager.ExtraDevice);

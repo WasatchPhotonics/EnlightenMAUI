@@ -81,6 +81,15 @@ internal class PlatformUtil
     static string autoSavePath;
 
     public static string modelName = "";
+    public static bool inputIsNormalized = true;
+    public static int inputStart = 0;
+    public static int inputLength = 2048;
+    public static double inputSpacing = 1;
+    public static int leftPadding = 184;
+    public static int rightPadding = 184;
+    public static int outputStart = 0;
+    public static int outputLength = 2048;
+    public static double outputSpacing = 1;
 
     public static void RequestSelectLogFolder()
     {
@@ -177,7 +186,7 @@ internal class PlatformUtil
         }
     }
 
-    public async static Task loadONNXModel(string root, string extension, string correctionPath)
+    public async static Task loadONNXModel(string root, string extension, string correctionPath, Spectrometer spec)
     {
         try
         {
@@ -421,7 +430,7 @@ internal class PlatformUtil
 
         if (transformerLoaded)
         {
-            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart);
+            double[] smoothed = ProcessBackground(m.wavenumbers, m.processed, spec.eeprom.serialNumber, spec.eeprom.avgResolution, spec.eeprom.ROIHorizStart, spec.eeprom.ROIHorizEnd);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -475,7 +484,7 @@ internal class PlatformUtil
         return null;
     }
 
-    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, bool useSimple = false)
+    public static double[] ProcessBackground(double[] wavenumbers, double[] counts, string serial, double fwhm, int roiStart, int roiEnd, bool useSimple = false)
     {
         try
         {
@@ -1117,6 +1126,11 @@ internal class PlatformUtil
         return savePath = todayDir;
     }
 
+    public static string getSpectrometerEEPROMPath(string serial)
+    {
+        return null;
+    }
+
     public static string getUserLibraryPath()
     {
         if (userLibraryPath != null)
@@ -1168,10 +1182,6 @@ internal class PlatformUtil
 
         logger.debug($"getuserLibraryPath: returning writeable userLibDir {docDir}");
         return configurationPath = Path.Join(docDir.AbsoluteString, "configuration.json");
-    }
-    public static string getSpectrometerEEPROMPath(string serial)
-    {
-        return null;
     }
 
     /*
@@ -1443,7 +1453,7 @@ internal class PlatformUtil
 
         if (false)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;
@@ -1458,7 +1468,7 @@ internal class PlatformUtil
 
         else
         {
-            double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(m.wavenumbers, m.processed, wavenumbers);
 
             Measurement updated = new Measurement();
@@ -1511,7 +1521,7 @@ internal class PlatformUtil
 
         if (PlatformUtil.transformerLoaded)
         {
-            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200);
+            double[] smoothed = PlatformUtil.ProcessBackground(m.wavenumbers, m.processed, "", 14, 200, 2500);
             double[] wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
             Measurement updated = new Measurement();
             updated.wavenumbers = wavenumbers;

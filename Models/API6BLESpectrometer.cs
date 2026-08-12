@@ -849,8 +849,8 @@ public class API6BLESpectrometer : Spectrometer
                 }
             }
 
-            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart);
-            measurement.wavenumbers = Enumerable.Range(400, smoothed.Length).Select(x => (double)x).ToArray();
+            double[] smoothed = PlatformUtil.ProcessBackground(wavenumbers, spectrum, eeprom.serialNumber, eeprom.avgResolution, eeprom.ROIHorizStart, eeprom.ROIHorizEnd);
+            measurement.wavenumbers = Enumerable.Range(PlatformUtil.outputStart, smoothed.Length).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             stretchedDark = new double[smoothed.Length];
             measurement.dark = stretchedDark;
             measurement.postProcessed = smoothed;
@@ -858,7 +858,7 @@ public class API6BLESpectrometer : Spectrometer
         }
         else
         {
-            double[] staticWavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+            double[] staticWavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
             double[] newIntensities = Wavecal.mapWavenumbers(wavenumbers, measurement.processed, staticWavenumbers);
             measurement.wavenumbers = staticWavenumbers;
             measurement.postProcessed = newIntensities;

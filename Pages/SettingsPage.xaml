@@ -313,6 +313,15 @@
                                                  HorizontalOptions="EndAndExpand"/>
                         </StackLayout>
 
+                        <!-- Left Trim -->
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="Left Trim (-1 disables)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                            <telerik:RadNumericInput x:Name="LeftTrim" 
+                                                 Value="{Binding leftTrim}" 
+                                                 Minimum="-1" Maximum="800"
+                                                 HorizontalOptions="EndAndExpand"/>
+                        </StackLayout>
+
                         <!-- Vertical ROI Start Line -->
                         <StackLayout Orientation="Horizontal">
                             <Label Text="Vertical ROI Start Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>

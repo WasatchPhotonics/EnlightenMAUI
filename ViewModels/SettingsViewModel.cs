@@ -18,6 +18,7 @@ namespace EnlightenMAUI.ViewModels
         public Dictionary<string, AutoRamanParameters> AutoParameters;
         public double  MatchThereshold;
         public int SNRThreshold;
+        public int LeftTrim;
         public string lastSpecDate;
         public int? specCount;
     }
@@ -409,6 +410,18 @@ namespace EnlightenMAUI.ViewModels
             {
                 settings.snrThreshold = value;
                 Preferences.Set("snrThreshold", value);
+                if (initialized)
+                    updateConfigFile();
+            }
+        }
+
+        public int leftTrim
+        {
+            get => settings.leftTrim;
+            set
+            {
+                settings.leftTrim = value;
+                Preferences.Set("leftTrim", value);
                 if (initialized)
                     updateConfigFile();
             }

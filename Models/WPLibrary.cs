@@ -463,6 +463,7 @@ namespace EnlightenMAUI.Models
         public Measurement mostRecentMeasurement;
         public event EventHandler<Library> LoadFinished;
         public List<string> samples => library.Keys.ToList();
+        protected Settings settings = Settings.getInstance();
 
         public Library(string root, Spectrometer spec) { }
 
@@ -568,7 +569,7 @@ namespace EnlightenMAUI.Models
         {
             Measurement adjusted = new Measurement();
             
-            if (sample.wavenumbers[0] == 400 && sample.wavenumbers.Length == 2008 && sample.wavenumbers.Last() == 2407)
+            if (sample.wavenumbers[0] == PlatformUtil.outputStart && sample.wavenumbers.Length == PlatformUtil.outputLength)
             {
                 adjusted = sample.copy();
                 adjusted.dark = null;
@@ -576,7 +577,7 @@ namespace EnlightenMAUI.Models
             }
             else
             {
-                double[] wavenumbers = Enumerable.Range(400, 2008).Select(x => (double)x).ToArray();
+                double[] wavenumbers = Enumerable.Range(PlatformUtil.outputStart, PlatformUtil.outputLength).Select(x => (double)x * PlatformUtil.outputSpacing).ToArray();
                 double[] newIntensities = Wavecal.mapWavenumbers(sample.wavenumbers, sample.processed, wavenumbers);
                 adjusted.wavenumbers = wavenumbers;
                 adjusted.dark = null;
@@ -658,7 +659,7 @@ namespace EnlightenMAUI.Models
 
             foreach (string sample in library.Keys)
             {
-                double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded);
+                double score = Common.Util.pearsonLibraryMatch(spectrum, library[sample], smooth: !PlatformUtil.transformerLoaded, leftTrim: settings.leftTrim);
                 logger.info($"{sample} score: {score}");
                 scores[sample] = score;
                 /*
