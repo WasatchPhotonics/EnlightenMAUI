@@ -20,7 +20,6 @@ using DeconvolutionMAUI;
 using System.Security.AccessControl;
 using Accord.Math;
 using CommunityToolkit.Maui.Extensions;
-using Android.Graphics;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -429,7 +428,15 @@ public class ScopeViewModel : INotifyPropertyChanged
         logger.debug("spectrometer refresh: initialization in another thread");
 
         if (spec != null && spec.paired)
-            spec.autoRamanEnabled = true;
+        {
+            if (spec is USBSpectrometer || spec is BluetoothSpectrometer || spec is API9BLESpectrometer)
+                spec.autoRamanEnabled = true;
+            else
+            {
+                spec.autoRamanEnabled = false;
+                spec.autoDarkEnabled = false;
+            }
+        }
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(paired)));
 

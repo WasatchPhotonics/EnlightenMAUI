@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using WPProduction.Utils;
-using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.Models
 {

@@ -367,7 +367,7 @@ public class BluetoothSpectrometer : Spectrometer
         genericReturned = false;
 
         logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 5, offset 0");
-        byte[] request = { 0xff, 0x01, 0, (byte)5, 0 };
+        byte[] request = { 0xff, 0x01, 0, (byte)0, 0 };
         bool ok = await writeGenericCharacteristic(request);
         if (!ok)
         {
@@ -378,13 +378,41 @@ public class BluetoothSpectrometer : Spectrometer
         while (!genericReturned)
             await Task.Delay(5);
 
-        PAGE_SUBFORMAT temp = (PAGE_SUBFORMAT)ParseData.toUInt8(EEPROMBuffer, 63);
+        byte format = ParseData.toUInt8(EEPROMBuffer, 63);
 
-        if (temp == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+        if (format >= 19)
         {
-            logger.debug($"Spectrometer.readEEPROMAsync: reading full EEPROM with Etalon correction");
             EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
-            readFullPixelCorrection = true;
+            EEPROMReadComplete = false;
+            EEPROMBytesRead = 0;
+            CurrentEEPROMPage = 0;
+            genericReturned = false;
+            logger.debug($"Spectrometer.readEEPROMAsync: requestEEPROMSubpage: page 8, offset 0");
+            request[3] = 8;
+            ok = await writeGenericCharacteristic(request);
+            if (!ok)
+            {
+                logger.error($"Spectrometer.readEEPROMAsync: failed to write eepromCmd(5, 0)");
+                return null;
+            }
+
+            while (!genericReturned)
+                await Task.Delay(5);
+
+            PIXEL_CALIBRATION_TYPE temp = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(EEPROMBuffer, 39);
+
+            if (temp == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+            {
+                logger.debug($"Spectrometer.readEEPROMAsync: reading full EEPROM with Etalon correction");
+                EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.MAX_PAGES];
+                readFullPixelCorrection = true;
+            }
+            else
+            {
+                logger.debug($"Spectrometer.readEEPROMAsync: reading limited EEPROM without Etalon correction");
+                EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.INITIAL_PAGES];
+                readFullPixelCorrection = false;
+            }
         }
         else
         {
@@ -392,6 +420,7 @@ public class BluetoothSpectrometer : Spectrometer
             EEPROMBuffer = new byte[EEPROM.PAGE_LENGTH * EEPROM.INITIAL_PAGES];
             readFullPixelCorrection = false;
         }
+
         EEPROMReadComplete = false;
         EEPROMBytesRead = 0;
         CurrentEEPROMPage = 0;
