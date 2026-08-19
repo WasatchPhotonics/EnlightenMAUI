@@ -595,7 +595,7 @@ namespace EnlightenMAUI.ViewModels
 
                     if (paths.Count == 1)
                     {
-                        string pathname = Path.Join(savePath, paths[0] + ".csv");
+                        string pathname = Path.Join(savePath, spvm.exportName + ".csv");
                         try
                         {
                             await Share.Default.RequestAsync(new ShareFileRequest

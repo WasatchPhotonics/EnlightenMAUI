@@ -291,56 +291,66 @@
                         <Switch IsToggled="{Binding autoSave}" Style="{StaticResource SwitchStyle}" HorizontalOptions="EndAndExpand" />
                     </StackLayout>
 
-                    <StackLayout Orientation="Vertical" BackgroundColor="#ccc" HorizontalOptions="FillAndExpand" Spacing="10" Padding="10">
+                    <Grid BackgroundColor="#ccc" HorizontalOptions="Fill" Padding="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <Label Text="Advanced Spectrometer Settings" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+                        <Label Text="Advanced Spectrometer Settings" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" FontSize="Large" TextColor="#eee" Margin="0, 10, 0, 10" />
+
 
                         <!-- Laser Warning Delay -->
-                        <StackLayout Orientation="Horizontal">
-                            <Label Text="Laser Delay (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                            <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
+                        <Label Text="Laser Delay (sec)" TextColor="#333" Margin="5" Grid.Column="0" Grid.Row="1" VerticalTextAlignment="Center" HorizontalOptions="Start" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="LaserWarningDelaySec" 
                                                  Value="{Binding laserWarningDelaySec}" 
+                                                 Margin="5" Grid.Column="1" Grid.Row="1"
                                                  Minimum="0" Maximum="10"
-                                                 HorizontalOptions="EndAndExpand"/>
-                        </StackLayout>
+                                                 HorizontalOptions="End"/>
 
                         <!-- Laser Watchdog Timeout -->
-                        <StackLayout Orientation="Horizontal">
-                            <Label Text="Laser Timeout (sec)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                            <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
+                        <Label Text="Laser Timeout (sec)" TextColor="#333" Margin="5" Grid.Column="0" Grid.Row="2" VerticalTextAlignment="Center" HorizontalOptions="Start" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="LaserWatchdogTimeoutSec" 
                                                  Value="{Binding laserWatchdogTimeoutSec}" 
+                                                 Margin="5" Grid.Column="1" Grid.Row="2"
                                                  Minimum="0" Maximum="600"
-                                                 HorizontalOptions="EndAndExpand"/>
-                        </StackLayout>
+                                                 HorizontalOptions="End"/>
 
                         <!-- Left Trim -->
-                        <StackLayout Orientation="Horizontal">
-                            <Label Text="Left Trim (-1 disables)" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                            <telerik:RadNumericInput x:Name="LeftTrim" 
+                        <Label Text="Left Trim (-1 disables)" TextColor="#333" Margin="5" Grid.Column="0" Grid.Row="3" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="LeftTrim" 
                                                  Value="{Binding leftTrim}" 
+                                                 Margin="5" Grid.Column="1" Grid.Row="3"
                                                  Minimum="-1" Maximum="800"
-                                                 HorizontalOptions="EndAndExpand"/>
-                        </StackLayout>
+                                                 HorizontalOptions="End"/>
 
                         <!-- Vertical ROI Start Line -->
-                        <StackLayout Orientation="Horizontal">
-                            <Label Text="Vertical ROI Start Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                            <telerik:RadNumericInput x:Name="VerticalROIStartLine" 
+                        <Label Text="Vertical ROI Start Line" TextColor="#333" Margin="5" Grid.Column="0" Grid.Row="4" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="VerticalROIStartLine" 
                                                  Value="{Binding verticalROIStartLine}" 
+                                                 Margin="5" Grid.Column="1" Grid.Row="4"
                                                  Minimum="0" Maximum="1080"
-                                                 HorizontalOptions="EndAndExpand"/>
-                        </StackLayout>
+                                                 HorizontalOptions="End"/>
 
                         <!-- Vertical ROI Stop Line -->
-                        <StackLayout Orientation="Horizontal">
-                            <Label Text="Vertical ROI Stop Line" TextColor="#333" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
-                            <telerik:RadNumericInput x:Name="verticalROIStopLine" 
+                        <Label Text="Vertical ROI Stop Line" TextColor="#333" Margin="5" Grid.Column="0" Grid.Row="5" VerticalTextAlignment="Center" MaximumWidthRequest="200"/>
+                        <telerik:RadNumericInput x:Name="verticalROIStopLine" 
                                                  Value="{Binding verticalROIStopLine}" 
+                                                 Margin="5" Grid.Column="1" Grid.Row="5"
                                                  Minimum="0" Maximum="1080"
-                                                 HorizontalOptions="EndAndExpand"/>
-                        </StackLayout>
+                                                 HorizontalOptions="End"/>
 
-                    </StackLayout>
+
+
+                    </Grid>
 
 
                     <StackLayout Orientation="Horizontal" Margin="10">

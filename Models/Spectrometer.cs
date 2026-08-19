@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using WPProduction.Utils;
+using static Android.Widget.GridLayout;
 
 namespace EnlightenMAUI.Models
 {
@@ -424,6 +425,46 @@ namespace EnlightenMAUI.Models
 
         public string note { get; set; }
         public string qrValue { get; set; } // parsed QR code
+
+        public virtual string deviceName { get => bleDeviceInfo.deviceName; }
+        public virtual string manufacturerName { get => bleDeviceInfo.manufacturerName; }
+
+        public virtual string firmwareRevision
+        {
+            get
+            {
+                if (firmwareRevision_ == null || firmwareRevision_.Length == 0)
+                    firmwareRevision_ = bleDeviceInfo.firmwareRevision;
+
+                return firmwareRevision_;
+            }
+        }
+        protected string firmwareRevision_;
+
+        public virtual string fpgaRevision
+        {
+            get
+            {
+                if (fpgaRevision_ == null || fpgaRevision_.Length == 0)
+                    fpgaRevision_ = bleDeviceInfo.hardwareRevision;
+
+                return fpgaRevision_;
+            }
+        }
+        protected string fpgaRevision_;
+
+        public virtual string bleRevision
+        {
+            get
+            {
+                if (bleRevision_ == null || bleRevision_.Length == 0)
+                    bleRevision_ = bleDeviceInfo.softwareRevision;
+
+                return bleRevision_;
+            }
+        }
+        protected string bleRevision_;
+
 
         ////////////////////////////////////////////////////////////////////////
         // battery

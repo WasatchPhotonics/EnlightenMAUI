@@ -502,9 +502,15 @@ namespace EnlightenMAUI.Models
             return pages;
         }
 
+        public const string BATTERY_5BYTE_MIN_VER = "1_0_66_1";
+
         internal override async Task<bool> updateBatteryAsync(bool extendedTimeout = false)
         {
-            uint tmp = Unpack.toUint(await getCmd2Async(Opcodes.GET_BATTERY_STATE, 3));
+            int len = 3;
+            if (Util.compareVersions(BATTERY_5BYTE_MIN_VER, firmwareRevision) >= 0)
+                len = 5;
+
+            uint tmp = Unpack.toUint(await getCmd2Async(Opcodes.GET_BATTERY_STATE, len));
             battery.parse(tmp);
 
             return true;
@@ -677,6 +683,62 @@ namespace EnlightenMAUI.Models
             int result = await usbWrapper.bulkTransfer(spectrumBuff, timeout);
             acqDone = true;
             return result;
+        }
+
+        public override string deviceName { get => eeprom.serialNumber; }
+        public override string manufacturerName { get => "Wasatch Photonics"; }
+
+        public override string firmwareRevision
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
+                byte[] buf = getCmd(op, 4);
+                if (buf is null)
+                    return "ERROR";
+                string s = "";
+                for (int i = 3; i >= 0; i--)
+                {
+                    s += String.Format("{0}", buf[i]);
+                    if (i > 0)
+                        s += ".";
+                }
+                return firmwareRevision_ = s;
+            }
+        }
+
+        public override string fpgaRevision
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_FPGA_REVISION;
+                byte[] buf = getCmd(op, 7);
+                if (buf is null)
+                    return "UNKNOWN";
+                string s = "";
+                for (uint i = 0; i < 7; i++)
+                    s += (char)buf[i];
+                return fpgaRevision_ = s.TrimEnd();
+            }
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_BLE_FW_VER_INFO;
+                byte[] buf = getCmd2(op, 32);
+                if (buf is null)
+                    return "UNKNOWN";
+                string s = "";
+                for (uint i = 0; i < buf.Length; i++)
+                {
+                    if (buf[i] == 0)
+                        break;
+                    s += (char)buf[i];
+                }
+                return bleRevision_ = s.TrimEnd();
+            }
         }
 
 

@@ -81,12 +81,32 @@ public class HardwareViewModel : INotifyPropertyChanged
     // BLE Device Info
     ////////////////////////////////////////////////////////////////////////
 
-    public string deviceName       { get => spec?.bleDeviceInfo.deviceName; }
-    public string manufacturerName { get => spec?.bleDeviceInfo.manufacturerName; }
-    public string softwareRevision { get => spec?.bleDeviceInfo.softwareRevision; }
-    public string firmwareRevision { get => spec?.bleDeviceInfo.firmwareRevision; }
-    public string hardwareRevision { get => spec?.bleDeviceInfo.hardwareRevision; }
+    public string deviceName       { get => spec?.deviceName; }
+    public string manufacturerName { get => spec?.manufacturerName; }
+    public string softwareRevision
+    {
+        get
+        {
+            if (spec == null)
+                return null;
 
+            if (spec?.bleRevision == "UNKNOWN")
+                spinCheckBLEFW();
+            return spec?.bleRevision;
+        }
+    }
+    public string firmwareRevision { get => spec?.firmwareRevision; }
+    public string hardwareRevision { get => spec?.fpgaRevision; }
+
+    async Task spinCheckBLEFW()
+    {
+        while (spec?.bleRevision == "UNKNOWN")
+        {
+            await Task.Delay(500);
+        }
+
+        refresh();
+    }
 
     void handleNewSpectrometer(object sender, Spectrometer e)
     {

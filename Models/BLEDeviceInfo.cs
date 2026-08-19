@@ -24,7 +24,7 @@ public class BLEDeviceInfo : INotifyPropertyChanged
     {
         string property;
 
-        switch(name)
+         switch(name)
         {
             case "Device Name": deviceName = value; property = nameof(deviceName); break;
             case "Manufacturer Name String": manufacturerName = value; property = nameof(manufacturerName); break;

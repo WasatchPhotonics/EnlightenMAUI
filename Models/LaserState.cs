@@ -85,7 +85,7 @@ public class LaserState
     // override these is.
     public byte[] serialize()
     {
-        if (payloadLength == 8)
+        if (payloadLength >= 8)
         {
             byte[] data = new byte[7];
             data[1] = (byte)type;

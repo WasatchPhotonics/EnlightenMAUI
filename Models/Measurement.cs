@@ -616,6 +616,53 @@ public class Measurement : INotifyPropertyChanged
         return true;
     }
 
+    public async Task<bool> saveAsync(string overrideName, bool forceWrite = false, Dictionary<string, string> forcedMetadata = null)
+    {
+        logger.debug("Measurement.saveAsync: starting");
+
+        Settings settings = Settings.getInstance();
+        string savePath = settings.getAutoSavePath();
+
+        if (savePath == null)
+        {
+            logger.error("saveAsync: can't get savePath");
+            return false;
+        }
+
+        string tempPath = Path.Join(savePath, filename);
+
+        if (pathname != null && tempPath == pathname)
+        {
+            logger.debug($"Measurement.saveAsync: already saved ({pathname})");
+            return true;
+        }
+
+        if ((processed is null || raw is null || spec is null) && !forceWrite)
+        {
+            logger.error("saveAsync: nothing to save");
+            return false;
+        }
+
+        pathname = Path.Join(savePath, filename);
+        logger.debug($"Measurement.saveAsync: creating {pathname}");
+
+        UserLibrary ul = UserLibrary.getInstance();
+        ul.addSpectrum(this, PlatformUtil.getFileName(filename));
+
+        using (StreamWriter sw = new StreamWriter(pathname))
+        {
+            if (forcedMetadata != null)
+                writeMetadata(sw, forcedMetadata);
+            else if (spec != null)
+                writeMetadata(sw);
+            sw.WriteLine();
+            writeSpectra(sw, false);
+        }
+
+        logger.debug($"Measurement.saveAsync: done");
+        return true;
+    }
+
     public async Task<bool> uploadAsync()
     {
         if (!await saveAsync())

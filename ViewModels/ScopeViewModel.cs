@@ -20,6 +20,7 @@ using DeconvolutionMAUI;
 using System.Security.AccessControl;
 using Accord.Math;
 using CommunityToolkit.Maui.Extensions;
+using Android.Graphics;
 
 namespace EnlightenMAUI.ViewModels;
 
@@ -1181,6 +1182,8 @@ public class ScopeViewModel : INotifyPropertyChanged
             notifyToast?.Invoke("Error reading spectrum");
         }
 
+        if (spec is USBSpectrometer) 
+            await spec.updateBatteryAsync();
         updateBatteryProperties();
         acquisitionProgress = 0;
         isRefreshing = false;
