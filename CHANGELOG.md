@@ -2,6 +2,16 @@
 
 ## 1.0 Initial Validated Play Store Release
 
+- 2026-08-31 0.9.70
+	- internal preview of 1.0 (missing one or two features)
+	- fixed logic for big EEPROM load
+	- fixed battery reads on USB spectrometers
+	- rename in share now impacts spectrum in addition to zips
+	- fixed UI sizing for settings page
+	- added firmware to USB
+	- corrected firmware labels
+	- potential fix for auto raman shutting off randomly
+
 ## 0.9.67- Pre-Validation Play Store Releases
 - 2026-06-29 0.9.69
 	- more robust fixes for infinite loop issue

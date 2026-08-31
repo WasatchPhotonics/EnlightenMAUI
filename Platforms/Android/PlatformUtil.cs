@@ -565,21 +565,8 @@ internal class PlatformUtil
 
     public static string getFileName(string name)
     {
-        string temp = name.Split('/').Last();
-        string[] parts = temp.Split('.');
-        StringBuilder sb = new StringBuilder();
-        foreach (var part in parts)
-        {
-            if (sb.Length > 0 && part != parts.Last())
-                sb.Append('.');
-
-            if (part != parts.Last())
-                sb.Append(part);
-            else
-                break;
-        }
-
-        return sb.ToString();
+        // no need to reinvent the wheel...that I didn't previously know existed -TS
+        return System.IO.Path.GetFileNameWithoutExtension(name);
     }
 
     async static Task addUserFile(Java.IO.File file, Spectrometer spec, Dictionary<string, Measurement> dict)

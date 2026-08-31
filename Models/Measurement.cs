@@ -130,8 +130,9 @@ public class Measurement : INotifyPropertyChanged
     const string UPLOAD_URL = "https://wasatchphotonics.com/save-spectra.php";
 
     // this iterates on every call of reload(). There is a reload() before any spectra are collected,
-    // and then a reload() per spectrum, so this ensures we start counting spectra at 0
-    public int specCount { get; set; } = -2;
+    // and then a reload() per spectrum, so this ensures we start counting spectra at 0 - TS
+    // there is apparently also a 3rd reload that I forgot about - TS
+    public int specCount { get; set; } = -3;
 
     ////////////////////////////////////////////////////////////////////////
     // Complex properties
@@ -599,7 +600,7 @@ public class Measurement : INotifyPropertyChanged
         pathname = Path.Join(savePath, filename);
         logger.debug($"Measurement.saveAsync: creating {pathname}");
 
-        UserLibrary ul = UserLibrary.getInstance();
+        LocalArchive ul = LocalArchive.getInstance();
         ul.addSpectrum(this, PlatformUtil.getFileName(filename));
 
         using (StreamWriter sw = new StreamWriter(pathname))
@@ -629,12 +630,32 @@ public class Measurement : INotifyPropertyChanged
             return false;
         }
 
+        filename = string.Format("{0}.csv",
+            overrideName);
+        //serialNumber,
+        //specCount.ToString("0000"));
+
+        tag = overrideName;
         string tempPath = Path.Join(savePath, filename);
 
-        if (pathname != null && tempPath == pathname)
+        bool uniqueName = false;
+        int counter = 1;
+        while (!uniqueName)
         {
-            logger.debug($"Measurement.saveAsync: already saved ({pathname})");
-            return true;
+            if (System.IO.File.Exists(tempPath))
+            {
+                logger.debug($"Measurement.saveAsync: already saved ({pathname})");
+                filename = string.Format("{0}-{1}.csv",
+                    overrideName,
+                    counter);
+                counter++;
+                tempPath = Path.Join(savePath, filename);
+            }
+            else
+            {
+                logger.debug($"Measurement.saveAsync: saveing measurement as ({filename})");
+                uniqueName = true;
+            }
         }
 
         if ((processed is null || raw is null || spec is null) && !forceWrite)
@@ -646,7 +667,7 @@ public class Measurement : INotifyPropertyChanged
         pathname = Path.Join(savePath, filename);
         logger.debug($"Measurement.saveAsync: creating {pathname}");
 
-        UserLibrary ul = UserLibrary.getInstance();
+        LocalArchive ul = LocalArchive.getInstance();
         ul.addSpectrum(this, PlatformUtil.getFileName(filename));
 
         using (StreamWriter sw = new StreamWriter(pathname))
@@ -741,6 +762,7 @@ public class Measurement : INotifyPropertyChanged
         sw.WriteLine("Host Description, {0}", settings.hostDescription);
         if (location != null)
             sw.WriteLine("Location, lat {0} : lon {1}", location.Latitude, location.Longitude);
+        sw.WriteLine("Tag, {0}", tag);
     }
 
     void writeMetadata(StreamWriter sw, Dictionary<string,string> metadata)

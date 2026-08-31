@@ -32,7 +32,7 @@ namespace EnlightenMAUI.ViewModels
         List<string> userSpectra = new List<string>();
 
         Logger logger = Logger.getInstance();
-        UserLibrary userLibrary = UserLibrary.getInstance();
+        LocalArchive userLibrary = LocalArchive.getInstance();
         public Library library;
         public Spectrometer spec;
         static AnalysisViewModel instance = null; 
@@ -580,12 +580,15 @@ namespace EnlightenMAUI.ViewModels
             {
                 logger.debug("export save triggered");
                 List<string> paths = new List<string>();
+                List<Measurement> ms = new List<Measurement>();
                 foreach (var entries in spvm.selections)
                 {
                     if (entries.selected)
                     {
                         if (userLibrary.userSpectra.ContainsKey(entries.name))
                             paths.Add(userLibrary.userSpectra[entries.name]);
+                        if (userLibrary.library.ContainsKey(entries.name))
+                            ms.Add(userLibrary.library[entries.name]);
                     }
                 }
 
@@ -596,6 +599,13 @@ namespace EnlightenMAUI.ViewModels
                     if (paths.Count == 1)
                     {
                         string pathname = Path.Join(savePath, spvm.exportName + ".csv");
+                        if (!System.IO.File.Exists(pathname))
+                        {
+                            Measurement m = ms[0];
+                            await m.saveAsync(spvm.exportName); 
+                            pathname = Path.Join(savePath, m.filename);
+                        }
+                        
                         try
                         {
                             await Share.Default.RequestAsync(new ShareFileRequest
